@@ -36,11 +36,18 @@ export const metadata: Metadata = {
         type: "image/svg+xml",
         media: "(prefers-color-scheme: dark)",
       },
-      { url: "/branding/icono.png", type: "image/png" },
     ],
     shortcut: [
-      { url: "/branding/icono-black.svg", type: "image/svg+xml" },
-      { url: "/branding/icono.png", type: "image/png" },
+      {
+        url: "/branding/icono-black.svg",
+        type: "image/svg+xml",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        url: "/branding/icono-white.svg",
+        type: "image/svg+xml",
+        media: "(prefers-color-scheme: dark)",
+      },
     ],
     apple: "/branding/icono.png",
   },
