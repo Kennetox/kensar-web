@@ -5,6 +5,7 @@ import {
   getCatalogCategories,
   getCatalogProducts,
   getStockLabel,
+  type WebCatalogCategory,
 } from "@/app/lib/metrikCatalog";
 
 type CatalogPageProps = {
@@ -44,11 +45,11 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
   const category = params.category?.trim() || "";
   const brand = params.brand?.trim() || "";
   const page = Math.max(Number(params.page) || 1, 1);
-  const fallbackCategories = [
-    { name: "Audio profesional", path: "" },
-    { name: "Microfonos", path: "" },
-    { name: "Seguridad", path: "" },
-    { name: "Accesorios", path: "" },
+  const fallbackCategories: WebCatalogCategory[] = [
+    { id: "fallback-audio", name: "Audio profesional", path: "", image_url: null, tile_color: null, product_count: 0 },
+    { id: "fallback-mics", name: "Microfonos", path: "", image_url: null, tile_color: null, product_count: 0 },
+    { id: "fallback-security", name: "Seguridad", path: "", image_url: null, tile_color: null, product_count: 0 },
+    { id: "fallback-accessories", name: "Accesorios", path: "", image_url: null, tile_color: null, product_count: 0 },
   ];
 
   try {
@@ -150,7 +151,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
                       className={item.path && item.path === category ? "catalog-filter-link is-active" : "catalog-filter-link"}
                     >
                       <span>{item.name}</span>
-                      {"product_count" in item ? <small>{item.product_count}</small> : null}
+                      <small>{item.product_count}</small>
                     </Link>
                   ))}
                 </div>
@@ -277,7 +278,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
                       className="storefront-category-tile"
                     >
                       <strong>{item.name}</strong>
-                      {"product_count" in item ? <span>{item.product_count} refs.</span> : <span>Proximamente</span>}
+                      <span>{item.product_count ? `${item.product_count} refs.` : "Proximamente"}</span>
                     </Link>
                   ))}
                 </div>
