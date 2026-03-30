@@ -51,127 +51,131 @@ const workGallery = [
 
 export default function EmpresaPage() {
   return (
-    <>
+    <div className="empresa-page-shell">
       <section id="empresa" className="home-section home-anchor-section home-section-light empresa-section">
         <div className="content-shell section-stack-lg">
-          <div className="split-section section-intro-grid">
-            <Reveal className="section-heading-block" delay="none" direction="left">
-              <p className="section-kicker">Empresa</p>
-              <h2 className="section-heading">Tienda retail especializada en audio, electronica e instrumentos con operacion comercial real.</h2>
-              <div className="section-tag-row" aria-label="Enfoque de empresa">
-                {companyTags.map((tag) => (
-                  <span key={tag} className="section-tag">
-                    {tag}
-                  </span>
+          <div className="section-inner-panel">
+            <div className="split-section section-intro-grid">
+              <Reveal className="section-heading-block" delay="none" direction="left">
+                <p className="section-kicker">Empresa</p>
+                <h2 className="section-heading">Tienda retail especializada en audio, electronica e instrumentos con operacion comercial real.</h2>
+                <div className="section-tag-row" aria-label="Enfoque de empresa">
+                  {companyTags.map((tag) => (
+                    <span key={tag} className="section-tag">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </Reveal>
+              <Reveal className="section-copy-block" delay="short" direction="right" speed="slow">
+                <p>
+                  Trabajamos con inventario fisico, rotacion alta y atencion rapida en punto de venta. El cliente llega
+                  con una necesidad y sale con una solucion concreta.
+                </p>
+                <p>
+                  Competimos por variedad, precio y disponibilidad inmediata. La tecnologia acompana la operacion, pero
+                  el foco sigue siendo vender bien y atender mejor.
+                </p>
+                <div
+                  className="section-media-frame"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(180deg, rgba(10,14,20,0.08), rgba(10,14,20,0.36)), url('https://images.unsplash.com/photo-1558002038-1055907df827?q=80&w=1600&auto=format&fit=crop')",
+                  }}
+                  aria-label="Atencion y operacion en tienda"
+                />
+              </Reveal>
+            </div>
+
+            <div className="feature-grid three-up home-points-grid">
+              {companyPoints.map((point, index) => (
+                <Reveal
+                  key={point}
+                  delay={index === 0 ? "none" : index === 1 ? "short" : "mid"}
+                  direction={index % 2 === 0 ? "left" : "right"}
+                  speed={index === 1 ? "slow" : "normal"}
+                >
+                  <article className="feature-card point-card">
+                    <p className="service-number">0{index + 1}</p>
+                    <p>{point}</p>
+                  </article>
+                </Reveal>
+              ))}
+            </div>
+
+            <Reveal delay="mid" direction="up">
+              <div className="trust-metrics-grid">
+                {trustMetrics.map((metric) => (
+                  <article key={metric.label} className="trust-metric-item">
+                    <p className="trust-metric-value">{metric.value}</p>
+                    <p className="trust-metric-label">{metric.label}</p>
+                  </article>
                 ))}
               </div>
             </Reveal>
-            <Reveal className="section-copy-block" delay="short" direction="right" speed="slow">
-              <p>
-                Trabajamos con inventario fisico, rotacion alta y atencion rapida en punto de venta. El cliente llega
-                con una necesidad y sale con una solucion concreta.
-              </p>
-              <p>
-                Competimos por variedad, precio y disponibilidad inmediata. La tecnologia acompana la operacion, pero
-                el foco sigue siendo vender bien y atender mejor.
-              </p>
-              <div
-                className="section-media-frame"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(180deg, rgba(10,14,20,0.08), rgba(10,14,20,0.36)), url('https://images.unsplash.com/photo-1558002038-1055907df827?q=80&w=1600&auto=format&fit=crop')",
-                }}
-                aria-label="Atencion y operacion en tienda"
-              />
-            </Reveal>
           </div>
-
-          <div className="feature-grid three-up home-points-grid">
-            {companyPoints.map((point, index) => (
-              <Reveal
-                key={point}
-                delay={index === 0 ? "none" : index === 1 ? "short" : "mid"}
-                direction={index % 2 === 0 ? "left" : "right"}
-                speed={index === 1 ? "slow" : "normal"}
-              >
-                <article className="feature-card point-card">
-                  <p className="service-number">0{index + 1}</p>
-                  <p>{point}</p>
-                </article>
-              </Reveal>
-            ))}
-          </div>
-
-          <Reveal delay="mid" direction="up">
-            <div className="trust-metrics-grid">
-              {trustMetrics.map((metric) => (
-                <article key={metric.label} className="trust-metric-item">
-                  <p className="trust-metric-value">{metric.value}</p>
-                  <p className="trust-metric-label">{metric.label}</p>
-                </article>
-              ))}
-            </div>
-          </Reveal>
         </div>
       </section>
 
       <section id="servicios" className="home-section home-anchor-section home-section-soft servicios-section">
         <div className="content-shell section-stack-lg">
-          <Reveal className="section-heading-row" delay="none" direction="left">
-            <div>
-              <p className="section-kicker">Servicios</p>
-              <h2 className="section-heading">Servicios tecnicos integrados al negocio, no un extra oculto.</h2>
-              <p className="section-lead">
-                Reparamos, instalamos y asesoramos con enfoque practico para resolver en un solo canal.
-              </p>
-            </div>
-          </Reveal>
-
-          <div className="feature-grid three-up home-services-grid">
-            {services.map((service, index) => (
-              <Reveal
-                key={service.title}
-                delay={index === 0 ? "none" : index === 1 ? "short" : "mid"}
-                direction={index === 1 ? "up" : index === 0 ? "left" : "right"}
-                speed={index === 1 ? "fast" : "normal"}
-              >
-                <article className="feature-card service-card service-card-tall">
-                  <div className="service-card-media" style={{ backgroundImage: service.image }} aria-hidden="true" />
-                  <p className="service-number">{service.number}</p>
-                  <h3>{service.title}</h3>
-                  <p>{service.description}</p>
-                </article>
-              </Reveal>
-            ))}
-          </div>
-
-          <Reveal delay="mid" direction="up" speed="slow">
-            <div className="cta-band compact-band">
+          <div className="section-inner-panel">
+            <Reveal className="section-heading-row" delay="none" direction="left">
               <div>
-                <p className="section-kicker">Atencion directa y util</p>
-                <h2>Compra, repara o instala por el mismo canal: respuesta clara, tiempos reales y seguimiento.</h2>
+                <p className="section-kicker">Servicios</p>
+                <h2 className="section-heading">Servicios tecnicos integrados al negocio, no un extra oculto.</h2>
+                <p className="section-lead">
+                  Reparamos, instalamos y asesoramos con enfoque practico para resolver en un solo canal.
+                </p>
               </div>
-              <div className="cta-band-actions">
-                <Link href="https://wa.me/573185657508" className="btn-dark" target="_blank" rel="noreferrer">
-                  Escribir por WhatsApp
-                </Link>
-                <Link href="/catalogo" className="btn-ghost-dark">
-                  Ver catalogo
-                </Link>
-              </div>
-            </div>
-          </Reveal>
+            </Reveal>
 
-          <div className="feature-grid three-up work-gallery-grid">
-            {workGallery.map((image, index) => (
-              <Reveal
-                key={image}
-                delay={index === 0 ? "none" : index === 1 ? "short" : "mid"}
-                direction={index === 1 ? "up" : index === 0 ? "left" : "right"}
-              >
-                <article className="work-gallery-item" style={{ backgroundImage: image }} aria-label={`Galeria ${index + 1}`} />
-              </Reveal>
-            ))}
+            <div className="feature-grid three-up home-services-grid">
+              {services.map((service, index) => (
+                <Reveal
+                  key={service.title}
+                  delay={index === 0 ? "none" : index === 1 ? "short" : "mid"}
+                  direction={index === 1 ? "up" : index === 0 ? "left" : "right"}
+                  speed={index === 1 ? "fast" : "normal"}
+                >
+                  <article className="feature-card service-card service-card-tall">
+                    <div className="service-card-media" style={{ backgroundImage: service.image }} aria-hidden="true" />
+                    <p className="service-number">{service.number}</p>
+                    <h3>{service.title}</h3>
+                    <p>{service.description}</p>
+                  </article>
+                </Reveal>
+              ))}
+            </div>
+
+            <Reveal delay="mid" direction="up" speed="slow">
+              <div className="cta-band compact-band">
+                <div>
+                  <p className="section-kicker">Atencion directa y util</p>
+                  <h2>Compra, repara o instala por el mismo canal: respuesta clara, tiempos reales y seguimiento.</h2>
+                </div>
+                <div className="cta-band-actions">
+                  <Link href="https://wa.me/573185657508" className="btn-dark" target="_blank" rel="noreferrer">
+                    Escribir por WhatsApp
+                  </Link>
+                  <Link href="/catalogo" className="btn-ghost-dark">
+                    Ver catalogo
+                  </Link>
+                </div>
+              </div>
+            </Reveal>
+
+            <div className="feature-grid three-up work-gallery-grid">
+              {workGallery.map((image, index) => (
+                <Reveal
+                  key={image}
+                  delay={index === 0 ? "none" : index === 1 ? "short" : "mid"}
+                  direction={index === 1 ? "up" : index === 0 ? "left" : "right"}
+                >
+                  <article className="work-gallery-item" style={{ backgroundImage: image }} aria-label={`Galeria ${index + 1}`} />
+                </Reveal>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -276,6 +280,6 @@ export default function EmpresaPage() {
           </Reveal>
         </div>
       </section>
-    </>
+    </div>
   );
 }

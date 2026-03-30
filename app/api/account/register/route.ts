@@ -30,10 +30,16 @@ export async function POST(request: Request) {
   });
 
   const body = await parseJsonSafe<BackendAuthResponse | { detail?: string }>(backendResponse);
+  const errorBody = body && !("token" in body) ? body : null;
 
   if (!backendResponse.ok || !body || !("token" in body)) {
     return NextResponse.json(
-      { detail: typeof body?.detail === "string" ? body.detail : "No se pudo registrar la cuenta" },
+      {
+        detail:
+          typeof errorBody?.detail === "string"
+            ? errorBody.detail
+            : "No se pudo registrar la cuenta",
+      },
       { status: backendResponse.status || 500 }
     );
   }

@@ -16,12 +16,56 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Kensar Electronic",
-  description: "Tecnología y servicio profesional",
+  metadataBase: new URL("https://kensar-web.vercel.app"),
+  title: {
+    default: "Kensar Electronic | Audio, seguridad y servicio técnico",
+    template: "%s | Kensar Electronic",
+  },
+  description:
+    "Catálogo web de Kensar Electronic con productos de audio, videovigilancia, accesorios y atención comercial directa en Palmira.",
+  applicationName: "Kensar Electronic",
   icons: {
-    icon: "/branding/icono-transparent.png",
-    shortcut: "/branding/icono-transparent.png",
-    apple: "/branding/icono-transparent.png",
+    icon: [
+      {
+        url: "/branding/icono-black.svg",
+        type: "image/svg+xml",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        url: "/branding/icono-white.svg",
+        type: "image/svg+xml",
+        media: "(prefers-color-scheme: dark)",
+      },
+      { url: "/branding/icono.png", type: "image/png" },
+    ],
+    shortcut: [
+      { url: "/branding/icono-black.svg", type: "image/svg+xml" },
+      { url: "/branding/icono.png", type: "image/png" },
+    ],
+    apple: "/branding/icono.png",
+  },
+  openGraph: {
+    title: "Kensar Electronic | Audio, seguridad y servicio técnico",
+    description:
+      "Compra, consulta y sigue tu proceso comercial con Kensar Electronic desde una web conectada a su operación real.",
+    siteName: "Kensar Electronic",
+    locale: "es_CO",
+    type: "website",
+    images: [
+      {
+        url: "/branding/kensar-logo.png",
+        width: 1200,
+        height: 630,
+        alt: "Kensar Electronic",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Kensar Electronic | Audio, seguridad y servicio técnico",
+    description:
+      "Catálogo web de Kensar Electronic con atención comercial directa y operación conectada a tienda.",
+    images: ["/branding/kensar-logo.png"],
   },
 };
 
@@ -62,16 +106,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
               <AccountAccess />
               <CartAccess />
-
-              <a
-                href="https://wa.me/573185657508"
-                target="_blank"
-                rel="noreferrer"
-                className="header-whatsapp-btn"
-                aria-label="Contactar por WhatsApp"
-              >
-                Cotizar WhatsApp
-              </a>
 
               <div className="social-links" aria-label="Redes sociales">
                 <a

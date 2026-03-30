@@ -1,5 +1,5 @@
 :root {
-  --topbar-height: 146px;
+  --topbar-height: 136px;
   --bg-tech: #f5f5f7;
   --surface: #ffffff;
   --accent: #ffb400;
@@ -48,15 +48,15 @@ body {
 }
 
 .topbar-container {
-  max-width: 1560px;
+  max-width: 1480px;
   width: 100%;
   margin: 0 auto;
-  padding: 0 48px;
+  padding: 0 90px;
   display: grid;
-  grid-template-columns: 340px 1fr minmax(500px, 620px);
+  grid-template-columns: 220px minmax(0, 1.35fr) minmax(380px, 500px);
   align-items: center;
-  gap: 24px;
-  min-height: 104px;
+  gap: 16px;
+  min-height: 96px;
 }
 
 .topbar-utility {
@@ -67,9 +67,9 @@ body {
 }
 
 .topbar-utility-inner {
-  max-width: 1560px;
+  max-width: 1480px;
   margin: 0 auto;
-  padding: 0 48px;
+  padding: 0 90px;
   min-height: 42px;
   display: flex;
   align-items: center;
@@ -97,23 +97,26 @@ body {
 .brand-logo-image {
   display: block;
   width: auto;
-  height: 104px;
+  height: 92px;
   object-fit: contain;
 }
 
 .top-nav {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 34px;
+  justify-content: flex-start;
+  gap: 18px;
+  min-width: 0;
+  overflow: visible;
 }
 
 .nav-link {
   text-decoration: none;
   color: var(--text-muted);
-  font-size: 1.08rem;
+  font-size: 0.94rem;
   font-weight: 500;
   transition: color 0.25s ease;
+  white-space: nowrap;
 }
 
 .nav-link:hover,
@@ -125,42 +128,45 @@ body {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 8px;
+  min-width: 0;
 }
 
 .header-search-form {
-  height: 42px;
+  height: 40px;
   display: grid;
   grid-template-columns: 1fr auto;
   border: 1px solid rgba(15, 23, 42, 0.14);
   border-radius: 9px;
   overflow: hidden;
   background: #ffffff;
-  min-width: 340px;
+  min-width: 300px;
+  flex: 1 1 300px;
 }
 
 .header-search-input {
   border: 0;
   outline: none;
-  padding: 0 14px;
+  padding: 0 12px;
   color: #111827;
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   font-family: inherit;
+  min-width: 0;
 }
 
 .header-search-btn {
   border: 0;
-  padding: 0 16px;
+  padding: 0 14px;
   background: #2f7bc0;
   color: #ffffff;
   font-weight: 700;
-  font-size: 0.86rem;
+  font-size: 0.82rem;
   cursor: pointer;
 }
 
 .header-whatsapp-btn {
-  height: 42px;
-  padding: 0 14px;
+  height: 40px;
+  padding: 0 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -169,12 +175,13 @@ body {
   background: #f0e122;
   color: #111827;
   font-weight: 700;
-  font-size: 0.87rem;
+  font-size: 0.78rem;
+  white-space: nowrap;
 }
 
 .header-account-link {
-  min-height: 42px;
-  padding: 6px 10px;
+  min-height: 40px;
+  padding: 6px 8px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -187,8 +194,8 @@ body {
 }
 
 .header-cart-link {
-  min-height: 42px;
-  padding: 6px 10px;
+  min-height: 40px;
+  padding: 6px 8px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -212,8 +219,8 @@ body {
 }
 
 .header-cart-icon {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -230,19 +237,19 @@ body {
 }
 
 .header-cart-copy strong {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   line-height: 1;
 }
 
 .header-cart-copy small {
   color: #64748b;
-  font-size: 0.68rem;
+  font-size: 0.64rem;
   line-height: 1;
 }
 
 .header-cart-count {
-  min-width: 21px;
-  height: 21px;
+  min-width: 19px;
+  height: 19px;
   padding: 0 6px;
   display: inline-flex;
   align-items: center;
@@ -250,7 +257,7 @@ body {
   border-radius: 999px;
   background: #0f172a;
   color: #ffffff;
-  font-size: 0.69rem;
+  font-size: 0.64rem;
   font-weight: 700;
 }
 
@@ -266,15 +273,15 @@ body {
 }
 
 .header-account-icon {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
   background: #eff6ff;
   color: #1d4ed8;
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -292,25 +299,25 @@ body {
 }
 
 .header-account-copy strong {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   line-height: 1;
 }
 
 .header-account-copy small {
   color: #64748b;
-  font-size: 0.68rem;
+  font-size: 0.64rem;
   line-height: 1;
 }
 
 .social-links {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 
 .social-icon-link {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1635,6 +1642,13 @@ body {
   }
 }
 
+.commerce-home {
+  max-width: 1560px;
+  margin: 0 auto;
+  padding-left: 90px;
+  padding-right: 90px;
+}
+
 .commerce-home .content-shell {
   max-width: 100%;
   padding: 0;
@@ -1642,7 +1656,7 @@ body {
 
 .commerce-hero {
   position: relative;
-  min-height: clamp(440px, calc(78dvh - var(--topbar-height)), 650px);
+  min-height: clamp(360px, calc(64dvh - var(--topbar-height)), 530px);
   overflow: hidden;
   margin-top: 14px;
   border-radius: 14px;
@@ -2048,8 +2062,8 @@ body {
 
 @media (max-width: 900px) {
   .commerce-home {
-    padding-left: 14px;
-    padding-right: 14px;
+    padding-left: 32px;
+    padding-right: 32px;
   }
 
   .commerce-hero-overlay {
@@ -2074,8 +2088,8 @@ body {
 
 @media (max-width: 720px) {
   .commerce-home {
-    padding-left: 10px;
-    padding-right: 10px;
+    padding-left: 20px;
+    padding-right: 20px;
   }
 
   .commerce-hero {
@@ -2458,6 +2472,16 @@ body {
 }
 
 @media (max-width: 1100px) {
+  .section-inner-panel {
+    padding: 22px 24px;
+    border-radius: 18px;
+  }
+
+  .empresa-page-shell {
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+
   .content-shell,
   .internal-hero-content {
     padding-left: 32px;
@@ -2483,8 +2507,6 @@ body {
   .empresa-section,
   .servicios-section,
   .contacto-section {
-    margin-left: 12px;
-    margin-right: 12px;
     border-radius: 12px;
   }
 
@@ -2496,6 +2518,16 @@ body {
 }
 
 @media (max-width: 720px) {
+  .section-inner-panel {
+    padding: 18px;
+    border-radius: 16px;
+  }
+
+  .empresa-page-shell {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
   .internal-hero {
     min-height: 480px;
   }
@@ -2544,8 +2576,6 @@ body {
   .empresa-section,
   .servicios-section,
   .contacto-section {
-    margin-left: 8px;
-    margin-right: 8px;
     margin-top: 10px;
     border-radius: 10px;
   }
@@ -2565,16 +2595,16 @@ body {
 .site-footer-inner {
   max-width: 1560px;
   margin: 0 auto;
-  padding: 32px 48px 18px;
+  padding: 22px 48px 12px;
   display: grid;
   grid-template-columns: 1.1fr 1.9fr;
-  gap: 32px;
+  gap: 24px;
 }
 
 .footer-brand-block {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .footer-logo-link {
@@ -2584,7 +2614,7 @@ body {
 
 .footer-logo-image {
   display: block;
-  width: min(100%, 190px);
+  width: min(100%, 160px);
   height: auto;
   object-fit: contain;
 }
@@ -2592,37 +2622,37 @@ body {
 .footer-brand-copy {
   max-width: 320px;
   color: #5e6470;
-  font-size: 0.96rem;
-  line-height: 1.65;
+  font-size: 0.88rem;
+  line-height: 1.55;
 }
 
 .footer-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
+  gap: 18px;
 }
 
 .footer-column {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .footer-label {
   color: var(--text-main);
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.16em;
-  margin-bottom: 6px;
+  letter-spacing: 0.14em;
+  margin-bottom: 4px;
 }
 
 .footer-column p,
 .footer-column a,
 .site-footer-bottom p {
   color: #5e6470;
-  font-size: 0.98rem;
-  line-height: 1.7;
+  font-size: 0.9rem;
+  line-height: 1.55;
   text-decoration: none;
 }
 
@@ -2633,13 +2663,13 @@ body {
 .site-footer-bottom {
   max-width: 1560px;
   margin: 0 auto;
-  padding: 18px 48px 26px;
+  padding: 12px 48px 18px;
   border-top: 1px solid rgba(15, 23, 42, 0.08);
   background: rgba(15, 23, 42, 0.02);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 14px;
 }
 
 @media (max-width: 1100px) {
@@ -2815,6 +2845,13 @@ body {
   border: 1px solid rgba(15, 23, 42, 0.08);
 }
 
+.empresa-page-shell {
+  max-width: 1560px;
+  margin: 0 auto;
+  padding-left: 96px;
+  padding-right: 96px;
+}
+
 .contacto-section {
   margin-bottom: 18px;
 }
@@ -2822,7 +2859,118 @@ body {
 .empresa-section .content-shell,
 .servicios-section .content-shell,
 .contacto-section .content-shell {
-  padding: 56px 54px 66px;
+  padding: 40px 40px 46px;
+}
+
+.section-inner-panel {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
+  padding: 28px 30px;
+}
+
+.empresa-section .section-stack-lg,
+.servicios-section .section-stack-lg,
+.contacto-section .section-stack-lg {
+  gap: 26px;
+}
+
+.empresa-section .split-section,
+.servicios-section .split-section,
+.contacto-section .split-section {
+  gap: 40px;
+}
+
+.empresa-section .section-kicker,
+.servicios-section .section-kicker,
+.contacto-section .section-kicker {
+  font-size: 0.76rem;
+  letter-spacing: 0.15em;
+  margin-bottom: 12px;
+}
+
+.empresa-section .section-kicker::before,
+.servicios-section .section-kicker::before,
+.contacto-section .section-kicker::before {
+  width: 22px;
+}
+
+.empresa-section .section-heading,
+.servicios-section .section-heading,
+.contacto-section .section-heading {
+  font-size: clamp(1.65rem, 2.9vw, 2.5rem);
+  line-height: 1.12;
+}
+
+.empresa-section .section-copy-block,
+.empresa-section .section-heading-block,
+.servicios-section .section-copy-block,
+.servicios-section .section-heading-block,
+.contacto-section .section-copy-block,
+.contacto-section .section-heading-block {
+  gap: 14px;
+}
+
+.empresa-section .section-copy-block p,
+.empresa-section .section-lead,
+.servicios-section .section-copy-block p,
+.servicios-section .section-lead,
+.contacto-section .section-copy-block p,
+.contacto-section .section-lead {
+  font-size: 0.92rem;
+  line-height: 1.58;
+}
+
+.empresa-section .section-tag-row,
+.servicios-section .section-tag-row,
+.contacto-section .section-tag-row {
+  gap: 8px;
+}
+
+.empresa-section .section-tag,
+.servicios-section .section-tag,
+.contacto-section .section-tag {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 0.76rem;
+}
+
+.empresa-section .section-media-frame,
+.servicios-section .section-media-frame,
+.contacto-section .section-media-frame {
+  height: clamp(190px, 24vw, 270px);
+}
+
+.empresa-section .feature-grid,
+.servicios-section .feature-grid,
+.contacto-section .feature-grid {
+  gap: 18px;
+}
+
+.empresa-section .feature-card,
+.servicios-section .feature-card,
+.contacto-section .feature-card {
+  padding: 22px;
+}
+
+.empresa-section .feature-card p,
+.servicios-section .feature-card p,
+.contacto-section .feature-card p {
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.empresa-section .feature-card h3,
+.servicios-section .feature-card h3,
+.contacto-section .feature-card h3,
+.servicios-section .cta-band h2,
+.contacto-section .cta-band h2 {
+  font-size: 1.22rem;
+  margin-bottom: 10px;
+}
+
+.empresa-section .home-points-grid .point-card {
+  min-height: 150px;
 }
 
 .home-points-grid .point-card {
@@ -2844,11 +2992,19 @@ body {
   border-top: 2px solid rgba(47, 123, 192, 0.5);
 }
 
+.empresa-section .trust-metric-item {
+  padding: 14px 16px;
+}
+
 .trust-metric-value {
   color: #111827;
   font-size: 1rem;
   font-weight: 700;
   line-height: 1.35;
+}
+
+.empresa-section .trust-metric-value {
+  font-size: 0.92rem;
 }
 
 .trust-metric-label {
@@ -2858,8 +3014,29 @@ body {
   margin-top: 4px;
 }
 
+.empresa-section .trust-metric-label {
+  font-size: 0.8rem;
+}
+
 .home-services-grid .service-card-tall {
   min-height: 248px;
+}
+
+.servicios-section .service-card,
+.home-services-grid .service-card-tall {
+  min-height: 220px;
+}
+
+.servicios-section .service-card-media {
+  width: calc(100% + 44px);
+  height: 138px;
+  margin: -22px -22px 16px;
+}
+
+.empresa-section .service-number,
+.servicios-section .service-number {
+  font-size: 0.78rem;
+  margin-bottom: 12px;
 }
 
 .work-gallery-grid {
@@ -2874,40 +3051,58 @@ body {
   background-position: center;
 }
 
+.servicios-section .work-gallery-item {
+  min-height: 140px;
+}
+
 .compact-band h2 {
   max-width: 680px;
 }
 
+.servicios-section .cta-band {
+  gap: 20px;
+  padding: 22px 24px;
+}
+
+.servicios-section .btn-dark,
+.servicios-section .btn-ghost-dark,
+.contacto-section .btn-dark,
+.contacto-section .btn-ghost-dark {
+  min-height: 40px;
+  padding: 0 15px;
+  font-size: 0.88rem;
+}
+
 .contact-home-shell {
-  padding-top: 36px;
-  padding-bottom: 40px;
+  padding-top: 26px;
+  padding-bottom: 30px;
 }
 
 .contact-panel {
   background: #ffffff;
   border: 1px solid rgba(15, 23, 42, 0.12);
   border-radius: 16px;
-  padding: 24px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 .contact-panel-top {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 24px;
+  gap: 18px;
 }
 
 .contact-panel-info {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .contact-panel h3 {
-  font-size: clamp(1.45rem, 2.2vw, 1.9rem);
+  font-size: clamp(1.22rem, 1.8vw, 1.55rem);
   color: var(--text-main);
   line-height: 1.15;
 }
@@ -2916,8 +3111,8 @@ body {
 .contact-field span,
 .contact-map-address {
   color: #334155;
-  font-size: 0.98rem;
-  line-height: 1.5;
+  font-size: 0.9rem;
+  line-height: 1.42;
 }
 
 .contact-panel a {
@@ -2940,7 +3135,7 @@ body {
 .contact-map-block {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .contact-map-embed {
@@ -2953,7 +3148,7 @@ body {
 
 .contact-map-embed iframe {
   width: 100%;
-  height: 210px;
+  height: 180px;
   border: 0;
   display: block;
 }
@@ -2961,20 +3156,20 @@ body {
 .contact-form-block {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .contact-form-grid {
   margin-top: 4px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .contact-field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .contact-field-full {
@@ -2994,9 +3189,9 @@ body {
   border: 1px solid rgba(37, 99, 235, 0.26);
   background: #f8fafc;
   color: #111827;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-family: inherit;
-  padding: 12px 14px;
+  padding: 10px 12px;
   outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
@@ -3011,12 +3206,12 @@ body {
 
 .contact-field textarea {
   resize: vertical;
-  min-height: 120px;
+  min-height: 104px;
 }
 
 .contact-field small {
   color: #64748b;
-  font-size: 0.88rem;
+  font-size: 0.8rem;
   text-align: right;
 }
 
@@ -3026,13 +3221,13 @@ body {
 }
 
 .contact-submit-btn {
-  min-height: 46px;
-  padding: 0 22px;
+  min-height: 40px;
+  padding: 0 18px;
   border: 0;
-  border-radius: 16px;
+  border-radius: 14px;
   color: #111827;
   font-weight: 700;
-  font-size: 0.96rem;
+  font-size: 0.88rem;
   font-family: inherit;
   cursor: pointer;
   background: linear-gradient(120deg, #f0e122 0%, #f7e96a 100%);

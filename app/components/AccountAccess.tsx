@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { useWebCustomer } from "@/app/components/WebCustomerProvider";
 
 function getFirstName(name?: string | null) {
@@ -11,11 +11,11 @@ function getFirstName(name?: string | null) {
 
 export default function AccountAccess() {
   const { authenticated, customer, loading } = useWebCustomer();
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
+  const hydrated = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false
+  );
 
   const title = !hydrated || loading
     ? "Cuenta"
