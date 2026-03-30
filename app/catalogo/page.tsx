@@ -44,6 +44,12 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
   const category = params.category?.trim() || "";
   const brand = params.brand?.trim() || "";
   const page = Math.max(Number(params.page) || 1, 1);
+  const fallbackCategories = [
+    { name: "Audio profesional", path: "" },
+    { name: "Microfonos", path: "" },
+    { name: "Seguridad", path: "" },
+    { name: "Accesorios", path: "" },
+  ];
 
   try {
     const [categories, productList] = await Promise.all([
@@ -55,208 +61,243 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
         page,
       }),
     ]);
+    const visibleCategories = categories.length ? categories.slice(0, 10) : fallbackCategories;
+    const visibleBrands = productList.filters.brands.slice(0, 10);
+    const activeFilterCount = [q, category, brand].filter(Boolean).length;
 
     return (
       <main className="site-shell internal-page section-space catalog-page-shell">
         <section className="page-hero catalog-page-hero">
-          <div>
-            <p className="section-label">Catalogo</p>
-            <h1 className="page-title">
-              Vitrina conectada a Metrik con productos publicados, stock comercial y consulta directa.
-            </h1>
+          <div className="catalog-hero-copy">
+            <p className="section-label">Tienda Kensar</p>
+            <h1 className="page-title">Equipos, accesorios y soluciones listas para cotizar o comprar desde la web.</h1>
             <p className="section-intro">
-              Kensar no publica todo su inventario. Aqui ves la seleccion activa en web, conectada con la operacion
-              real de tienda y lista para filtrar por categoria, marca o busqueda.
+              Explora la seleccion de referencias publicadas por Kensar. Filtra por categoria o marca, revisa el
+              detalle del producto y si necesitas una referencia adicional te la conseguimos por WhatsApp.
             </p>
+            <div className="catalog-hero-pills">
+              <span>Audio</span>
+              <span>Seguridad</span>
+              <span>Instrumentos</span>
+              <span>Accesorios</span>
+            </div>
           </div>
-          <div className="catalog-hero-stats">
-            <article>
-              <strong>{productList.total}</strong>
-              <span>productos publicados</span>
-            </article>
-            <article>
-              <strong>{categories.length}</strong>
-              <span>categorias activas</span>
-            </article>
-            <article>
-              <strong>{productList.filters.brands.length}</strong>
-              <span>marcas visibles</span>
-            </article>
+          <div className="catalog-hero-highlight">
+            <span className="catalog-hero-highlight-label">Compra guiada</span>
+            <strong>{productList.total ? `${productList.total} referencias visibles` : "Catalogo en crecimiento"}</strong>
+            <p>
+              {productList.total
+                ? "Selecciona una referencia, revisa el detalle y agregala al carrito o cotizala por WhatsApp."
+                : "Estamos cargando referencias destacadas. Mientras tanto puedes escribirnos y te ayudamos a ubicar cualquier producto."}
+            </p>
+            <Link
+              href="https://wa.me/573185657508?text=Hola%2C%20quiero%20asesoria%20para%20encontrar%20un%20producto%20en%20la%20tienda%20web."
+              target="_blank"
+              rel="noreferrer"
+              className="catalog-primary-action"
+            >
+              Pedir asesoria
+            </Link>
           </div>
         </section>
 
-        <section className="catalog-filter-panel">
-          <div className="catalog-filter-block">
-            <p className="catalog-filter-label">Busqueda actual</p>
-            <div className="catalog-filter-row">
-              {q ? <span className="catalog-chip catalog-chip-active">“{q}”</span> : <span className="catalog-chip">Sin termino</span>}
-              {category ? (
-                <span className="catalog-chip catalog-chip-active">
-                  Categoria: {categories.find((item) => item.path === category)?.name ?? category}
-                </span>
-              ) : null}
-              {brand ? <span className="catalog-chip catalog-chip-active">Marca: {brand}</span> : null}
-              {(q || category || brand) ? (
-                <Link href="/catalogo" className="catalog-reset-link">
-                  Limpiar filtros
-                </Link>
-              ) : null}
-            </div>
+        <section className="catalog-toolbar">
+          <div className="catalog-toolbar-results">
+            <strong>{productList.total ? `${productList.total} resultados` : "Sin productos publicados aun"}</strong>
+            <span>
+              {activeFilterCount
+                ? `${activeFilterCount} filtro${activeFilterCount > 1 ? "s" : ""} activo${activeFilterCount > 1 ? "s" : ""}`
+                : "Explora por categoria, marca o busqueda"}
+            </span>
           </div>
-
-          <div className="catalog-filter-block">
-            <p className="catalog-filter-label">Categorias</p>
-            <div className="catalog-filter-row">
-              <Link
-                href={buildCatalogHref({ q: q || undefined, brand: brand || undefined })}
-                className={!category ? "catalog-chip catalog-chip-active" : "catalog-chip"}
-              >
-                Todas
+          <div className="catalog-toolbar-actions">
+            {q ? <span className="catalog-chip catalog-chip-active">“{q}”</span> : null}
+            {category ? (
+              <span className="catalog-chip catalog-chip-active">
+                {categories.find((item) => item.path === category)?.name ?? category}
+              </span>
+            ) : null}
+            {brand ? <span className="catalog-chip catalog-chip-active">{brand}</span> : null}
+            {(q || category || brand) ? (
+              <Link href="/catalogo" className="catalog-reset-link">
+                Limpiar
               </Link>
-              {categories.map((item) => (
-                <Link
-                  key={item.path}
-                  href={buildCatalogHref({
-                    q: q || undefined,
-                    category: item.path,
-                    brand: brand || undefined,
-                  })}
-                  className={item.path === category ? "catalog-chip catalog-chip-active" : "catalog-chip"}
-                >
-                  {item.name}
-                  <small>{item.product_count}</small>
-                </Link>
-              ))}
-            </div>
+            ) : null}
           </div>
+        </section>
 
-          {productList.filters.brands.length > 0 ? (
-            <div className="catalog-filter-block">
-              <p className="catalog-filter-label">Marcas</p>
-              <div className="catalog-filter-row">
-                <Link
-                  href={buildCatalogHref({ q: q || undefined, category: category || undefined })}
-                  className={!brand ? "catalog-chip catalog-chip-active" : "catalog-chip"}
-                >
-                  Todas
-                </Link>
-                {productList.filters.brands.slice(0, 14).map((item) => (
+        <section className="catalog-store-layout">
+          <aside className="catalog-sidebar">
+            <div className="catalog-filter-panel">
+              <div className="catalog-filter-block">
+                <p className="catalog-filter-label">Categorias</p>
+                <div className="catalog-filter-stack">
                   <Link
-                    key={item.value}
-                    href={buildCatalogHref({
-                      q: q || undefined,
-                      category: category || undefined,
-                      brand: item.value,
-                    })}
-                    className={item.value === brand ? "catalog-chip catalog-chip-active" : "catalog-chip"}
+                    href={buildCatalogHref({ q: q || undefined, brand: brand || undefined })}
+                    className={!category ? "catalog-filter-link is-active" : "catalog-filter-link"}
                   >
-                    {item.label}
-                    <small>{item.count}</small>
+                    <span>Todas las categorias</span>
+                    <small>{productList.total || categories.reduce((sum, item) => sum + item.product_count, 0)}</small>
                   </Link>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </section>
-
-        <section className="catalog-results-head">
-          <div>
-            <p className="catalog-results-kicker">Resultados</p>
-            <h2>{productList.total ? `${productList.total} referencias publicadas` : "No hay productos para mostrar"}</h2>
-          </div>
-          <p className="catalog-results-copy">
-            Si no ves una referencia especifica, te la cotizamos por WhatsApp con disponibilidad en tienda o por pedido.
-          </p>
-        </section>
-
-        {productList.items.length ? (
-          <section className="catalog-product-grid">
-            {productList.items.map((product) => (
-              <article key={product.id} className="catalog-product-card-live">
-                <div
-                  className="catalog-product-card-media"
-                  style={{
-                    backgroundImage: product.image_url
-                      ? `linear-gradient(180deg, rgba(15,23,42,0.08), rgba(15,23,42,0.18)), url('${product.image_url}')`
-                      : "linear-gradient(135deg, #e8eef8 0%, #d9e2f1 100%)",
-                  }}
-                >
-                  <span className={`catalog-stock-badge stock-${product.stock_status}`}>{getStockLabel(product.stock_status)}</span>
-                  {product.featured ? <span className="catalog-featured-badge">Destacado</span> : null}
-                </div>
-
-                <div className="catalog-product-card-body">
-                  <div className="catalog-product-meta">
-                    <span>{product.brand || "Kensar"}</span>
-                    <span>{product.category_name || "Catalogo"}</span>
-                  </div>
-
-                  <h3>
-                    <Link href={`/catalogo/${product.slug}`} className="catalog-product-detail-link">
-                      {product.name}
-                    </Link>
-                  </h3>
-                  <p className="catalog-product-description">
-                    {product.short_description || "Consulta disponibilidad, precio y configuracion comercial con el equipo de Kensar."}
-                  </p>
-
-                  <div className="catalog-product-price-row">
-                    <strong>{formatCatalogPrice(product.price)}</strong>
-                    {product.sku ? <span>SKU {product.sku}</span> : <span>Consulta directa</span>}
-                  </div>
-
-                  <div className="catalog-product-actions">
-                    <Link href={`/catalogo/${product.slug}`} className="catalog-secondary-action">
-                      Ver detalle
-                    </Link>
+                  {visibleCategories.map((item) => (
                     <Link
-                      href={buildWhatsAppHref(product.name)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="catalog-primary-action"
+                      key={item.path || item.name}
+                      href={item.path ? buildCatalogHref({
+                        q: q || undefined,
+                        category: item.path,
+                        brand: brand || undefined,
+                      }) : "/catalogo"}
+                      className={item.path && item.path === category ? "catalog-filter-link is-active" : "catalog-filter-link"}
                     >
-                      Consultar por WhatsApp
+                      <span>{item.name}</span>
+                      {"product_count" in item ? <small>{item.product_count}</small> : null}
                     </Link>
-                    <AddToCartButton productId={product.id} />
-                    {product.category_path ? (
+                  ))}
+                </div>
+              </div>
+
+              {visibleBrands.length > 0 ? (
+                <div className="catalog-filter-block">
+                  <p className="catalog-filter-label">Marcas</p>
+                  <div className="catalog-filter-stack">
+                    <Link
+                      href={buildCatalogHref({ q: q || undefined, category: category || undefined })}
+                      className={!brand ? "catalog-filter-link is-active" : "catalog-filter-link"}
+                    >
+                      <span>Todas las marcas</span>
+                    </Link>
+                    {visibleBrands.map((item) => (
                       <Link
+                        key={item.value}
                         href={buildCatalogHref({
                           q: q || undefined,
-                          category: product.category_path,
-                          brand: brand || undefined,
+                          category: category || undefined,
+                          brand: item.value,
                         })}
-                        className="catalog-secondary-action"
+                        className={item.value === brand ? "catalog-filter-link is-active" : "catalog-filter-link"}
                       >
-                        Ver categoria
+                        <span>{item.label}</span>
+                        <small>{item.count}</small>
                       </Link>
-                    ) : null}
+                    ))}
                   </div>
                 </div>
-              </article>
-            ))}
-          </section>
-        ) : (
-          <section className="catalog-empty-state">
-            <h2>No encontramos referencias con esos filtros.</h2>
-            <p>
-              Ajusta la busqueda o escribenos por WhatsApp. Kensar maneja miles de referencias y no todas estan
-              publicadas en la web.
-            </p>
-            <div className="catalog-empty-actions">
-              <Link href="/catalogo" className="catalog-secondary-action">
-                Ver todo el catalogo publicado
-              </Link>
-              <Link
-                href="https://wa.me/573185657508?text=Hola%2C%20quiero%20consultar%20un%20producto%20que%20no%20encuentro%20en%20el%20catalogo."
-                target="_blank"
-                rel="noreferrer"
-                className="catalog-primary-action"
-              >
-                Consultar producto
-              </Link>
+              ) : null}
+
+              <div className="catalog-support-card">
+                <p className="catalog-filter-label">Ayuda de compra</p>
+                <h2>No encuentras la referencia?</h2>
+                <p>
+                  Te ayudamos a ubicar equipos, repuestos y accesorios aunque todavia no esten publicados en la web.
+                </p>
+                <Link
+                  href="https://wa.me/573185657508?text=Hola%2C%20quiero%20ayuda%20para%20encontrar%20un%20producto%20en%20la%20tienda%20web."
+                  target="_blank"
+                  rel="noreferrer"
+                  className="catalog-primary-action"
+                >
+                  Escribir por WhatsApp
+                </Link>
+              </div>
             </div>
-          </section>
-        )}
+          </aside>
+
+          <div className="catalog-store-content">
+            {productList.items.length ? (
+              <section className="catalog-product-grid storefront-grid">
+                {productList.items.map((product) => (
+                  <article key={product.id} className="catalog-product-card-live storefront-card">
+                    <Link href={`/catalogo/${product.slug}`} className="catalog-product-card-media storefront-card-media">
+                      <div
+                        className="storefront-media-image"
+                        style={{
+                          backgroundImage: product.image_url
+                            ? `url('${product.image_url}')`
+                            : "linear-gradient(135deg, #eef2f7 0%, #dce5f2 100%)",
+                        }}
+                      />
+                      <span className={`catalog-stock-badge stock-${product.stock_status}`}>{getStockLabel(product.stock_status)}</span>
+                      {product.featured ? <span className="catalog-featured-badge">Destacado</span> : null}
+                    </Link>
+
+                    <div className="catalog-product-card-body storefront-card-body">
+                      <div className="catalog-product-meta storefront-meta">
+                        <span>{product.brand || "Kensar"}</span>
+                        <span>{product.category_name || "Catalogo"}</span>
+                      </div>
+
+                      <h3>
+                        <Link href={`/catalogo/${product.slug}`} className="catalog-product-detail-link">
+                          {product.name}
+                        </Link>
+                      </h3>
+
+                      <p className="catalog-product-description">
+                        {product.short_description || "Consulta disponibilidad, precio y configuracion con el equipo de Kensar."}
+                      </p>
+
+                      <div className="catalog-product-price-row storefront-price-row">
+                        <strong>{formatCatalogPrice(product.price)}</strong>
+                        {product.sku ? <span>SKU {product.sku}</span> : <span>Consulta directa</span>}
+                      </div>
+
+                      <div className="catalog-product-actions storefront-actions">
+                        <AddToCartButton productId={product.id} />
+                        <Link href={`/catalogo/${product.slug}`} className="catalog-secondary-action">
+                          Ver detalle
+                        </Link>
+                        <Link
+                          href={buildWhatsAppHref(product.name)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="catalog-whatsapp-link"
+                        >
+                          Cotizar
+                        </Link>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </section>
+            ) : (
+              <section className="catalog-empty-state storefront-empty-state">
+                <div className="storefront-empty-copy">
+                  <span className="catalog-filter-label">Tienda en actualizacion</span>
+                  <h2>Estamos preparando esta vitrina con productos destacados de Kensar.</h2>
+                  <p>
+                    Muy pronto veras aqui referencias listas para comprar o cotizar. Si necesitas algo hoy, escribenos
+                    y te ayudamos a conseguirlo.
+                  </p>
+                </div>
+                <div className="storefront-empty-categories">
+                  {visibleCategories.slice(0, 6).map((item) => (
+                    <Link
+                      key={item.path || item.name}
+                      href={item.path ? buildCatalogHref({ category: item.path }) : "/catalogo"}
+                      className="storefront-category-tile"
+                    >
+                      <strong>{item.name}</strong>
+                      {"product_count" in item ? <span>{item.product_count} refs.</span> : <span>Proximamente</span>}
+                    </Link>
+                  ))}
+                </div>
+                <div className="catalog-empty-actions">
+                  <Link
+                    href="https://wa.me/573185657508?text=Hola%2C%20quiero%20consultar%20un%20producto%20que%20todavia%20no%20veo%20en%20la%20tienda."
+                    target="_blank"
+                    rel="noreferrer"
+                    className="catalog-primary-action"
+                  >
+                    Consultar producto
+                  </Link>
+                  <Link href="/empresa" className="catalog-secondary-action">
+                    Conocer la tienda
+                  </Link>
+                </div>
+              </section>
+            )}
+          </div>
+        </section>
       </main>
     );
   } catch {
