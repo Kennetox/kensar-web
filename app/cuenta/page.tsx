@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { Suspense, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -102,7 +102,7 @@ function PasswordVisibilityIcon({ visible }: { visible: boolean }) {
   );
 }
 
-export default function CuentaPage() {
+function CuentaPageContent() {
   const { authenticated, customer, loading, login, register, updateProfile, logout } = useWebCustomer();
   const { orders, ordersLoading } = useWebCart();
   const router = useRouter();
@@ -881,5 +881,21 @@ export default function CuentaPage() {
         </section>
       )}
     </main>
+  );
+}
+
+export default function CuentaPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="account-page-shell">
+          <section className="account-loading-card">
+            <p>Cargando cuenta…</p>
+          </section>
+        </main>
+      }
+    >
+      <CuentaPageContent />
+    </Suspense>
   );
 }
