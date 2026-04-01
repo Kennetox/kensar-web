@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Inter } from "next/font/google";
+import { Suspense } from "react";
 import Reveal from "./components/Reveal";
 import TopNav from "./components/TopNav";
 import AccountAccess from "./components/AccountAccess";
@@ -114,12 +115,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
             <div className="topbar-actions">
               <div className="header-search-cluster">
-                <HeaderCatalogSearch />
+                <Suspense fallback={null}>
+                  <HeaderCatalogSearch />
+                </Suspense>
                 <HeaderUserBadge />
               </div>
 
-              <AccountAccess />
-              <CartAccess />
+              <Suspense fallback={null}>
+                <AccountAccess />
+              </Suspense>
+              <Suspense fallback={null}>
+                <CartAccess />
+              </Suspense>
 
               <div className="social-links" aria-label="Redes sociales">
                 <a
