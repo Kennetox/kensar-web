@@ -31,31 +31,9 @@ export const metadata: Metadata = {
     "Catálogo web de Kensar Electronic con productos de audio, videovigilancia, accesorios y atención comercial directa en Palmira.",
   applicationName: "Kensar Electronic",
   icons: {
-    icon: [
-      {
-        url: "/branding/icono-black.svg",
-        type: "image/svg+xml",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/branding/icono-white.svg",
-        type: "image/svg+xml",
-        media: "(prefers-color-scheme: dark)",
-      },
-    ],
-    shortcut: [
-      {
-        url: "/branding/icono-black.svg",
-        type: "image/svg+xml",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/branding/icono-white.svg",
-        type: "image/svg+xml",
-        media: "(prefers-color-scheme: dark)",
-      },
-    ],
-    apple: "/branding/icono.png",
+    icon: [{ url: "/branding/icono-white.svg", type: "image/svg+xml" }],
+    shortcut: [{ url: "/branding/icono-white.svg", type: "image/svg+xml" }],
+    apple: "/branding/icono-transparent.png",
   },
   openGraph: {
     title: "Kensar Electronic | Audio, seguridad y servicio técnico",
