@@ -79,7 +79,7 @@ export default function HeaderUserBadge() {
       <button
         type="button"
         className="header-user-badge"
-        aria-label={`Opciones de cuenta de ${customer.name}`}
+        aria-label={`Opciones de cuenta de ${customer?.name ?? "cliente"}`}
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={() => setOpen((current) => !current)}
