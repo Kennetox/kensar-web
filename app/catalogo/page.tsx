@@ -104,11 +104,10 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
   const fallbackCategories = buildFallbackCategories();
   const visibleCategories = categories.length ? categories : fallbackCategories;
   const visibleBrands = productList.filters.brands.slice(0, 10);
-  const selectedCategory =
-    visibleCategories.find((item) => item.path === category) ||
-    productList.filters.categories.find((item) => item.value === category) ||
-    null;
-  const selectedCategoryName = selectedCategory ? selectedCategory.name : "";
+  const selectedCategoryName =
+    visibleCategories.find((item) => item.path === category)?.name ||
+    productList.filters.categories.find((item) => item.value === category)?.label ||
+    "";
   const quickCategories = productList.filters.categories
     .filter((item) => item.value && item.value !== category)
     .slice(0, 5);
