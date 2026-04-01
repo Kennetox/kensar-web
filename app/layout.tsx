@@ -6,8 +6,13 @@ import Reveal from "./components/Reveal";
 import TopNav from "./components/TopNav";
 import AccountAccess from "./components/AccountAccess";
 import CartAccess from "./components/CartAccess";
+import HeaderUserBadge from "./components/HeaderUserBadge";
+import HeaderCatalogSearch from "./components/HeaderCatalogSearch";
+import FloatingWhatsAppButton from "./components/FloatingWhatsAppButton";
 import WebCartProvider from "./components/WebCartProvider";
 import WebCustomerProvider from "./components/WebCustomerProvider";
+import TopbarScrollBehavior from "./components/TopbarScrollBehavior";
+import CheckoutHeaderMode from "./components/CheckoutHeaderMode";
 import "./globals.css";
 
 const inter = Inter({
@@ -80,6 +85,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es">
       <body className={inter.className}>
+        <TopbarScrollBehavior />
+        <CheckoutHeaderMode />
         <WebCustomerProvider>
         <WebCartProvider>
         <header className="topbar">
@@ -106,10 +113,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <TopNav />
 
             <div className="topbar-actions">
-              <form action="/catalogo" method="get" className="header-search-form" role="search" aria-label="Buscar en catalogo">
-                <input type="search" name="q" placeholder="Que producto buscas?" className="header-search-input" />
-                <button type="submit" className="header-search-btn">Buscar</button>
-              </form>
+              <div className="header-search-cluster">
+                <HeaderCatalogSearch />
+                <HeaderUserBadge />
+              </div>
 
               <AccountAccess />
               <CartAccess />
@@ -143,6 +150,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </header>
 
         <main className="main-wrapper">{children}</main>
+        <FloatingWhatsAppButton />
 
         <footer className="site-footer">
           <div className="site-footer-inner">

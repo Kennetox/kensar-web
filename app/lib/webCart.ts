@@ -9,6 +9,7 @@ export type WebCartItem = {
   stock_status: "in_stock" | "low_stock" | "out_of_stock" | "service" | "consultar";
   quantity: number;
   unit_price: number;
+  compare_price?: number | null;
   line_total: number;
 };
 
@@ -18,7 +19,12 @@ export type WebCart = {
   currency: string;
   items: WebCartItem[];
   items_count: number;
+  subtotal_base: number;
+  discount_amount: number;
   subtotal: number;
+  total: number;
+  coupon_code?: string | null;
+  coupon_discount_percent?: number;
   updated_at: string;
 };
 
@@ -173,6 +179,24 @@ export async function clearWebCart(): Promise<void> {
   if (!response.ok) {
     throw await parseApiError(response);
   }
+}
+
+export async function applyWebCartCoupon(code: string): Promise<WebCart> {
+  const response = await fetch("/api/cart/coupon", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ code }),
+  });
+  return parseJsonResponse<WebCart>(response);
+}
+
+export async function clearWebCartCoupon(): Promise<WebCart> {
+  const response = await fetch("/api/cart/coupon", {
+    method: "DELETE",
+    credentials: "include",
+  });
+  return parseJsonResponse<WebCart>(response);
 }
 
 export async function createWebOrderFromCart(notes?: string): Promise<WebOrderSummary> {

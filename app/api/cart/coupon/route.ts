@@ -8,27 +8,26 @@ import {
 } from "@/app/lib/metrikServer";
 import { normalizeCartPayload } from "@/app/api/cart/_lib/normalizeCartPayload";
 
-type RouteContext = {
-  params: Promise<{ productId: string }>;
-};
-
-async function getToken() {
+async function requireToken() {
   const cookieStore = await cookies();
-  return {
-    cookieStore,
-    token: cookieStore.get(getWebCustomerTokenCookieName())?.value,
-  };
+  const token = cookieStore.get(getWebCustomerTokenCookieName())?.value;
+  return { cookieStore, token };
 }
 
-export async function PUT(request: Request, context: RouteContext) {
-  const { cookieStore, token } = await getToken();
-  if (!token) {
-    return NextResponse.json({ detail: "Debes iniciar sesión para editar el carrito." }, { status: 401 });
-  }
+function unauthorizedResponse() {
+  return NextResponse.json({ detail: "Debes iniciar sesión para aplicar cupones." }, { status: 401 });
+}
+
+export async function PUT(request: Request) {
+  const { cookieStore, token } = await requireToken();
+  if (!token) return unauthorizedResponse();
 
   const payload = await request.json().catch(() => null);
-  const { productId } = await context.params;
-  const response = await fetchMetrikApi(`/web/cart/items/${productId}`, {
+  if (!payload || typeof payload !== "object") {
+    return NextResponse.json({ detail: "Payload inválido" }, { status: 400 });
+  }
+
+  const response = await fetchMetrikApi("/web/cart/coupon", {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -39,20 +38,18 @@ export async function PUT(request: Request, context: RouteContext) {
 
   if (response.status === 401) {
     cookieStore.set(getWebCustomerTokenCookieName(), "", buildWebCustomerCookieOptions(new Date(0)));
+    return unauthorizedResponse();
   }
 
   const body = await parseJsonSafe<unknown>(response);
   return NextResponse.json(normalizeCartPayload(body), { status: response.status });
 }
 
-export async function DELETE(_request: Request, context: RouteContext) {
-  const { cookieStore, token } = await getToken();
-  if (!token) {
-    return NextResponse.json({ detail: "Debes iniciar sesión para editar el carrito." }, { status: 401 });
-  }
+export async function DELETE() {
+  const { cookieStore, token } = await requireToken();
+  if (!token) return unauthorizedResponse();
 
-  const { productId } = await context.params;
-  const response = await fetchMetrikApi(`/web/cart/items/${productId}`, {
+  const response = await fetchMetrikApi("/web/cart/coupon", {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -61,6 +58,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
   if (response.status === 401) {
     cookieStore.set(getWebCustomerTokenCookieName(), "", buildWebCustomerCookieOptions(new Date(0)));
+    return unauthorizedResponse();
   }
 
   const body = await parseJsonSafe<unknown>(response);

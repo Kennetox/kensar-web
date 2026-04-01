@@ -2,6 +2,8 @@ export type WebCustomer = {
   id: number;
   pos_customer_id: number;
   name: string;
+  first_name?: string | null;
+  last_name?: string | null;
   email: string;
   phone: string | null;
   tax_id: string | null;
@@ -29,6 +31,14 @@ export type WebCustomerRegisterInput = {
 export type WebCustomerLoginInput = {
   email: string;
   password: string;
+};
+
+export type WebCustomerProfileUpdateInput = {
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  tax_id?: string;
+  address?: string;
 };
 
 async function parseApiError(response: Response): Promise<Error> {
@@ -95,4 +105,18 @@ export async function logoutWebCustomer(): Promise<void> {
   if (!response.ok) {
     throw await parseApiError(response);
   }
+}
+
+export async function updateWebCustomerProfile(
+  input: WebCustomerProfileUpdateInput
+): Promise<WebCustomerSession> {
+  const response = await fetch("/api/account/profile", {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify(input),
+  });
+  return readSessionResponse(response);
 }

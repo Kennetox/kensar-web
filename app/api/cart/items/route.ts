@@ -6,6 +6,7 @@ import {
   getWebCustomerTokenCookieName,
   parseJsonSafe,
 } from "@/app/lib/metrikServer";
+import { normalizeCartPayload } from "@/app/api/cart/_lib/normalizeCartPayload";
 
 export async function POST(request: Request) {
   const cookieStore = await cookies();
@@ -34,5 +35,5 @@ export async function POST(request: Request) {
   }
 
   const body = await parseJsonSafe<unknown>(response);
-  return NextResponse.json(body, { status: response.status });
+  return NextResponse.json(normalizeCartPayload(body), { status: response.status });
 }

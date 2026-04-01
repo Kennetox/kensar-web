@@ -13,8 +13,10 @@ import {
   loginWebCustomer,
   logoutWebCustomer,
   registerWebCustomer,
+  updateWebCustomerProfile,
   type WebCustomer,
   type WebCustomerLoginInput,
+  type WebCustomerProfileUpdateInput,
   type WebCustomerRegisterInput,
   type WebCustomerSession,
 } from "@/app/lib/webCustomer";
@@ -26,6 +28,7 @@ type WebCustomerContextValue = {
   refreshSession: () => Promise<WebCustomerSession>;
   login: (input: WebCustomerLoginInput) => Promise<WebCustomerSession>;
   register: (input: WebCustomerRegisterInput) => Promise<WebCustomerSession>;
+  updateProfile: (input: WebCustomerProfileUpdateInput) => Promise<WebCustomerSession>;
   logout: () => Promise<void>;
 };
 
@@ -84,6 +87,12 @@ export default function WebCustomerProvider({
     return nextSession;
   }, []);
 
+  const updateProfile = useCallback(async (input: WebCustomerProfileUpdateInput) => {
+    const nextSession = await updateWebCustomerProfile(input);
+    setSession(nextSession);
+    return nextSession;
+  }, []);
+
   const logout = useCallback(async () => {
     await logoutWebCustomer();
     setSession(guestSession);
@@ -97,9 +106,10 @@ export default function WebCustomerProvider({
       refreshSession,
       login,
       register,
+      updateProfile,
       logout,
     }),
-    [loading, login, logout, refreshSession, register, session]
+    [loading, login, logout, refreshSession, register, session, updateProfile]
   );
 
   return <WebCustomerContext.Provider value={value}>{children}</WebCustomerContext.Provider>;

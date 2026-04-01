@@ -21,13 +21,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ detail: "Payload inválido" }, { status: 400 });
   }
 
-  const backendResponse = await fetchMetrikApi("/web/customers/register", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  let backendResponse: Response;
+  try {
+    backendResponse = await fetchMetrikApi("/web/customers/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    return NextResponse.json(
+      { detail: "No se pudo conectar con el servidor para registrar la cuenta" },
+      { status: 502 }
+    );
+  }
 
   const body = await parseJsonSafe<BackendAuthResponse | { detail?: string }>(backendResponse);
   const errorBody = body && !("token" in body) ? body : null;

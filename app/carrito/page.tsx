@@ -6,6 +6,8 @@ import { useMemo, useState, useTransition } from "react";
 import { useWebCart } from "@/app/components/WebCartProvider";
 import { useWebCustomer } from "@/app/components/WebCustomerProvider";
 
+const CART_NOTES_MAX_CHARS = 220;
+
 function formatMoney(value: number) {
   return new Intl.NumberFormat("es-CO", {
     style: "currency",
@@ -14,37 +16,44 @@ function formatMoney(value: number) {
   }).format(value);
 }
 
-function formatDate(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Fecha no disponible";
-  return new Intl.DateTimeFormat("es-CO", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
-}
-
 export default function CarritoPage() {
   const router = useRouter();
-  const { authenticated, customer, loading: customerLoading } = useWebCustomer();
+  const { authenticated } = useWebCustomer();
   const {
     cart,
-    orders,
-    loading,
-    ordersLoading,
     error,
     updateItem,
     removeItem,
     clear,
-    createOrder,
+    applyCoupon,
+    clearCoupon,
   } = useWebCart();
   const [notes, setNotes] = useState("");
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [couponOpen, setCouponOpen] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponMessage, setCouponMessage] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const hasItems = Boolean(cart && cart.items.length > 0);
   const subtotal = cart?.subtotal ?? 0;
+  const subtotalBase = cart?.subtotal_base ?? subtotal;
+  const couponDiscountAmount = cart?.discount_amount ?? 0;
+  const totalWithCoupon = cart?.total ?? subtotal;
+  const activeCouponCode = (cart?.coupon_code || "").trim();
+  const activeCouponPercent = Number(cart?.coupon_discount_percent || 0);
   const sortedItems = useMemo(() => cart?.items ?? [], [cart?.items]);
+  const subtotalWithoutDiscount = sortedItems.reduce((acc, item) => {
+    const quantity = Number(item.quantity) || 0;
+    if (typeof item.compare_price === "number" && item.compare_price > item.unit_price) {
+      return acc + item.compare_price * quantity;
+    }
+    return acc + item.unit_price * quantity;
+  }, 0);
+  const hasDiscountGap = subtotalWithoutDiscount > subtotal + 0.5;
+  const savingsValue = Math.max(0, subtotalWithoutDiscount - subtotal);
 
   function updateQuantity(productId: number, quantity: number) {
     setFeedback(null);
@@ -78,75 +87,116 @@ export default function CarritoPage() {
     });
   }
 
-  function handleCheckout() {
-    setFeedback(null);
+  function handleGoToPayments() {
+    if (!hasItems) return;
+    router.push("/pago");
+  }
+
+  function handleApplyCoupon() {
+    if (!couponCode.trim()) {
+      setCouponMessage("Ingresa un código para continuar.");
+      return;
+    }
+    if (!authenticated) {
+      setCouponMessage("Inicia sesión para aplicar cupones.");
+      return;
+    }
+    setCouponMessage(null);
     setActionError(null);
     startTransition(async () => {
       try {
-        const order = await createOrder(notes.trim() || undefined);
-        setNotes("");
-        setFeedback(`Orden ${order.document_number || `#${order.id}`} creada correctamente.`);
-        router.push(`/ordenes/${order.id}`);
+        const applied = await applyCoupon(couponCode.trim());
+        const nextCode = (applied.coupon_code || "").trim();
+        if (nextCode) {
+          setCouponCode(nextCode);
+          setCouponMessage("Cupón aplicado correctamente.");
+        } else {
+          setCouponMessage("No se pudo aplicar el cupón.");
+        }
       } catch (nextError) {
-        setActionError(nextError instanceof Error ? nextError.message : "No se pudo crear la orden web.");
+        setCouponMessage(
+          nextError instanceof Error ? nextError.message : "No se pudo aplicar el cupón."
+        );
       }
     });
   }
 
+  function handleClearCoupon() {
+    if (!authenticated) {
+      setCouponCode("");
+      setCouponMessage("Inicia sesión para gestionar cupones.");
+      return;
+    }
+    setCouponMessage(null);
+    setActionError(null);
+    startTransition(async () => {
+      try {
+        await clearCoupon();
+        setCouponCode("");
+        setCouponMessage("Cupón removido.");
+      } catch (nextError) {
+        setCouponMessage(
+          nextError instanceof Error ? nextError.message : "No se pudo remover el cupón."
+        );
+      }
+    });
+  }
+
+  function handleGoBack() {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push("/catalogo");
+  }
+
   return (
     <main className="site-shell internal-page section-space cart-page-shell">
-      <section className="page-hero cart-page-hero">
-        <div>
-          <p className="section-label">Carrito y checkout</p>
-          <h1 className="page-title">Construye tu orden web conectada con Metrik antes del pago.</h1>
+      <section className="catalog-breadcrumbs">
+        <button type="button" className="catalog-breadcrumb-back-btn" onClick={handleGoBack}>
+          ← Volver
+        </button>
+        <span>Checkout</span>
+        <span>Carrito</span>
+      </section>
+
+      <section className={`cart-intro-card${!authenticated ? " has-guest-note" : ""}`}>
+        <div className="cart-intro-copy">
+          <p className="section-label">Carrito y pagos</p>
+          <h1 className="page-title">Revisa tu carrito y continúa al pago.</h1>
           <p className="section-intro">
-            Aquí consolidamos el carrito del cliente autenticado y generamos la `OW` que luego seguirá
-            el flujo operativo de Comercio Web.
+            Ajusta cantidades, valida tu pedido y sigue al flujo de pago con una experiencia clara y rápida.
           </p>
         </div>
-        <div className="cart-hero-panel">
-          <strong>
-            {customerLoading || loading ? "Cargando..." : authenticated ? customer?.name : "Sesión requerida"}
-          </strong>
-          <span>
-            {authenticated
-              ? "Tu carrito está ligado al mismo cliente maestro que vive en Metrik."
-              : "Inicia sesión para persistir el carrito y crear órdenes web reales."}
-          </span>
-        </div>
+        {!authenticated ? (
+          <div className="cart-intro-side">
+            <p className="guest-mode-note cart-intro-guest-note">
+              Compra como invitado.{" "}
+              <Link href="/cuenta?returnTo=%2Fcarrito" className="guest-mode-note-link guest-mode-note-link-dark">
+                Iniciar sesión
+              </Link>
+            </p>
+          </div>
+        ) : null}
       </section>
 
       {error ? <p className="account-feedback error">{error}</p> : null}
       {actionError ? <p className="account-feedback error">{actionError}</p> : null}
       {feedback ? <p className="account-feedback success">{feedback}</p> : null}
 
-      {!authenticated ? (
-        <section className="cart-guest-card">
-          <h2>Necesitas iniciar sesión</h2>
-          <p>
-            El carrito persistente y la creación de órdenes web requieren una cuenta de cliente conectada
-            con Metrik.
-          </p>
-          <div className="account-action-row">
-            <Link href="/cuenta" className="account-primary-btn">
-              Ir a mi cuenta
-            </Link>
-            <Link href="/catalogo" className="account-secondary-btn">
-              Volver al catálogo
-            </Link>
-          </div>
-        </section>
-      ) : (
-        <section className="cart-main-grid">
+      <section className="cart-main-grid">
           <article className="cart-card">
             <div className="cart-card-head">
               <div>
-                <p className="account-section-kicker">Carrito persistente</p>
+                <p className="account-section-kicker">Tu selección</p>
                 <h2>Productos seleccionados</h2>
               </div>
               {hasItems ? (
                 <button type="button" onClick={handleClear} disabled={isPending} className="cart-clear-btn">
-                  Vaciar carrito
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M9 3.5h6l.7 1.5H20v2H4v-2h4.3L9 3.5Zm-2 6h2v8H7v-8Zm4 0h2v8h-2v-8Zm4 0h2v8h-2v-8Z" />
+                  </svg>
+                  <span>Vaciar carrito</span>
                 </button>
               ) : null}
             </div>
@@ -162,12 +212,24 @@ export default function CarritoPage() {
               <div className="cart-item-list">
                 {sortedItems.map((item) => (
                   <div key={item.id} className="cart-item-row">
-                    <div className="cart-item-copy">
-                      <h3>{item.product_name}</h3>
-                      <p>
-                        {item.product_sku || "Sin SKU"} · {item.brand || "Kensar"} · {item.stock_status}
-                      </p>
-                      <strong>{formatMoney(item.line_total)}</strong>
+                    <div className="cart-item-main">
+                      <div
+                        className={`cart-item-media${item.image_url ? " has-image" : ""}`}
+                        style={item.image_url ? { backgroundImage: `url('${item.image_url}')` } : undefined}
+                        aria-hidden="true"
+                      />
+                      <div className="cart-item-copy">
+                        <h3>{item.product_name}</h3>
+                        <p>
+                          {item.product_sku || "Sin SKU"} · {item.brand || "Kensar"}
+                        </p>
+                        <strong className="cart-item-price-row">
+                          <span>{formatMoney(item.line_total)}</span>
+                          {typeof item.compare_price === "number" && item.compare_price > item.unit_price ? (
+                            <small>{formatMoney(item.compare_price * item.quantity)}</small>
+                          ) : null}
+                        </strong>
+                      </div>
                     </div>
                     <div className="cart-item-actions">
                       <div className="cart-qty-box">
@@ -193,7 +255,10 @@ export default function CarritoPage() {
                         onClick={() => updateQuantity(item.product_id, 0)}
                         disabled={isPending}
                       >
-                        Eliminar
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M9 3.5h6l.7 1.5H20v2H4v-2h4.3L9 3.5Zm-2 6h2v8H7v-8Zm4 0h2v8h-2v-8Zm4 0h2v8h-2v-8Z" />
+                        </svg>
+                        <span>Eliminar</span>
                       </button>
                     </div>
                   </div>
@@ -203,79 +268,120 @@ export default function CarritoPage() {
           </article>
 
           <aside className="cart-card cart-summary-card">
-            <p className="account-section-kicker">Checkout base</p>
-            <h2>Crear orden web</h2>
+            <p className="account-section-kicker">Resumen</p>
+            <h2>Finalizar compra</h2>
             <div className="cart-summary-line">
-              <span>Items</span>
+              <span>Artículos</span>
               <strong>{cart?.items_count ?? 0}</strong>
             </div>
+            {hasDiscountGap ? (
+              <>
+                <div className="cart-summary-line cart-summary-line-compare">
+                  <span>Subtotal</span>
+                  <strong>{formatMoney(subtotalWithoutDiscount)}</strong>
+                </div>
+                <div className="cart-summary-line">
+                  <span>Subtotal web</span>
+                  <strong>{formatMoney(subtotalBase)}</strong>
+                </div>
+                <div className="cart-summary-line cart-summary-saving">
+                  <span>Te ahorras</span>
+                  <strong>{formatMoney(savingsValue)}</strong>
+                </div>
+              </>
+            ) : (
+              <div className="cart-summary-line">
+                <span>Subtotal</span>
+                <strong>{formatMoney(subtotalBase)}</strong>
+              </div>
+            )}
+            {couponDiscountAmount > 0 ? (
+              <div className="cart-summary-line cart-summary-saving">
+                <span>
+                  Cupón {activeCouponCode ? activeCouponCode : ""}{activeCouponPercent > 0 ? ` (${activeCouponPercent}%)` : ""}
+                </span>
+                <strong>- {formatMoney(couponDiscountAmount)}</strong>
+              </div>
+            ) : null}
             <div className="cart-summary-line">
-              <span>Subtotal</span>
-              <strong>{formatMoney(subtotal)}</strong>
+              <span>Total</span>
+              <strong>{formatMoney(totalWithCoupon)}</strong>
+            </div>
+            <div className="cart-coupon-block">
+              <button
+                type="button"
+                className="cart-notes-toggle"
+                onClick={() => setCouponOpen((prev) => !prev)}
+                aria-expanded={couponOpen}
+                aria-controls="cart-coupon-panel"
+              >
+                <span>Tengo un código</span>
+                <span className={`cart-notes-toggle-icon${couponOpen ? " is-open" : ""}`}>▾</span>
+              </button>
+              {couponOpen ? (
+                <div id="cart-coupon-panel" className="cart-coupon-panel">
+                  <div className={`cart-coupon-row${activeCouponCode ? " has-active-coupon" : ""}`}>
+                    <input
+                      id="cart-coupon-code"
+                      type="text"
+                      value={couponCode}
+                      onChange={(event) => {
+                        setCouponCode(event.target.value.toUpperCase());
+                        if (couponMessage) setCouponMessage(null);
+                      }}
+                      placeholder="Ej: KENSAR10"
+                    />
+                    <button type="button" className="cart-coupon-btn" onClick={handleApplyCoupon}>
+                      Aplicar
+                    </button>
+                    {activeCouponCode ? (
+                      <button type="button" className="cart-coupon-btn cart-coupon-btn-clear" onClick={handleClearCoupon}>
+                        Quitar
+                      </button>
+                    ) : null}
+                  </div>
+                  {couponMessage ? <p className="cart-coupon-note">{couponMessage}</p> : null}
+                </div>
+              ) : null}
             </div>
             <label className="cart-notes-field">
-              <span>Notas para la orden</span>
-              <textarea
-                rows={4}
-                value={notes}
-                onChange={(event) => setNotes(event.target.value)}
-                placeholder="Ej: recoger en tienda, confirmar por WhatsApp, referencia urgente..."
-              />
+              <button
+                type="button"
+                className="cart-notes-toggle"
+                onClick={() => setNotesOpen((prev) => !prev)}
+                aria-expanded={notesOpen}
+                aria-controls="cart-notes-textarea"
+              >
+                <span>Notas para la orden</span>
+                <span className={`cart-notes-toggle-icon${notesOpen ? " is-open" : ""}`}>▾</span>
+              </button>
+              {notesOpen ? (
+                <>
+                  <textarea
+                    id="cart-notes-textarea"
+                    rows={4}
+                    maxLength={CART_NOTES_MAX_CHARS}
+                    value={notes}
+                    onChange={(event) => setNotes(event.target.value.slice(0, CART_NOTES_MAX_CHARS))}
+                    placeholder="Ej: recoger en tienda, confirmar por WhatsApp, referencia urgente..."
+                  />
+                  <p className="cart-notes-counter">
+                    {notes.length}/{CART_NOTES_MAX_CHARS}
+                  </p>
+                </>
+              ) : null}
             </label>
             <button
               type="button"
               disabled={!hasItems || isPending}
-              onClick={handleCheckout}
+              onClick={handleGoToPayments}
               className="account-primary-btn cart-checkout-btn"
             >
-              {isPending ? "Creando orden..." : "Crear orden web"}
+              Continuar a pagos
             </button>
-            <p className="cart-summary-note">
-              Esta acción crea una `OW` real en Metrik. El siguiente bloque conectará pago y confirmación comercial.
-            </p>
           </aside>
         </section>
-      )}
 
-      {authenticated ? (
-        <section className="cart-orders-section">
-          <div className="commerce-section-head">
-            <div>
-              <p className="commerce-section-kicker">Órdenes recientes</p>
-              <h2>Historial web inicial</h2>
-              <p className="commerce-section-sub">
-                Base para que después puedas ver estados, pagos y seguimiento del canal online.
-              </p>
-            </div>
-          </div>
-          <div className="cart-orders-grid">
-            {ordersLoading ? (
-              <article className="cart-order-card">
-                <p>Cargando tus órdenes…</p>
-              </article>
-            ) : orders.length === 0 ? (
-              <article className="cart-order-card">
-                <p>Aún no hay órdenes web creadas desde esta cuenta.</p>
-              </article>
-            ) : (
-              orders.map((order) => (
-                <article key={order.id} className="cart-order-card">
-                  <div className="cart-order-head">
-                    <strong>{order.document_number || `Orden #${order.id}`}</strong>
-                    <span>{order.status}</span>
-                  </div>
-                  <p>{formatMoney(order.total)}</p>
-                  <small>{formatDate(order.created_at)}</small>
-                  <div className="cart-order-meta">
-                    <span>Pago: {order.payment_status}</span>
-                    <span>Fulfillment: {order.fulfillment_status}</span>
-                  </div>
-                </article>
-              ))
-            )}
-          </div>
-        </section>
-      ) : null}
     </main>
   );
 }

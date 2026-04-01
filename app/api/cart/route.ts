@@ -6,6 +6,7 @@ import {
   getWebCustomerTokenCookieName,
   parseJsonSafe,
 } from "@/app/lib/metrikServer";
+import { normalizeCartPayload } from "@/app/api/cart/_lib/normalizeCartPayload";
 
 async function requireToken() {
   const cookieStore = await cookies();
@@ -34,7 +35,7 @@ export async function GET() {
   }
 
   const body = await parseJsonSafe<unknown>(response);
-  return NextResponse.json(body, { status: response.status });
+  return NextResponse.json(normalizeCartPayload(body), { status: response.status });
 }
 
 export async function DELETE() {

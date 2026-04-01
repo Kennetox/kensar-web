@@ -20,12 +20,18 @@ export type WebCatalogProductCard = {
   name: string;
   short_description: string | null;
   brand: string | null;
+  group_name: string | null;
   category_path: string | null;
   category_name: string | null;
   image_url: string | null;
   image_thumb_url: string | null;
+  gallery: string[];
+  badge_text?: string | null;
   price_mode: "visible" | "consultar";
   price: number | null;
+  compare_price: number | null;
+  web_price_source?: "base" | "fixed" | "discount_percent" | null;
+  web_price_value?: number | string | null;
   stock_status: "in_stock" | "low_stock" | "out_of_stock" | "service" | "consultar";
   featured: boolean;
 };
@@ -47,9 +53,11 @@ export type WebCatalogProductDetail = {
   slug: string;
   name: string;
   badge_text: string | null;
+  featured?: boolean;
   short_description: string | null;
   long_description: string | null;
   brand: string | null;
+  group_name: string | null;
   category_path: string | null;
   category_name: string | null;
   image_url: string | null;
@@ -59,6 +67,7 @@ export type WebCatalogProductDetail = {
   price: number | null;
   compare_price: number | null;
   stock_status: "in_stock" | "low_stock" | "out_of_stock" | "service" | "consultar";
+  warranty_text?: string | null;
   specs: Record<string, string>;
   whatsapp_message: string | null;
 };
@@ -69,6 +78,55 @@ function getApiBaseUrl() {
     throw new Error("Missing METRIK_API_BASE_URL");
   }
   return baseUrl.replace(/\/$/, "");
+}
+
+function resolveCatalogAssetUrl(baseUrl: string, value: string | null): string | null {
+  if (!value) return null;
+
+  try {
+    return new URL(value, `${baseUrl}/`).toString();
+  } catch {
+    return value;
+  }
+}
+
+function normalizeCatalogCategory(baseUrl: string, item: WebCatalogCategory): WebCatalogCategory {
+  return {
+    ...item,
+    image_url: resolveCatalogAssetUrl(baseUrl, item.image_url),
+  };
+}
+
+function normalizeCatalogProductCard(
+  baseUrl: string,
+  item: WebCatalogProductCard
+): WebCatalogProductCard {
+  const itemWithLegacyBadge = item as WebCatalogProductCard & {
+    web_badge_text?: string | null;
+  };
+  return {
+    ...item,
+    badge_text: item.badge_text ?? itemWithLegacyBadge.web_badge_text ?? null,
+    image_url: resolveCatalogAssetUrl(baseUrl, item.image_url),
+    image_thumb_url: resolveCatalogAssetUrl(baseUrl, item.image_thumb_url),
+    gallery: item.gallery.map((image) => resolveCatalogAssetUrl(baseUrl, image) || image),
+  };
+}
+
+function normalizeCatalogProductDetail(
+  baseUrl: string,
+  item: WebCatalogProductDetail
+): WebCatalogProductDetail {
+  const detailWithLegacyWarranty = item as WebCatalogProductDetail & {
+    web_warranty_text?: string | null;
+  };
+  return {
+    ...item,
+    warranty_text: item.warranty_text ?? detailWithLegacyWarranty.web_warranty_text ?? null,
+    image_url: resolveCatalogAssetUrl(baseUrl, item.image_url),
+    image_thumb_url: resolveCatalogAssetUrl(baseUrl, item.image_thumb_url),
+    gallery: item.gallery.map((image) => resolveCatalogAssetUrl(baseUrl, image) || image),
+  };
 }
 
 async function fetchCatalog<T>(path: string, params?: URLSearchParams): Promise<T> {
@@ -103,8 +161,9 @@ async function fetchCatalogOptional<T>(path: string): Promise<T | null> {
 }
 
 export async function getCatalogCategories() {
+  const baseUrl = getApiBaseUrl();
   const response = await fetchCatalog<{ items: WebCatalogCategory[] }>("/web/catalog/categories");
-  return response.items;
+  return response.items.map((item) => normalizeCatalogCategory(baseUrl, item));
 }
 
 export async function getCatalogProducts(input: {
@@ -120,11 +179,18 @@ export async function getCatalogProducts(input: {
   if (input.brand) params.set("brand", input.brand);
   if (input.page && input.page > 1) params.set("page", String(input.page));
 
-  return fetchCatalog<WebCatalogProductList>("/web/catalog/products", params);
+  const baseUrl = getApiBaseUrl();
+  const response = await fetchCatalog<WebCatalogProductList>("/web/catalog/products", params);
+  return {
+    ...response,
+    items: response.items.map((item) => normalizeCatalogProductCard(baseUrl, item)),
+  };
 }
 
 export async function getCatalogProduct(slug: string) {
-  return fetchCatalogOptional<WebCatalogProductDetail>(`/web/catalog/products/${slug}`);
+  const baseUrl = getApiBaseUrl();
+  const response = await fetchCatalogOptional<WebCatalogProductDetail>(`/web/catalog/products/${slug}`);
+  return response ? normalizeCatalogProductDetail(baseUrl, response) : null;
 }
 
 export function formatCatalogPrice(value: number | null) {
