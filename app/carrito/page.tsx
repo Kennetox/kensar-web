@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { Suspense, useMemo, useState, useTransition } from "react";
 import { useWebCart } from "@/app/components/WebCartProvider";
 import { useWebCustomer } from "@/app/components/WebCustomerProvider";
 
@@ -26,7 +26,7 @@ function sanitizeReturnTo(value?: string | null): string | null {
   return candidate;
 }
 
-export default function CarritoPage() {
+function CarritoPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { authenticated } = useWebCustomer();
@@ -399,5 +399,13 @@ export default function CarritoPage() {
         </section>
 
     </main>
+  );
+}
+
+export default function CarritoPage() {
+  return (
+    <Suspense fallback={<main className="site-shell internal-page section-space cart-page-shell" />}>
+      <CarritoPageContent />
+    </Suspense>
   );
 }
