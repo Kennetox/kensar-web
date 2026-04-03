@@ -394,7 +394,11 @@ function PagoPageContent() {
     sandbox_init_point?: string | null;
     init_point?: string | null;
   }): string {
-    const nextUrl = (input.sandbox_init_point || input.init_point || "").trim();
+    const publicKey = (process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY || "").trim().toUpperCase();
+    const isLiveCredentials = publicKey.startsWith("APP_USR-");
+    const primaryUrl = isLiveCredentials ? input.init_point : input.sandbox_init_point;
+    const fallbackUrl = isLiveCredentials ? input.sandbox_init_point : input.init_point;
+    const nextUrl = (primaryUrl || fallbackUrl || "").trim();
     if (!nextUrl) {
       throw new Error("No se recibió URL de pago desde Mercado Pago.");
     }
