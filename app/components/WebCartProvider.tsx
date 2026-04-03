@@ -22,6 +22,7 @@ import {
   type WebCartItem,
   type WebOrderSummary,
 } from "@/app/lib/webCart";
+import { hasCouponSessionMarker, setCouponSessionMarker } from "@/app/lib/couponSession";
 import { useWebCustomer } from "@/app/components/WebCustomerProvider";
 
 const GUEST_CART_STORAGE_KEY = "kensar_web_guest_cart_v1";
@@ -151,10 +152,34 @@ export default function WebCartProvider({
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const hasActiveCoupon = useCallback((nextCart: WebCart | null) => {
+    return Boolean(nextCart?.coupon_code && nextCart.coupon_code.trim().length > 0);
+  }, []);
+
+  const normalizeAuthenticatedCouponSession = useCallback(
+    async (nextCart: WebCart) => {
+      let normalized = nextCart;
+      const couponActive = hasActiveCoupon(nextCart);
+
+      if (couponActive && !hasCouponSessionMarker()) {
+        try {
+          normalized = await clearWebCartCoupon();
+        } catch {
+          normalized = nextCart;
+        }
+      }
+
+      setCouponSessionMarker(hasActiveCoupon(normalized));
+      return normalized;
+    },
+    [hasActiveCoupon]
+  );
+
   const refreshCart = useCallback(async () => {
     if (!authenticated) {
       const guestCart = parseGuestStorage();
       setCart(guestCart);
+      setCouponSessionMarker(false);
       return guestCart;
     }
 
@@ -162,15 +187,16 @@ export default function WebCartProvider({
       setRefreshing(true);
       setError(null);
       const nextCart = await fetchWebCart();
-      setCart(nextCart);
-      return nextCart;
+      const normalized = await normalizeAuthenticatedCouponSession(nextCart);
+      setCart(normalized);
+      return normalized;
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : "No se pudo cargar el carrito.");
       return null;
     } finally {
       setRefreshing(false);
     }
-  }, [authenticated]);
+  }, [authenticated, normalizeAuthenticatedCouponSession]);
 
   const refreshOrders = useCallback(async () => {
     if (!authenticated) {
@@ -200,6 +226,7 @@ export default function WebCartProvider({
       if (!authenticated) {
         if (!active) return;
         setCart(parseGuestStorage());
+        setCouponSessionMarker(false);
         setOrders([]);
         setLoading(false);
         return;
@@ -207,8 +234,9 @@ export default function WebCartProvider({
 
       try {
         const [nextCart, nextOrders] = await Promise.all([fetchWebCart(), fetchMyWebOrders()]);
+        const normalizedCart = await normalizeAuthenticatedCouponSession(nextCart);
         if (!active) return;
-        setCart(nextCart);
+        setCart(normalizedCart);
         setOrders(nextOrders);
         setError(null);
       } catch (nextError) {
@@ -224,7 +252,7 @@ export default function WebCartProvider({
     return () => {
       active = false;
     };
-  }, [authenticated, customerLoading]);
+  }, [authenticated, customerLoading, normalizeAuthenticatedCouponSession]);
 
   const addItem = useCallback(
     async (productId: number, quantity = 1, guestItem?: GuestCartItemInput) => {
@@ -272,10 +300,11 @@ export default function WebCartProvider({
 
       const nextCart = await addWebCartItem({ product_id: productId, quantity });
       setCart(nextCart);
+      setCouponSessionMarker(hasActiveCoupon(nextCart));
       setError(null);
       return nextCart;
     },
-    [authenticated]
+    [authenticated, hasActiveCoupon]
   );
 
   const updateItem = useCallback(async (productId: number, quantity: number) => {
@@ -303,9 +332,10 @@ export default function WebCartProvider({
 
     const nextCart = await updateWebCartItem(productId, quantity);
     setCart(nextCart);
+    setCouponSessionMarker(hasActiveCoupon(nextCart));
     setError(null);
     return nextCart;
-  }, [authenticated]);
+  }, [authenticated, hasActiveCoupon]);
 
   const removeItem = useCallback(async (productId: number) => {
     if (!authenticated) {
@@ -320,21 +350,24 @@ export default function WebCartProvider({
 
     const nextCart = await removeWebCartItem(productId);
     setCart(nextCart);
+    setCouponSessionMarker(hasActiveCoupon(nextCart));
     setError(null);
     return nextCart;
-  }, [authenticated]);
+  }, [authenticated, hasActiveCoupon]);
 
   const clear = useCallback(async () => {
     if (!authenticated) {
       const nextGuest = buildGuestCart();
       setCart(nextGuest);
       persistGuestCart(nextGuest);
+      setCouponSessionMarker(false);
       setError(null);
       return;
     }
 
     await clearWebCart();
     setCart(buildGuestCart());
+    setCouponSessionMarker(false);
     setError(null);
   }, [authenticated]);
 
@@ -344,19 +377,22 @@ export default function WebCartProvider({
     }
     const nextCart = await applyWebCartCoupon(code);
     setCart(nextCart);
+    setCouponSessionMarker(hasActiveCoupon(nextCart));
     setError(null);
     return nextCart;
-  }, [authenticated]);
+  }, [authenticated, hasActiveCoupon]);
 
   const clearCoupon = useCallback(async () => {
     if (!authenticated) {
       const nextCart = parseGuestStorage();
       setCart(nextCart);
+      setCouponSessionMarker(false);
       setError(null);
       return nextCart;
     }
     const nextCart = await clearWebCartCoupon();
     setCart(nextCart);
+    setCouponSessionMarker(false);
     setError(null);
     return nextCart;
   }, [authenticated]);

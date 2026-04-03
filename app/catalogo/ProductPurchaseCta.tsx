@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import ProductPaymentMethods from "@/app/catalogo/ProductPaymentMethods";
 import { useWebCart } from "@/app/components/WebCartProvider";
@@ -28,6 +28,8 @@ export default function ProductPurchaseCta({
   comparePrice: number | null;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { addItem } = useWebCart();
   const [quantity, setQuantity] = useState(1);
   const [adding, setAdding] = useState(false);
@@ -36,6 +38,9 @@ export default function ProductPurchaseCta({
   const quantityOptions = useMemo(() => Array.from({ length: 3 }, (_, index) => index + 1), []);
   const stockLabel = stockStatus === "out_of_stock" ? "Sin stock" : "Stock disponible";
   const canPurchase = stockStatus !== "out_of_stock";
+  const query = searchParams.toString();
+  const returnTo = `${pathname}${query ? `?${query}` : ""}`;
+  const checkoutHref = `/pago?returnTo=${encodeURIComponent(returnTo)}`;
 
   async function handleAddToCart() {
     try {
@@ -74,7 +79,7 @@ export default function ProductPurchaseCta({
         unit_price: unitPrice,
         compare_price: comparePrice,
       });
-      router.push("/pago");
+      router.push(checkoutHref);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudo continuar con la compra.");
       setBuyingNow(false);

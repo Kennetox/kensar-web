@@ -20,6 +20,8 @@ import {
   type WebCustomerRegisterInput,
   type WebCustomerSession,
 } from "@/app/lib/webCustomer";
+import { clearWebCartCoupon } from "@/app/lib/webCart";
+import { setCouponSessionMarker } from "@/app/lib/couponSession";
 
 type WebCustomerContextValue = {
   customer: WebCustomer | null;
@@ -94,6 +96,14 @@ export default function WebCustomerProvider({
   }, []);
 
   const logout = useCallback(async () => {
+    try {
+      await clearWebCartCoupon();
+    } catch {
+      // Best-effort cleanup: logout must continue even if coupon cleanup fails.
+    } finally {
+      setCouponSessionMarker(false);
+    }
+
     await logoutWebCustomer();
     setSession(guestSession);
   }, []);

@@ -89,6 +89,39 @@ export type WebOrderStatusLog = {
   created_at: string;
 };
 
+export type WebMercadoPagoCheckoutInit = {
+  order_id: number;
+  provider: string;
+  preference_id: string;
+  init_point?: string | null;
+  sandbox_init_point?: string | null;
+  public_key?: string | null;
+  order_access_token?: string | null;
+};
+
+export type WebMercadoPagoOrderPaymentStatus = {
+  order_id: number;
+  web_order_number?: number | null;
+  document_number?: string | null;
+  status: WebOrderSummary["status"];
+  payment_status: WebOrderSummary["payment_status"];
+  subtotal: number;
+  discount_amount: number;
+  shipping_amount: number;
+  total: number;
+  customer_name?: string | null;
+  customer_email?: string | null;
+  sale_id: number | null;
+  sale_document_number: string | null;
+  provider: string | null;
+  provider_reference: string | null;
+  amount: number | null;
+  currency: string | null;
+  payment_record_status: WebOrderSummary["payment_status"] | null;
+  items: WebOrderItem[];
+  updated_at: string;
+};
+
 export type WebOrderDetail = WebOrderSummary & {
   customer_name: string | null;
   customer_email: string | null;
@@ -244,4 +277,67 @@ export async function submitManualPaymentForOrder(
     body: JSON.stringify(input),
   });
   return parseJsonResponse<WebOrderDetail>(response);
+}
+
+export async function createMercadoPagoCheckout(
+  input: {
+    order_id: number;
+    payer?: {
+      email?: string;
+      first_name?: string;
+      last_name?: string;
+      identification?: {
+        type?: string;
+        number?: string;
+      };
+    };
+  }
+): Promise<WebMercadoPagoCheckoutInit> {
+  const response = await fetch("/api/payments/mercadopago/checkout", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(input),
+  });
+  return parseJsonResponse<WebMercadoPagoCheckoutInit>(response);
+}
+
+export async function createMercadoPagoGuestCheckout(input: {
+  items: Array<{ product_id: number; quantity: number }>;
+  customer_email: string;
+  customer_name?: string;
+  customer_phone?: string;
+  customer_tax_id?: string;
+  customer_address?: string;
+  notes?: string;
+  payer?: {
+    email?: string;
+    first_name?: string;
+    last_name?: string;
+    identification?: {
+      type?: string;
+      number?: string;
+    };
+  };
+}): Promise<WebMercadoPagoCheckoutInit> {
+  const response = await fetch("/api/payments/mercadopago/guest-checkout", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(input),
+  });
+  return parseJsonResponse<WebMercadoPagoCheckoutInit>(response);
+}
+
+export async function fetchMercadoPagoOrderPaymentStatus(
+  orderId: number,
+  accessToken?: string
+): Promise<WebMercadoPagoOrderPaymentStatus> {
+  const qs = accessToken ? `?accessToken=${encodeURIComponent(accessToken)}` : "";
+  const response = await fetch(`/api/payments/mercadopago/orders/${orderId}/status${qs}`, {
+    method: "GET",
+    credentials: "include",
+    cache: "no-store",
+  });
+  return parseJsonResponse<WebMercadoPagoOrderPaymentStatus>(response);
 }

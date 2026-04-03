@@ -15,6 +15,17 @@ function formatMoney(value: number) {
   }).format(value);
 }
 
+function sanitizeReturnTo(value?: string | null): string {
+  const candidate = (value || "").trim();
+  if (!candidate || !candidate.startsWith("/") || candidate.startsWith("//")) {
+    return "/catalogo";
+  }
+  if (candidate.startsWith("/carrito") || candidate.startsWith("/pago")) {
+    return "/catalogo";
+  }
+  return candidate;
+}
+
 export default function CartAccess() {
   const router = useRouter();
   const pathname = usePathname();
@@ -47,7 +58,10 @@ export default function CartAccess() {
   const productsCountLabel = !hydrated || loading ? "…" : String(items.length);
   const currentQuery = searchParams.toString();
   const currentPath = `${pathname}${currentQuery ? `?${currentQuery}` : ""}`;
+  const checkoutReturnTo = sanitizeReturnTo(currentPath);
   const guestLoginHref = `/cuenta?returnTo=${encodeURIComponent(currentPath)}`;
+  const cartHref = `/carrito?returnTo=${encodeURIComponent(checkoutReturnTo)}`;
+  const checkoutHref = `/pago?returnTo=${encodeURIComponent(checkoutReturnTo)}`;
 
   useEffect(() => {
     function handleEscape(event: KeyboardEvent) {
@@ -108,7 +122,7 @@ export default function CartAccess() {
       return;
     }
     setTermsWarning("");
-    goTo("/pago");
+    goTo(checkoutHref);
   }
 
   return (
@@ -266,7 +280,7 @@ export default function CartAccess() {
                         <strong>{formatMoney(subtotal)}</strong>
                       </div>
                       <div className="mini-cart-footer-actions">
-                        <button type="button" className="account-secondary-btn" onClick={() => goTo("/carrito")}>
+                        <button type="button" className="account-secondary-btn" onClick={() => goTo(cartHref)}>
                           Ver carrito
                         </button>
                         <button type="button" className="account-primary-btn" onClick={handleGoToPay}>

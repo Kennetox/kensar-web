@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { useWebCart } from "@/app/components/WebCartProvider";
 import { useWebCustomer } from "@/app/components/WebCustomerProvider";
@@ -16,8 +16,19 @@ function formatMoney(value: number) {
   }).format(value);
 }
 
+function sanitizeReturnTo(value?: string | null): string | null {
+  const candidate = (value || "").trim();
+  if (!candidate) return null;
+  if (!candidate.startsWith("/")) return null;
+  if (candidate.startsWith("//")) return null;
+  if (candidate.startsWith("/carrito")) return null;
+  if (candidate.startsWith("/pago")) return null;
+  return candidate;
+}
+
 export default function CarritoPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { authenticated } = useWebCustomer();
   const {
     cart,
@@ -54,6 +65,15 @@ export default function CarritoPage() {
   }, 0);
   const hasDiscountGap = subtotalWithoutDiscount > subtotal + 0.5;
   const savingsValue = Math.max(0, subtotalWithoutDiscount - subtotal);
+  const safeReturnTo = useMemo(
+    () => sanitizeReturnTo(searchParams.get("returnTo")),
+    [searchParams]
+  );
+  const backTarget = safeReturnTo || "/catalogo";
+  const checkoutHref = `/pago${safeReturnTo ? `?returnTo=${encodeURIComponent(safeReturnTo)}` : ""}`;
+  const guestLoginHref = `/cuenta?returnTo=${encodeURIComponent(
+    `/carrito${safeReturnTo ? `?returnTo=${encodeURIComponent(safeReturnTo)}` : ""}`
+  )}`;
 
   function updateQuantity(productId: number, quantity: number) {
     setFeedback(null);
@@ -89,7 +109,7 @@ export default function CarritoPage() {
 
   function handleGoToPayments() {
     if (!hasItems) return;
-    router.push("/pago");
+    router.push(checkoutHref);
   }
 
   function handleApplyCoupon() {
@@ -143,11 +163,7 @@ export default function CarritoPage() {
   }
 
   function handleGoBack() {
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      router.back();
-      return;
-    }
-    router.push("/catalogo");
+    router.push(backTarget);
   }
 
   return (
@@ -172,7 +188,7 @@ export default function CarritoPage() {
           <div className="cart-intro-side">
             <p className="guest-mode-note cart-intro-guest-note">
               Compra como invitado.{" "}
-              <Link href="/cuenta?returnTo=%2Fcarrito" className="guest-mode-note-link guest-mode-note-link-dark">
+              <Link href={guestLoginHref} className="guest-mode-note-link guest-mode-note-link-dark">
                 Iniciar sesión
               </Link>
             </p>
