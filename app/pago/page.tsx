@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useState, type InputHTMLAttributes, type SelectHTMLAttributes } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState, type InputHTMLAttributes, type SelectHTMLAttributes } from "react";
 import { AsYouType, getCountryCallingCode, parsePhoneNumberFromString, type CountryCode } from "libphonenumber-js";
 import { useWebCart } from "@/app/components/WebCartProvider";
 import { useWebCustomer } from "@/app/components/WebCustomerProvider";
@@ -344,7 +344,6 @@ function PagoPageContent() {
   const { authenticated, customer } = useWebCustomer();
   const { cart, error, createOrder } = useWebCart();
   const [orderId, setOrderId] = useState<number | null>(null);
-  const [snapshot, setSnapshot] = useState<CheckoutSnapshot | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [checkoutEmail, setCheckoutEmail] = useState(customer?.email || "");
@@ -355,12 +354,35 @@ function PagoPageContent() {
   const [paymentMethod, setPaymentMethod] = useState<"mercadopago" | "wompi">("mercadopago");
   const [billingMode, setBillingMode] = useState<"same_as_shipping" | "different">("same_as_shipping");
   const [fieldErrors, setFieldErrors] = useState<CheckoutFieldErrors>({});
+  const previousCartSignatureRef = useRef<string | null>(null);
+
+  const cartSignature = useMemo(
+    () =>
+      JSON.stringify({
+        items: (cart?.items || []).map((item) => ({
+          product_id: item.product_id,
+          quantity: Number(item.quantity) || 0,
+          unit_price: Number(item.unit_price) || 0,
+          line_total: Number(item.line_total) || 0,
+        })),
+        subtotal: Number(cart?.subtotal || 0),
+        total: Number(cart?.total || 0),
+      }),
+    [cart?.items, cart?.subtotal, cart?.total]
+  );
 
   useEffect(() => {
-    if (!orderId) {
-      setSnapshot(buildSnapshotFromCart(cart));
+    const previous = previousCartSignatureRef.current;
+    if (previous === null) {
+      previousCartSignatureRef.current = cartSignature;
+      return;
     }
-  }, [cart, orderId]);
+    if (previous !== cartSignature) {
+      // Force a fresh order for authenticated users when cart contents change.
+      setOrderId(null);
+    }
+    previousCartSignatureRef.current = cartSignature;
+  }, [cartSignature]);
 
   useEffect(() => {
     setCheckoutEmail(customer?.email || "");
@@ -369,7 +391,7 @@ function PagoPageContent() {
     setCheckoutDocument(customer?.tax_id || "");
   }, [customer?.email, customer?.first_name, customer?.last_name, customer?.tax_id]);
 
-  const effectiveSnapshot = snapshot ?? buildSnapshotFromCart(cart);
+  const effectiveSnapshot = buildSnapshotFromCart(cart);
   const items = effectiveSnapshot.items;
   const hasItems = items.length > 0;
   const subtotalBase = effectiveSnapshot.subtotalBase;

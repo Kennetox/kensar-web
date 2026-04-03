@@ -71,6 +71,9 @@ function CheckoutResultContent() {
   const searchParams = useSearchParams();
   const orderIdParam = searchParams.get("orderId");
   const paymentHint = (searchParams.get("payment") || "").toLowerCase();
+  const hintFailure = paymentHint === "failure";
+  const hintPending = paymentHint === "pending";
+  const hintSuccess = paymentHint === "success";
   const accessTokenParam = (searchParams.get("accessToken") || "").trim();
   const orderId = Number(orderIdParam || 0);
   const invalidOrder = !orderId || Number.isNaN(orderId);
@@ -135,6 +138,17 @@ function CheckoutResultContent() {
         if (cancelled) return;
         setStatus(next);
         setError(null);
+        if (hintFailure && next.payment_status !== "approved") {
+          setLoading(false);
+          return;
+        }
+        if (
+          hintSuccess &&
+          ["approved", "failed", "cancelled", "refunded"].includes(next.payment_status || "")
+        ) {
+          setLoading(false);
+          return;
+        }
         const pending = next.payment_status === "pending";
         if (!pending || attempts >= maxAttempts) {
           setLoading(false);
@@ -154,18 +168,19 @@ function CheckoutResultContent() {
     return () => {
       cancelled = true;
     };
-  }, [accessToken, invalidOrder, orderId, tokenReady]);
+  }, [accessToken, hintFailure, hintSuccess, invalidOrder, orderId, tokenReady]);
 
   const paymentLabel = useMemo(() => {
     if (status?.payment_status === "approved") return "Pago aprobado";
     if (status?.payment_status === "failed") return "Pago rechazado";
     if (status?.payment_status === "cancelled") return "Pago cancelado";
     if (status?.payment_status === "refunded") return "Pago reembolsado";
+    if (hintFailure) return "Pago no aprobado";
+    if (hintPending) return "Pago pendiente";
+    if (hintSuccess && !loading) return "Pago en validación";
     if (loading) return "Validando pago...";
-    if (paymentHint === "pending") return "Pago pendiente";
-    if (paymentHint === "failure") return "Pago no aprobado";
     return "Pago en validación";
-  }, [loading, paymentHint, status?.payment_status]);
+  }, [hintFailure, hintPending, hintSuccess, loading, status?.payment_status]);
 
   const message = (() => {
     if (invalidOrder) return "No recibimos una orden válida para validar el pago.";
@@ -182,20 +197,29 @@ function CheckoutResultContent() {
     if (status?.payment_status === "refunded") {
       return "Este pago aparece como reembolsado.";
     }
+    if (hintFailure) {
+      return "El pago no fue aprobado. Puedes intentar nuevamente con otro medio.";
+    }
+    if (hintPending) {
+      return "Tu pago está pendiente de confirmación por el proveedor.";
+    }
     return "Estamos confirmando el estado con Mercado Pago.";
   })();
 
   const isApproved = status?.payment_status === "approved";
   const showPaidDetails = isApproved;
-  const showRetryAction = status?.payment_status === "failed" || status?.payment_status === "cancelled";
+  const showRetryAction =
+    status?.payment_status === "failed" || status?.payment_status === "cancelled" || (hintFailure && !isApproved);
   const toneClass =
     status?.payment_status === "approved"
       ? "is-approved"
       : status?.payment_status === "failed" || status?.payment_status === "cancelled"
         ? "is-failed"
-        : status?.payment_status === "refunded"
-          ? "is-refunded"
-          : "is-pending";
+        : hintFailure
+          ? "is-failed"
+          : status?.payment_status === "refunded"
+            ? "is-refunded"
+            : "is-pending";
   const orderLabel = status?.web_order_number || status?.order_id || orderId;
   const resolvedCustomerName =
     (status?.customer_name || checkoutContext?.customerName || "").trim() || "Cliente";
