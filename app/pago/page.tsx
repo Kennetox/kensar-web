@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState, type InputHTMLAttributes, type SelectHTMLAttributes } from "react";
+import { Suspense, useEffect, useMemo, useState, type InputHTMLAttributes, type SelectHTMLAttributes } from "react";
 import { AsYouType, getCountryCallingCode, parsePhoneNumberFromString, type CountryCode } from "libphonenumber-js";
 import { useWebCart } from "@/app/components/WebCartProvider";
 import { useWebCustomer } from "@/app/components/WebCustomerProvider";
@@ -339,7 +339,7 @@ function FloatingPhoneInput({
   );
 }
 
-export default function PagoPage() {
+function PagoPageContent() {
   const searchParams = useSearchParams();
   const { authenticated, customer } = useWebCustomer();
   const { cart, error, createOrder } = useWebCart();
@@ -1111,5 +1111,13 @@ export default function PagoPage() {
         </section>
       )}
     </main>
+  );
+}
+
+export default function PagoPage() {
+  return (
+    <Suspense fallback={<main className="site-shell internal-page section-space checkout-page-shell" />}>
+      <PagoPageContent />
+    </Suspense>
   );
 }
