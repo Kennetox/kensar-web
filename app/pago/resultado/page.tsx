@@ -134,7 +134,11 @@ function CheckoutResultContent() {
     const loadStatus = async () => {
       attempts += 1;
       try {
-        const next = await fetchMercadoPagoOrderPaymentStatus(orderId, accessToken || undefined);
+        const next = await fetchMercadoPagoOrderPaymentStatus(
+          orderId,
+          accessToken || undefined,
+          paymentHint || undefined
+        );
         if (cancelled) return;
         setStatus(next);
         setError(null);
@@ -168,7 +172,7 @@ function CheckoutResultContent() {
     return () => {
       cancelled = true;
     };
-  }, [accessToken, hintFailure, hintSuccess, invalidOrder, orderId, tokenReady]);
+  }, [accessToken, hintFailure, hintSuccess, invalidOrder, orderId, paymentHint, tokenReady]);
 
   const paymentLabel = useMemo(() => {
     if (status?.payment_status === "approved") return "Pago aprobado";

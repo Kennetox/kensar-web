@@ -331,9 +331,13 @@ export async function createMercadoPagoGuestCheckout(input: {
 
 export async function fetchMercadoPagoOrderPaymentStatus(
   orderId: number,
-  accessToken?: string
+  accessToken?: string,
+  paymentHint?: string
 ): Promise<WebMercadoPagoOrderPaymentStatus> {
-  const qs = accessToken ? `?accessToken=${encodeURIComponent(accessToken)}` : "";
+  const params = new URLSearchParams();
+  if (accessToken) params.set("accessToken", accessToken);
+  if (paymentHint) params.set("payment", paymentHint);
+  const qs = params.toString() ? `?${params.toString()}` : "";
   const response = await fetch(`/api/payments/mercadopago/orders/${orderId}/status${qs}`, {
     method: "GET",
     credentials: "include",

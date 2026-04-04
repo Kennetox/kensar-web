@@ -55,6 +55,8 @@ export async function GET(_request: Request, context: RouteContext) {
   const { orderId } = await context.params;
   const requestUrl = new URL(_request.url);
   let accessToken = (requestUrl.searchParams.get("accessToken") || "").trim();
+  const paymentHint = (requestUrl.searchParams.get("payment") || "").trim().toLowerCase();
+  const paymentQuery = paymentHint ? `&payment=${encodeURIComponent(paymentHint)}` : "";
 
   const cookieStore = await cookies();
   if (!accessToken) {
@@ -65,7 +67,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
   if (accessToken) {
     const response = await fetchMetrikApi(
-      `/web/payments/mercadopago/guest/orders/${orderId}/status?access_token=${encodeURIComponent(accessToken)}`,
+      `/web/payments/mercadopago/guest/orders/${orderId}/status?access_token=${encodeURIComponent(accessToken)}${paymentQuery}`,
       {
         headers: {
           "Content-Type": "application/json",
@@ -79,7 +81,7 @@ export async function GET(_request: Request, context: RouteContext) {
   const token = cookieStore.get(getWebCustomerTokenCookieName())?.value;
   if (!token) return unauthorizedResponse();
 
-  const response = await fetchMetrikApi(`/web/payments/mercadopago/orders/${orderId}/status`, {
+  const response = await fetchMetrikApi(`/web/payments/mercadopago/orders/${orderId}/status${paymentHint ? `?payment=${encodeURIComponent(paymentHint)}` : ""}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
