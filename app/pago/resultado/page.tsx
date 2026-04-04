@@ -207,19 +207,20 @@ function CheckoutResultContent() {
   })();
 
   const isApproved = status?.payment_status === "approved";
+  const isFailedLike =
+    status?.payment_status === "failed" ||
+    status?.payment_status === "cancelled" ||
+    (hintFailure && !isApproved);
   const showPaidDetails = isApproved;
-  const showRetryAction =
-    status?.payment_status === "failed" || status?.payment_status === "cancelled" || (hintFailure && !isApproved);
+  const showRetryAction = isFailedLike;
   const toneClass =
     status?.payment_status === "approved"
       ? "is-approved"
-      : status?.payment_status === "failed" || status?.payment_status === "cancelled"
+      : isFailedLike
         ? "is-failed"
-        : hintFailure
-          ? "is-failed"
-          : status?.payment_status === "refunded"
-            ? "is-refunded"
-            : "is-pending";
+        : status?.payment_status === "refunded"
+          ? "is-refunded"
+          : "is-pending";
   const orderLabel = status?.web_order_number || status?.order_id || orderId;
   const resolvedCustomerName =
     (status?.customer_name || checkoutContext?.customerName || "").trim() || "Cliente";
@@ -246,7 +247,7 @@ function CheckoutResultContent() {
         <article className={`checkout-form-card checkout-result-flow-card ${toneClass}`}>
           <header className="checkout-result-hero-v2">
             <span className={`checkout-result-hero-icon-v2${isApproved ? " is-approved" : ""}`} aria-hidden="true">
-              {isApproved ? "✓" : status?.payment_status === "failed" || status?.payment_status === "cancelled" ? "!" : "⏳"}
+              {isApproved ? "✓" : isFailedLike ? "!" : "⏳"}
             </span>
             <div className="checkout-result-hero-copy-v2">
               <p className="checkout-result-confirmation">Confirmación N°{status?.provider_reference || orderLabel}</p>
