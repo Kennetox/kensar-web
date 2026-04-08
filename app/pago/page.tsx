@@ -496,11 +496,13 @@ function PagoPageContent() {
     }
 
     const checkoutPhone = getFieldValue("checkout_phone");
+    const checkoutCountryCode = getFieldValue("checkout_country") || "CO";
     const checkoutAddress = getFieldValue("checkout_address");
     const checkoutAddress2 = getFieldValue("checkout_address_2");
     const checkoutCity = getFieldValue("checkout_city");
     const checkoutState = getFieldValue("checkout_state") || "Valle del Cauca";
-    const checkoutCountry = getFieldValue("checkout_country") || "Colombia";
+    const checkoutZip = getFieldValue("checkout_zip");
+    const checkoutCountry = checkoutCountryCode === "CO" ? "Colombia" : checkoutCountryCode;
     const shippingAddress = [checkoutAddress, checkoutAddress2, checkoutCity, checkoutState, checkoutCountry]
       .map((value) => value.trim())
       .filter(Boolean)
@@ -513,6 +515,9 @@ function PagoPageContent() {
     const billingCity = getFieldValue("billing_city");
     const billingState = getFieldValue("billing_state") || checkoutState;
     const billingCountry = getFieldValue("billing_country") || checkoutCountry;
+    const billingZip = getFieldValue("billing_zip");
+    const billingCompany = getFieldValue("billing_company");
+    const billingPhone = getFieldValue("billing_phone");
     const resolvedShippingAddress =
       deliveryMode === "pickup"
         ? PICKUP_ADDRESS_FULL
@@ -541,6 +546,60 @@ function PagoPageContent() {
       paymentMethodLabel: "Mercado Pago",
       paymentMethodDetail: "PSE, Efecty y billetera Mercado Pago.",
     };
+    const checkoutContextPayload: Record<string, unknown> = {
+      flow: authenticated ? "authenticated" : "guest",
+      payment_method: paymentMethod,
+      delivery_mode: deliveryMode,
+      billing_mode: deliveryMode === "shipping" ? billingMode : "pickup",
+      contact: {
+        email,
+        first_name: firstName || null,
+        last_name: lastName || null,
+        document_number: identification || null,
+        phone: checkoutPhone || null,
+      },
+      shipping: {
+        country: checkoutCountry || null,
+        country_code: checkoutCountryCode || null,
+        state: checkoutState || null,
+        city: checkoutCity || null,
+        address_line_1: checkoutAddress || null,
+        address_line_2: checkoutAddress2 || null,
+        zip: checkoutZip || null,
+        label: shippingLabel,
+        full_address: resolvedShippingAddress || null,
+      },
+      billing: {
+        country: billingCountry || null,
+        state: billingState || null,
+        city: billingCity || null,
+        address_line_1: billingAddress || null,
+        address_line_2: billingAddress2 || null,
+        zip: billingZip || null,
+        company: billingCompany || null,
+        phone: billingPhone || null,
+        first_name: billingFirstName || null,
+        last_name: billingLastName || null,
+        full_name: resolvedBillingName || null,
+        full_address: resolvedBillingAddress || null,
+      },
+      cart_summary: {
+        subtotal_base: subtotalBase,
+        coupon_discount_amount: couponDiscountAmount,
+        total_with_coupon: totalWithCoupon,
+        active_coupon_code: activeCouponCode || null,
+        active_coupon_percent: activeCouponPercent,
+        items: items.map((item) => ({
+          product_id: item.product_id,
+          product_name: item.product_name,
+          product_sku: item.product_sku,
+          quantity: Number(item.quantity) || 0,
+          unit_price: Number(item.unit_price) || 0,
+          line_total: Number(item.line_total) || 0,
+        })),
+      },
+      checkout_result_context: checkoutResultContext,
+    };
 
     setCheckoutLoading(true);
     try {
@@ -556,6 +615,7 @@ function PagoPageContent() {
           customer_phone: checkoutPhone || undefined,
           customer_tax_id: identification || undefined,
           customer_address: resolvedShippingAddress || undefined,
+          checkout_context: checkoutContextPayload,
           payer: {
             email,
             first_name: firstName || undefined,
@@ -586,6 +646,7 @@ function PagoPageContent() {
 
       const init = await createMercadoPagoCheckout({
         order_id: nextOrderId,
+        checkout_context: checkoutContextPayload,
         payer: {
           email,
           first_name: firstName || undefined,

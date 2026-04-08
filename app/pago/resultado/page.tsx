@@ -33,6 +33,7 @@ type CheckoutResultContext = {
 
 const PICKUP_ADDRESS_FULL = "Cra 24 #30-75, Palmira, Valle del Cauca, Colombia";
 const CHECKOUT_RESULT_CONTEXT_STORAGE_PREFIX = "kensar_web_checkout_result_context_";
+const GUEST_CART_STORAGE_KEY = "kensar_web_guest_cart_v1";
 const SUPPORT_EMAIL = "kensarelec@gmail.com";
 
 function firstNameFromFullName(fullName?: string | null): string {
@@ -173,6 +174,18 @@ function CheckoutResultContent() {
       cancelled = true;
     };
   }, [accessToken, hintFailure, hintSuccess, invalidOrder, orderId, paymentHint, tokenReady]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!status || status.payment_status !== "approved") return;
+    try {
+      window.localStorage.removeItem(GUEST_CART_STORAGE_KEY);
+      window.localStorage.removeItem(`kensar_web_guest_order_token_${orderId}`);
+      window.localStorage.removeItem(`${CHECKOUT_RESULT_CONTEXT_STORAGE_PREFIX}${orderId}`);
+    } catch {
+      // Ignore storage failures.
+    }
+  }, [orderId, status]);
 
   const paymentLabel = useMemo(() => {
     if (status?.payment_status === "approved") return "Pago aprobado";

@@ -22,6 +22,39 @@ function formatDate(value: string) {
   }).format(date);
 }
 
+function translateOrderStatus(status?: string | null): string {
+  const normalized = (status || "").trim().toLowerCase();
+  if (normalized === "pending_payment") return "Pendiente de pago";
+  if (normalized === "paid") return "Pagada";
+  if (normalized === "processing") return "En proceso";
+  if (normalized === "ready") return "Lista";
+  if (normalized === "fulfilled") return "Entregada";
+  if (normalized === "payment_failed") return "Pago fallido";
+  if (normalized === "cancelled") return "Cancelada";
+  if (normalized === "refunded") return "Reembolsada";
+  return status || "Sin estado";
+}
+
+function translatePaymentStatus(status?: string | null): string {
+  const normalized = (status || "").trim().toLowerCase();
+  if (normalized === "pending") return "Pendiente";
+  if (normalized === "approved") return "Aprobado";
+  if (normalized === "failed" || normalized === "rejected") return "Rechazado";
+  if (normalized === "cancelled") return "Cancelado";
+  if (normalized === "refunded") return "Reembolsado";
+  return status || "Sin estado";
+}
+
+function translateFulfillmentStatus(status?: string | null): string {
+  const normalized = (status || "").trim().toLowerCase();
+  if (normalized === "pending") return "Pendiente";
+  if (normalized === "processing") return "En proceso";
+  if (normalized === "ready") return "Lista";
+  if (normalized === "fulfilled") return "Entregada";
+  if (normalized === "cancelled") return "Cancelada";
+  return status || "Sin estado";
+}
+
 export default function MisPedidosPage() {
   const router = useRouter();
   const { authenticated } = useWebCustomer();
@@ -84,13 +117,13 @@ export default function MisPedidosPage() {
                 <article key={order.id} className="cart-order-card">
                   <div className="cart-order-head">
                     <strong>{order.document_number || `Orden #${order.id}`}</strong>
-                    <span>{order.status}</span>
+                    <span>{translateOrderStatus(order.status)}</span>
                   </div>
                   <p>{formatMoney(order.total)}</p>
                   <small>{formatDate(order.created_at)}</small>
                   <div className="cart-order-meta">
-                    <span>Pago: {order.payment_status}</span>
-                    <span>Fulfillment: {order.fulfillment_status}</span>
+                    <span>Pago: {translatePaymentStatus(order.payment_status)}</span>
+                    <span>Fulfillment: {translateFulfillmentStatus(order.fulfillment_status)}</span>
                   </div>
                   <div className="account-action-row">
                     <Link

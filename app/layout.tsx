@@ -7,13 +7,13 @@ import Reveal from "./components/Reveal";
 import TopNav from "./components/TopNav";
 import AccountAccess from "./components/AccountAccess";
 import CartAccess from "./components/CartAccess";
-import HeaderUserBadge from "./components/HeaderUserBadge";
 import HeaderCatalogSearch from "./components/HeaderCatalogSearch";
 import FloatingWhatsAppButton from "./components/FloatingWhatsAppButton";
 import WebCartProvider from "./components/WebCartProvider";
 import WebCustomerProvider from "./components/WebCustomerProvider";
 import TopbarScrollBehavior from "./components/TopbarScrollBehavior";
 import CheckoutHeaderMode from "./components/CheckoutHeaderMode";
+import { getCatalogCategories } from "@/app/lib/metrikCatalog";
 import "./globals.css";
 
 const inter = Inter({
@@ -60,7 +60,43 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+type HeaderCategory = {
+  id: string;
+  path: string;
+  name: string;
+};
+
+const fallbackHeaderCategories: HeaderCategory[] = [
+  { id: "audio", path: "audio-profesional", name: "Audio profesional" },
+  { id: "instrumentos", path: "instrumentos", name: "Instrumentos" },
+  { id: "microfonos", path: "microfonos", name: "Microfonos" },
+  { id: "camaras", path: "camaras", name: "Camaras" },
+  { id: "tecnologia", path: "tecnologia", name: "Tecnologia" },
+];
+
+async function loadHeaderCategories(): Promise<HeaderCategory[]> {
+  try {
+    const categories = await getCatalogCategories();
+    const activeCategories = categories.filter((category) => category.product_count > 0);
+    const source = (activeCategories.length ? activeCategories : categories).slice(0, 8);
+
+    if (!source.length) {
+      return fallbackHeaderCategories;
+    }
+
+    return source.map((category) => ({
+      id: category.id,
+      path: category.path,
+      name: category.name,
+    }));
+  } catch {
+    return fallbackHeaderCategories;
+  }
+}
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const headerCategories = await loadHeaderCategories();
+
   return (
     <html lang="es">
       <body className={inter.className}>
@@ -88,48 +124,38 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 priority
               />
             </Link>
+            <div className="topbar-main-right">
+              <div className="topbar-actions">
+                <div className="header-search-cluster">
+                  <Suspense fallback={null}>
+                    <HeaderCatalogSearch />
+                  </Suspense>
+                </div>
 
-            <TopNav />
+                <div className="header-icon-cluster">
+                  <Suspense fallback={null}>
+                    <AccountAccess />
+                  </Suspense>
+                  <Suspense fallback={null}>
+                    <CartAccess />
+                  </Suspense>
 
-            <div className="topbar-actions">
-              <div className="header-search-cluster">
-                <Suspense fallback={null}>
-                  <HeaderCatalogSearch />
-                </Suspense>
-                <HeaderUserBadge />
+                  <div className="social-links" aria-label="Redes sociales">
+                    <a
+                      href="https://instagram.com/"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="social-icon-link"
+                      aria-label="Instagram"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9a5.5 5.5 0 0 1-5.5 5.5h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2Zm0 1.8A3.7 3.7 0 0 0 3.8 7.5v9a3.7 3.7 0 0 0 3.7 3.7h9a3.7 3.7 0 0 0 3.7-3.7v-9a3.7 3.7 0 0 0-3.7-3.7h-9Zm9.65 1.5a1.15 1.15 0 1 1 0 2.3 1.15 1.15 0 0 1 0-2.3ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 1.8A3.2 3.2 0 1 0 12 15.2 3.2 3.2 0 0 0 12 8.8Z" />
+                      </svg>
+                    </a>
+                  </div>
+                </div>
               </div>
-
-              <Suspense fallback={null}>
-                <AccountAccess />
-              </Suspense>
-              <Suspense fallback={null}>
-                <CartAccess />
-              </Suspense>
-
-              <div className="social-links" aria-label="Redes sociales">
-                <a
-                  href="https://instagram.com/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="social-icon-link"
-                  aria-label="Instagram"
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9a5.5 5.5 0 0 1-5.5 5.5h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2Zm0 1.8A3.7 3.7 0 0 0 3.8 7.5v9a3.7 3.7 0 0 0 3.7 3.7h9a3.7 3.7 0 0 0 3.7-3.7v-9a3.7 3.7 0 0 0-3.7-3.7h-9Zm9.65 1.5a1.15 1.15 0 1 1 0 2.3 1.15 1.15 0 0 1 0-2.3ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 1.8A3.2 3.2 0 1 0 12 15.2 3.2 3.2 0 0 0 12 8.8Z" />
-                  </svg>
-                </a>
-                <a
-                  href="https://facebook.com/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="social-icon-link"
-                  aria-label="Facebook"
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M13.6 22v-8.3h2.8l.42-3.2h-3.22V8.44c0-.94.27-1.58 1.65-1.58h1.76V4.01a23.3 23.3 0 0 0-2.57-.13c-2.54 0-4.27 1.56-4.27 4.43v2.18H7.3v3.2h2.86V22h3.44Z" />
-                  </svg>
-                </a>
-              </div>
+              <TopNav categories={headerCategories} />
             </div>
           </div>
         </header>

@@ -5,17 +5,13 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useWebCustomer } from "@/app/components/WebCustomerProvider";
 
 export default function AccountAccess() {
-  const { authenticated, customer, loading } = useWebCustomer();
+  const { authenticated, customer } = useWebCustomer();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  if (authenticated && !loading) {
-    return null;
-  }
-
   const query = searchParams.toString();
   const returnTo = `${pathname}${query ? `?${query}` : ""}`;
-  const href = `/cuenta?returnTo=${encodeURIComponent(returnTo)}`;
+  const href = authenticated ? "/cuenta" : `/cuenta?returnTo=${encodeURIComponent(returnTo)}`;
 
   return (
     <Link

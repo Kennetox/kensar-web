@@ -63,6 +63,29 @@ function splitCustomerName(fullName?: string | null) {
   return { first_name: parts[0], last_name: parts.slice(1).join(" ") };
 }
 
+function translateOrderStatus(status?: string | null): string {
+  const normalized = (status || "").trim().toLowerCase();
+  if (normalized === "pending_payment") return "Pendiente de pago";
+  if (normalized === "paid") return "Pagada";
+  if (normalized === "processing") return "En proceso";
+  if (normalized === "ready") return "Lista";
+  if (normalized === "fulfilled") return "Entregada";
+  if (normalized === "payment_failed") return "Pago fallido";
+  if (normalized === "cancelled") return "Cancelada";
+  if (normalized === "refunded") return "Reembolsada";
+  return status || "Sin estado";
+}
+
+function translatePaymentStatus(status?: string | null): string {
+  const normalized = (status || "").trim().toLowerCase();
+  if (normalized === "pending") return "Pendiente";
+  if (normalized === "approved") return "Aprobado";
+  if (normalized === "failed" || normalized === "rejected") return "Rechazado";
+  if (normalized === "cancelled") return "Cancelado";
+  if (normalized === "refunded") return "Reembolsado";
+  return status || "Sin estado";
+}
+
 function buildProfileFormFromCustomer(customer: {
   name?: string | null;
   first_name?: string | null;
@@ -686,7 +709,7 @@ function CuentaPageContent() {
                   <Link key={order.id} href={`/ordenes/${order.id}`} className="account-order-link">
                     <div>
                       <strong>{order.document_number || `Orden #${order.id}`}</strong>
-                      <span>{order.status} · pago {order.payment_status}</span>
+                      <span>{translateOrderStatus(order.status)} · pago {translatePaymentStatus(order.payment_status)}</span>
                     </div>
                     <small>{new Intl.NumberFormat("es-CO", {
                       style: "currency",
