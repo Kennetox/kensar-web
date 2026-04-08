@@ -1,8 +1,8 @@
 import Link from "next/link";
+import Image from "next/image";
 import CatalogProductCard from "@/app/catalogo/CatalogProductCard";
 import CommerceSlider from "@/app/components/CommerceSlider";
 import {
-  formatCatalogPrice,
   getCatalogCategories,
   getCatalogProducts,
   type WebCatalogCategory,
@@ -180,27 +180,10 @@ function buildCategoryHref(path: string | null) {
   return `/catalogo?category=${encodeURIComponent(path)}`;
 }
 
-function getDiscountPercent(product: WebCatalogProductCard) {
-  if (
-    product.price_mode !== "visible" ||
-    product.price === null ||
-    product.compare_price === null ||
-    product.compare_price <= product.price
-  ) {
-    return null;
-  }
-
-  return Math.round(((product.compare_price - product.price) / product.compare_price) * 100);
-}
-
 export default async function HomePage() {
   const { categories, products } = await loadHomeData();
 
   const discoverProducts = products.slice(0, 5);
-  const topDeals = [...products]
-    .filter((product) => getDiscountPercent(product) !== null)
-    .sort((a, b) => (getDiscountPercent(b) ?? 0) - (getDiscountPercent(a) ?? 0))
-    .slice(0, 3);
   const sliderSlides = [
     {
       id: "guitarras",
@@ -262,6 +245,7 @@ export default async function HomePage() {
           })}
         </div>
       </section>
+      <div className="commerce-categories-divider" aria-hidden="true" />
 
       <section className="commerce-brand-collage" aria-label="Marcas que respaldan tu sonido">
         <div className="commerce-brand-collage-head">
@@ -303,56 +287,16 @@ export default async function HomePage() {
           </Link>
         </div>
       </section>
-
-      {topDeals.length > 0 ? (
-        <section className="commerce-deals" aria-label="Ofertas destacadas">
-          <div className="commerce-section-head">
-            <div>
-              <p className="commerce-section-kicker">Precio en oportunidad</p>
-              <h2>Descuentos comerciales del momento</h2>
-            </div>
-            <Link href="/catalogo">Ver mas ofertas</Link>
-          </div>
-
-          <div className="commerce-deal-grid">
-            {topDeals.map((product) => {
-              const discount = getDiscountPercent(product);
-
-              return (
-                <Link key={`deal-${product.id}`} href={`/catalogo/${product.slug}`} className="commerce-deal-card">
-                  <div
-                    className="commerce-deal-image"
-                    style={{
-                      backgroundImage: `linear-gradient(180deg, rgba(5,12,24,0.05), rgba(5,12,24,0.48)), url('${product.image_url || "https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?q=80&w=1200&auto=format&fit=crop"}')`,
-                    }}
-                    aria-hidden="true"
-                  />
-                  <div className="commerce-deal-body">
-                    <p>{product.category_name || "Catalogo"}</p>
-                    <h3>{product.name}</h3>
-                    <strong>{formatCatalogPrice(product.price_mode === "visible" ? product.price : null)}</strong>
-                    {discount ? <small>Ahorra {discount}% frente al precio anterior</small> : null}
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      ) : null}
-
-      <section className="commerce-trust" aria-label="Confianza para comprar">
-        <p>
-          <strong>Stock conectado</strong> a operación de tienda
-        </p>
-        <p>
-          <strong>Checkout web</strong> con seguimiento de pedido
-        </p>
-        <p>
-          <strong>Asesor comercial</strong> por WhatsApp y llamada
-        </p>
-        <p>
-          <strong>Respaldo técnico</strong> en audio y videovigilancia
-        </p>
+      <div className="commerce-categories-divider commerce-next-section-divider" aria-hidden="true" />
+      <section className="commerce-next-clean-section" aria-label="Banner hogar">
+        <Image
+          src="/sliders/home/banner-hogar.png"
+          alt="Banner de hogar Kensar Electronic"
+          width={1920}
+          height={640}
+          sizes="100vw"
+          className="commerce-next-banner-image"
+        />
       </section>
     </div>
   );
