@@ -1,10 +1,10 @@
 import Link from "next/link";
-import AddToCartButton from "@/app/components/AddToCartButton";
+import CatalogProductCard from "@/app/catalogo/CatalogProductCard";
+import CommerceSlider from "@/app/components/CommerceSlider";
 import {
   formatCatalogPrice,
   getCatalogCategories,
   getCatalogProducts,
-  getStockLabel,
   type WebCatalogCategory,
   type WebCatalogProductCard,
 } from "@/app/lib/metrikCatalog";
@@ -196,185 +196,111 @@ function getDiscountPercent(product: WebCatalogProductCard) {
 export default async function HomePage() {
   const { categories, products } = await loadHomeData();
 
-  const visibleCategories = [...categories]
-    .sort((a, b) => b.product_count - a.product_count)
-    .slice(0, 6);
-
-  const spotlightProducts = products.slice(0, 8);
+  const discoverProducts = products.slice(0, 5);
   const topDeals = [...products]
     .filter((product) => getDiscountPercent(product) !== null)
     .sort((a, b) => (getDiscountPercent(b) ?? 0) - (getDiscountPercent(a) ?? 0))
     .slice(0, 3);
+  const sliderSlides = [
+    {
+      id: "guitarras",
+      image: "/sliders/home/slide-01-desktop.webp",
+      alt: "Promociones y descuentos en categorias destacadas",
+      href: "/catalogo?category=instrumentos",
+      ctaLabel: "VER GUITARRAS",
+    },
+    {
+      id: "audio-main",
+      image: "/sliders/home/slide-02-desktop.webp",
+      alt: "Sonido profesional para eventos y produccion",
+      href: "/catalogo",
+      ctaLabel: "VER EQUIPOS",
+    },
+    {
+      id: "contacto",
+      image: "/sliders/home/slide-03-desktop.webp",
+      alt: "Marcas premium en audio profesional",
+      href: "/empresa#contacto",
+      ctaLabel: "EXPLORAR TIENDA",
+    },
+  ];
+  const preferredFeaturedCategories = [
+    { key: "audio-profesional", name: "Audio profesional", imageUrl: "/categories/home/cat-01-audio.webp" },
+    { key: "accesorios", name: "Accesorios", imageUrl: "/categories/home/cat-02-accesorios.webp" },
+    { key: "instrumentos", name: "Instrumentos", imageUrl: "/categories/home/cat-03-instrumentos.webp" },
+    { key: "microfonos", name: "Microfonos", imageUrl: "/categories/home/cat-04-microfonos.webp" },
+  ];
+  const featuredCategories = preferredFeaturedCategories.map((preferred, index) => {
+    const matchedCategory = categories.find((category) => category.path === preferred.key);
+    return {
+      id: matchedCategory?.id || `featured-${index}`,
+      href: matchedCategory ? buildCategoryHref(matchedCategory.path) : buildCategoryHref(preferred.key),
+      name: matchedCategory?.name || preferred.name,
+      imageUrl: preferred.imageUrl,
+    };
+  });
 
   return (
     <div id="inicio" className="commerce-home home-anchor-section">
-      <section className="commerce-conversion-strip" aria-label="beneficios de compra">
-        <p>Compra por web con stock conectado a tienda.</p>
-        <p>Atencion comercial en WhatsApp en minutos.</p>
-        <p>Pago seguro y seguimiento de pedido.</p>
-      </section>
+      <CommerceSlider slides={sliderSlides} categories={featuredCategories} intervalMs={8000} />
 
-      <section className="commerce-hero" aria-label="Portada ecommerce">
-        <div className="commerce-hero-main">
-          <p className="commerce-hero-eyebrow">Tienda online Kensar Electronic</p>
-          <h1>Todo para audio y seguridad, listo para comprar hoy.</h1>
-          <p>
-            Encuentra referencias con precio actualizado, valida disponibilidad real y agrega al carrito desde el
-            primer minuto.
-          </p>
-
-          <form action="/catalogo" className="commerce-hero-search" role="search">
-            <input
-              type="search"
-              name="q"
-              placeholder="Buscar producto, marca o referencia"
-              aria-label="Buscar en el catalogo"
-            />
-            <button type="submit">Buscar</button>
-          </form>
-
-          <div className="commerce-hero-actions">
-            <Link href="/catalogo" className="commerce-btn commerce-btn-primary">
-              Comprar ahora
-            </Link>
-            <Link href="/carrito" className="commerce-btn commerce-btn-ghost">
-              Ver carrito
-            </Link>
-          </div>
-
-          <div className="commerce-category-pills" aria-label="Accesos rapidos por categoria">
-            {visibleCategories.map((category) => (
-              <Link key={category.id} href={buildCategoryHref(category.path)} className="commerce-category-pill">
-                <span>{category.name}</span>
-                <small>{category.product_count > 0 ? `${category.product_count} productos` : "Explorar"}</small>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        <aside className="commerce-hero-side">
-          <div className="hero-side-card hero-side-highlight">
-            <p className="hero-side-kicker">Atencion comercial hoy</p>
-            <h3>WhatsApp activo para cerrar tu compra</h3>
-            <p>Lunes a sabado 8:30am - 6:30pm. Palmira, Valle del Cauca.</p>
-            <Link href="https://wa.me/573185657508" target="_blank" rel="noreferrer">
-              Hablar con asesor
-            </Link>
-          </div>
-
-          <div className="hero-side-card">
-            <p className="hero-side-kicker">Categorias top</p>
-            <ul>
-              {visibleCategories.slice(0, 4).map((category) => (
-                <li key={`top-${category.id}`}>
-                  <span>{category.name}</span>
-                  <strong>{category.product_count > 0 ? category.product_count : "-"}</strong>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </aside>
-      </section>
-
-      <section className="commerce-categories" aria-label="Categorias destacadas">
-        <div className="commerce-section-head">
+      <section className="commerce-discover" aria-label="Descubre lo nuevo">
+        <div className="commerce-categories-divider" aria-hidden="true" />
+        <div className="commerce-discover-head">
           <div>
-            <p className="commerce-section-kicker">Compra por categoria</p>
-            <h2>Entra por tu necesidad y compra en 2 pasos</h2>
-          </div>
-          <Link href="/catalogo">Ver todas</Link>
-        </div>
-
-        <div className="commerce-category-grid">
-          {visibleCategories.map((category) => (
-            <Link
-              key={`tile-${category.id}`}
-              href={buildCategoryHref(category.path)}
-              className="commerce-category-card"
-              style={{
-                backgroundImage: `linear-gradient(180deg, rgba(6,12,22,0.08), rgba(6,12,22,0.7)), url('${category.image_url || "https://images.unsplash.com/photo-1484704849700-f032a568e944?q=80&w=1200&auto=format&fit=crop"}')`,
-              }}
-            >
-              <small>{category.product_count > 0 ? `${category.product_count} productos` : "Categoria"}</small>
-              <span>{category.name}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="commerce-products" aria-label="Productos para comprar hoy">
-        <div className="commerce-section-head">
-          <div>
-            <p className="commerce-section-kicker">Venta directa</p>
-            <h2>Productos listos para agregar al carrito</h2>
+            <p className="commerce-section-kicker">Descubre lo nuevo</p>
+            <h2>Nuevos productos para comprar hoy</h2>
           </div>
           <Link href="/catalogo">Ir al catalogo</Link>
         </div>
 
-        <div className="commerce-product-grid">
-          {spotlightProducts.map((product) => {
-            const discount = getDiscountPercent(product);
-
+        <div className="catalog-product-grid commerce-discover-grid">
+          {discoverProducts.map((product) => {
             return (
-              <article key={product.id} className="commerce-product-card">
-                <Link href={`/catalogo/${product.slug}`} className="commerce-product-image-link" aria-label={product.name}>
-                  <div
-                    className={`commerce-product-image${product.image_url ? " has-image" : ""}`}
-                    style={
-                      product.image_url
-                        ? { backgroundImage: `url('${product.image_url}')` }
-                        : undefined
-                    }
-                    aria-hidden="true"
-                  />
-                </Link>
-
-                <div className="commerce-product-body">
-                  <p className="commerce-product-tag">{product.category_name || "Catalogo"}</p>
-                  <Link href={`/catalogo/${product.slug}`} className="commerce-product-title-link">
-                    <h3>{product.name}</h3>
-                  </Link>
-                  {product.short_description ? <p className="commerce-product-copy">{product.short_description}</p> : null}
-
-                  <p className="commerce-product-price">
-                    <span>{formatCatalogPrice(product.price_mode === "visible" ? product.price : null)}</span>
-                    {product.price_mode === "visible" &&
-                    product.compare_price !== null &&
-                    product.price !== null &&
-                    product.compare_price > product.price ? (
-                      <del>{formatCatalogPrice(product.compare_price)}</del>
-                    ) : null}
-                  </p>
-
-                  <p className="commerce-product-stock">{getStockLabel(product.stock_status)}</p>
-
-                  <div className="commerce-product-cta">
-                    {product.price_mode === "visible" &&
-                    product.price !== null &&
-                    product.stock_status !== "out_of_stock" ? (
-                      <AddToCartButton
-                        productId={product.id}
-                        productName={product.name}
-                        productSlug={product.slug}
-                        productSku={product.sku}
-                        imageUrl={product.image_thumb_url || product.image_url}
-                        brand={product.brand}
-                        stockStatus={product.stock_status}
-                        unitPrice={product.price}
-                        comparePrice={product.compare_price}
-                      />
-                    ) : (
-                      <Link href="https://wa.me/573185657508" target="_blank" rel="noreferrer" className="commerce-product-btn">
-                        Consultar compra
-                      </Link>
-                    )}
-                  </div>
-                </div>
-
-                {discount ? <span className="commerce-product-badge">-{discount}%</span> : null}
-              </article>
+              <CatalogProductCard key={product.id} product={product} />
             );
           })}
+        </div>
+      </section>
+
+      <section className="commerce-brand-collage" aria-label="Marcas que respaldan tu sonido">
+        <div className="commerce-brand-collage-head">
+          <p className="commerce-section-kicker">Marcas destacadas</p>
+          <h2>Marcas que respaldan tu sonido</h2>
+        </div>
+
+        <div className="brand-collage-grid">
+          <Link href="/catalogo?brand=yamaha" className="brand-tile brand-tile-main" aria-label="Explorar Yamaha">
+            <div
+              className="brand-tile-image"
+              style={{ backgroundImage: "url('/brands/collage/hero-yamaha.webp')" }}
+              aria-hidden="true"
+            />
+          </Link>
+
+          <Link href="/catalogo?brand=pro-dj" className="brand-tile brand-tile-top-left" aria-label="Explorar Pro DJ">
+            <div
+              className="brand-tile-image"
+              style={{ backgroundImage: "url('/brands/collage/title-prodj.webp')" }}
+              aria-hidden="true"
+            />
+          </Link>
+
+          <Link href="/catalogo?brand=rm" className="brand-tile brand-tile-top-right" aria-label="Explorar RM">
+            <div
+              className="brand-tile-image"
+              style={{ backgroundImage: "url('/brands/collage/title-rm1.webp')" }}
+              aria-hidden="true"
+            />
+          </Link>
+
+          <Link href="/catalogo?brand=spain" className="brand-tile brand-tile-bottom" aria-label="Explorar Spain">
+            <div
+              className="brand-tile-image"
+              style={{ backgroundImage: "url('/brands/collage/banner-spain.webp')" }}
+              aria-hidden="true"
+            />
+          </Link>
         </div>
       </section>
 

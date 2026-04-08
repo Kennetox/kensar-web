@@ -282,6 +282,7 @@ export async function submitManualPaymentForOrder(
 export async function createMercadoPagoCheckout(
   input: {
     order_id: number;
+    checkout_context?: Record<string, unknown>;
     payer?: {
       email?: string;
       first_name?: string;
@@ -310,6 +311,7 @@ export async function createMercadoPagoGuestCheckout(input: {
   customer_tax_id?: string;
   customer_address?: string;
   notes?: string;
+  checkout_context?: Record<string, unknown>;
   payer?: {
     email?: string;
     first_name?: string;

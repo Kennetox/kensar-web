@@ -29,11 +29,44 @@ function formatDate(value?: string | null) {
   }).format(date);
 }
 
+function translateOrderStatus(status?: string | null): string {
+  const normalized = (status || "").trim().toLowerCase();
+  if (normalized === "pending_payment") return "Pendiente de pago";
+  if (normalized === "paid") return "Pagada";
+  if (normalized === "processing") return "En proceso";
+  if (normalized === "ready") return "Lista";
+  if (normalized === "fulfilled") return "Entregada";
+  if (normalized === "payment_failed") return "Pago fallido";
+  if (normalized === "cancelled") return "Cancelada";
+  if (normalized === "refunded") return "Reembolsada";
+  return status || "Sin estado";
+}
+
+function translatePaymentStatus(status?: string | null): string {
+  const normalized = (status || "").trim().toLowerCase();
+  if (normalized === "pending") return "Pendiente";
+  if (normalized === "approved") return "Aprobado";
+  if (normalized === "failed" || normalized === "rejected") return "Rechazado";
+  if (normalized === "cancelled") return "Cancelado";
+  if (normalized === "refunded") return "Reembolsado";
+  return status || "Sin estado";
+}
+
+function translateFulfillmentStatus(status?: string | null): string {
+  const normalized = (status || "").trim().toLowerCase();
+  if (normalized === "pending") return "Pendiente";
+  if (normalized === "processing") return "En proceso";
+  if (normalized === "ready") return "Lista";
+  if (normalized === "fulfilled") return "Entregada";
+  if (normalized === "cancelled") return "Cancelada";
+  return status || "Sin estado";
+}
+
 function getStatusLabel(order: WebOrderDetail) {
   if (order.payment_status === "approved") return "Pago aprobado";
   if (order.payment_status === "pending") return "Esperando validación";
   if (order.payment_status === "failed") return "Pago fallido";
-  return order.status;
+  return translateOrderStatus(order.status);
 }
 
 export default function WebOrderDetailPage() {
@@ -163,11 +196,11 @@ export default function WebOrderDetailPage() {
               <div className="order-meta-grid">
                 <div className="order-meta-pill">
                   <span>Pago</span>
-                  <strong>{order.payment_status}</strong>
+                  <strong>{translatePaymentStatus(order.payment_status)}</strong>
                 </div>
                 <div className="order-meta-pill">
                   <span>Fulfillment</span>
-                  <strong>{order.fulfillment_status}</strong>
+                  <strong>{translateFulfillmentStatus(order.fulfillment_status)}</strong>
                 </div>
                 <div className="order-meta-pill">
                   <span>Total</span>
@@ -198,7 +231,7 @@ export default function WebOrderDetailPage() {
                   ) : (
                     order.status_logs.map((log) => (
                       <div key={log.id} className="order-log-card">
-                        <strong>{log.from_status ? `${log.from_status} → ` : ""}{log.to_status}</strong>
+                        <strong>{log.from_status ? `${translateOrderStatus(log.from_status)} → ` : ""}{translateOrderStatus(log.to_status)}</strong>
                         <span>{formatDate(log.created_at)}</span>
                         <p>{log.note || "Sin nota adicional"}</p>
                       </div>
