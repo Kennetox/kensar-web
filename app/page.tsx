@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import CatalogProductCard from "@/app/catalogo/CatalogProductCard";
+import AddToCartButton from "@/app/components/AddToCartButton";
 import CommerceSlider from "@/app/components/CommerceSlider";
 import HomeProductCarousel from "@/app/components/HomeProductCarousel";
 import {
@@ -326,7 +327,22 @@ export default async function HomePage() {
         <div className="catalog-product-grid commerce-discover-grid">
           {discoverProducts.map((product) => {
             return (
-              <CatalogProductCard key={product.id} product={product} />
+              <div key={product.id} className="commerce-discover-item">
+                <CatalogProductCard product={product} />
+                <div className="commerce-discover-cta">
+                  <AddToCartButton
+                    productId={product.id}
+                    productName={product.name}
+                    productSlug={product.slug}
+                    productSku={product.sku}
+                    imageUrl={product.image_thumb_url || product.image_url}
+                    brand={product.brand}
+                    stockStatus={product.stock_status}
+                    unitPrice={product.price ?? 0}
+                    comparePrice={product.compare_price}
+                  />
+                </div>
+              </div>
             );
           })}
         </div>
@@ -380,6 +396,7 @@ export default async function HomePage() {
           width={1920}
           height={640}
           sizes="100vw"
+          unoptimized
           className="commerce-next-banner-image"
         />
 
@@ -389,6 +406,19 @@ export default async function HomePage() {
               {livingProducts.map((product) => (
                 <div key={`hogar-${product.id}`} className="home-product-carousel-item">
                   <CatalogProductCard product={product} />
+                  <div className="home-product-carousel-cta">
+                    <AddToCartButton
+                      productId={product.id}
+                      productName={product.name}
+                      productSlug={product.slug}
+                      productSku={product.sku}
+                      imageUrl={product.image_thumb_url || product.image_url}
+                      brand={product.brand}
+                      stockStatus={product.stock_status}
+                      unitPrice={product.price ?? 0}
+                      comparePrice={product.compare_price}
+                    />
+                  </div>
                 </div>
               ))}
             </HomeProductCarousel>
@@ -419,6 +449,58 @@ export default async function HomePage() {
             <source src="/media/home/home-strip-video.mp4" type="video/mp4" />
           </video>
         </div>
+        <section className="commerce-service-strip" aria-label="Beneficios de compra">
+          <div className="commerce-service-item" role="presentation">
+            <span className="commerce-service-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M3 7h10v8H3zM13 9h4l3 3v3h-3" />
+                <circle cx="7" cy="17" r="2" />
+                <circle cx="17" cy="17" r="2" />
+              </svg>
+            </span>
+            <p>Envíos nacionales</p>
+          </div>
+
+          <div className="commerce-service-item" role="presentation">
+            <span className="commerce-service-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="8" />
+                <path d="M10 9h3a2 2 0 0 1 0 4h-2a2 2 0 0 0 0 4h3M12 7v10" />
+              </svg>
+            </span>
+            <p>Pago seguro</p>
+          </div>
+
+          <div className="commerce-service-item" role="presentation">
+            <span className="commerce-service-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="7" r="3" />
+                <path d="M5 20a7 7 0 0 1 14 0M4 11h3M17 11h3" />
+              </svg>
+            </span>
+            <p>Atención inmediata</p>
+          </div>
+
+          <div className="commerce-service-item is-service-tech" role="presentation">
+            <span className="commerce-service-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" />
+                <circle cx="12" cy="12" r="4" />
+              </svg>
+            </span>
+            <p>Servicio técnico e instalaciones</p>
+          </div>
+
+          <div className="commerce-service-item" role="presentation">
+            <span className="commerce-service-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M6 5h12v14H6zM9 9h6M9 13h6" />
+                <path d="M6 7 3 9v10h3" />
+              </svg>
+            </span>
+            <p>Devoluciones</p>
+          </div>
+        </section>
       </section>
     </div>
   );

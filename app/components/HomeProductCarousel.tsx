@@ -9,12 +9,16 @@ import {
   useRef,
   useState,
   type ReactNode,
+  type TransitionEvent,
 } from "react";
 
 type HomeProductCarouselProps = {
   children: ReactNode;
   ariaLabel?: string;
 };
+
+const LOOP_CYCLES = 15;
+const MIDDLE_CYCLE_INDEX = Math.floor(LOOP_CYCLES / 2);
 
 export default function HomeProductCarousel({
   children,
@@ -29,7 +33,7 @@ export default function HomeProductCarousel({
     if (!logicalCount) return [];
     const repeated: ReactNode[] = [];
 
-    for (let cycle = 0; cycle < 3; cycle += 1) {
+    for (let cycle = 0; cycle < LOOP_CYCLES; cycle += 1) {
       items.forEach((item, itemIndex) => {
         if (isValidElement(item)) {
           repeated.push(cloneElement(item, { key: `home-carousel-${cycle}-${itemIndex}` }));
@@ -46,12 +50,9 @@ export default function HomeProductCarousel({
     return repeated;
   }, [items, logicalCount]);
   const [itemStep, setItemStep] = useState(0);
-  const [index, setIndex] = useState(logicalCount);
+  const [index, setIndex] = useState(MIDDLE_CYCLE_INDEX * Math.max(1, logicalCount));
   const [transitionEnabled, setTransitionEnabled] = useState(true);
-
-  useEffect(() => {
-    setIndex(logicalCount);
-  }, [logicalCount]);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -63,7 +64,7 @@ export default function HomeProductCarousel({
       const firstWidth = firstItem.getBoundingClientRect().width;
       const styles = window.getComputedStyle(track);
       const gapValue = parseFloat(styles.columnGap || styles.gap || "0");
-      const nextStep = Math.max(1, Math.round(firstWidth + gapValue));
+      const nextStep = Math.max(1, firstWidth + gapValue);
       setItemStep(nextStep);
     };
 
@@ -93,26 +94,29 @@ export default function HomeProductCarousel({
   }
 
   function move(direction: 1 | -1) {
-    if (!logicalCount) return;
+    if (!logicalCount || isAnimating) return;
+    setIsAnimating(true);
     setTransitionEnabled(true);
     setIndex((prev) => prev + direction);
   }
 
-  function handleTransitionEnd() {
+  function handleTransitionEnd(event: TransitionEvent<HTMLDivElement>) {
+    if (event.target !== trackRef.current) return;
     if (!logicalCount) return;
 
-    if (index >= logicalCount * 2) {
+    const cycleOffset = ((index % logicalCount) + logicalCount) % logicalCount;
+    const recenterIndex = MIDDLE_CYCLE_INDEX * logicalCount + cycleOffset;
+    const lowerLimit = logicalCount;
+    const upperLimit = logicalCount * (LOOP_CYCLES - 2) - 1;
+    if (index <= lowerLimit || index >= upperLimit) {
       setTransitionEnabled(false);
-      setIndex(logicalCount);
+      setIndex(recenterIndex);
+      setIsAnimating(false);
       scheduleTransitionRestore();
       return;
     }
 
-    if (index < logicalCount) {
-      setTransitionEnabled(false);
-      setIndex(logicalCount * 2 - 1);
-      scheduleTransitionRestore();
-    }
+    setIsAnimating(false);
   }
 
   return (
@@ -122,6 +126,7 @@ export default function HomeProductCarousel({
         className="home-product-carousel-nav home-product-carousel-nav-left"
         onClick={() => move(-1)}
         aria-label="Ver productos anteriores"
+        disabled={isAnimating}
       >
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M14.5 5 7.5 12l7 7" />
@@ -146,6 +151,7 @@ export default function HomeProductCarousel({
         className="home-product-carousel-nav home-product-carousel-nav-right"
         onClick={() => move(1)}
         aria-label="Ver más productos"
+        disabled={isAnimating}
       >
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="m9.5 5 7 7-7 7" />

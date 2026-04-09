@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useWebCart } from "@/app/components/WebCartProvider";
 import { useWebCustomer } from "@/app/components/WebCustomerProvider";
 
@@ -42,6 +42,9 @@ export default function CartAccess() {
   const [mounted, setMounted] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsWarning, setTermsWarning] = useState("");
+  const [cartPulse, setCartPulse] = useState(false);
+  const cartIconRef = useRef<HTMLSpanElement | null>(null);
+  const cartPulseTimeoutRef = useRef<number | null>(null);
 
   const count = cart?.items_count ?? 0;
   const items = cart?.items ?? [];
@@ -89,6 +92,78 @@ export default function CartAccess() {
     };
   }, [open]);
 
+  useEffect(() => {
+    function triggerCartPulse() {
+      if (cartPulseTimeoutRef.current) {
+        window.clearTimeout(cartPulseTimeoutRef.current);
+      }
+      setCartPulse(true);
+      cartPulseTimeoutRef.current = window.setTimeout(() => {
+        setCartPulse(false);
+        cartPulseTimeoutRef.current = null;
+      }, 520);
+    }
+
+    function handleCartAddEffect(event: Event) {
+      const targetRect = cartIconRef.current?.getBoundingClientRect();
+      if (!targetRect) return;
+
+      const detail = (event as CustomEvent<{ x?: number; y?: number }>).detail || {};
+      const startX = Number.isFinite(detail.x) ? Number(detail.x) : targetRect.left + targetRect.width * 0.5;
+      const startY = Number.isFinite(detail.y) ? Number(detail.y) : targetRect.top + targetRect.height * 0.5;
+      const endX = targetRect.left + targetRect.width * 0.5;
+      const endY = targetRect.top + targetRect.height * 0.5;
+      const deltaX = endX - startX;
+      const deltaY = endY - startY;
+
+      const token = document.createElement("span");
+      token.className = "cart-fly-token";
+      token.innerHTML = `
+        <span class="cart-fly-token-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M3 4h2.3l1.8 9.2a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8l1.2-6.1H7.2" />
+            <circle cx="10" cy="19" r="1.6" />
+            <circle cx="17" cy="19" r="1.6" />
+          </svg>
+        </span>
+      `;
+      token.style.left = `${startX}px`;
+      token.style.top = `${startY}px`;
+      document.body.appendChild(token);
+
+      token
+        .animate(
+          [
+            { transform: "translate(-50%, -50%) scale(1)", opacity: 0.98 },
+            {
+              transform: `translate(calc(-50% + ${deltaX * 0.58}px), calc(-50% + ${deltaY * 0.58}px)) scale(0.9)`,
+              opacity: 0.96,
+              offset: 0.62,
+            },
+            { transform: `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px)) scale(0.48)`, opacity: 0.08 },
+          ],
+          {
+            duration: 700,
+            easing: "cubic-bezier(0.18, 0.78, 0.24, 1)",
+            fill: "forwards",
+          }
+        )
+        .addEventListener("finish", () => {
+          token.remove();
+        });
+
+      triggerCartPulse();
+    }
+
+    window.addEventListener("kensar:cart-add", handleCartAddEffect as EventListener);
+    return () => {
+      window.removeEventListener("kensar:cart-add", handleCartAddEffect as EventListener);
+      if (cartPulseTimeoutRef.current) {
+        window.clearTimeout(cartPulseTimeoutRef.current);
+      }
+    };
+  }, []);
+
   async function handleQuantity(productId: number, quantity: number) {
     try {
       setBusy(true);
@@ -135,7 +210,11 @@ export default function CartAccess() {
         aria-expanded={open}
         onClick={() => setOpen(true)}
       >
-        <span className="header-cart-icon-wrap" aria-hidden="true">
+        <span
+          ref={cartIconRef}
+          className={`header-cart-icon-wrap${cartPulse ? " is-cart-pulse" : ""}`}
+          aria-hidden="true"
+        >
           <span className="header-cart-icon">
             <svg viewBox="0 0 24 24" fill="none">
               <path d="M3 4h2.3l1.8 9.2a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8l1.2-6.1H7.2" />
