@@ -3,7 +3,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Inter } from "next/font/google";
 import { Suspense } from "react";
-import Reveal from "./components/Reveal";
 import TopNav from "./components/TopNav";
 import AccountAccess from "./components/AccountAccess";
 import CartAccess from "./components/CartAccess";
@@ -165,62 +164,69 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
         <footer className="site-footer">
           <div className="site-footer-inner">
-            <Reveal className="footer-brand-reveal" delay="none">
-              <div className="footer-brand-block">
-                <Link href="/" className="footer-logo-link" aria-label="Ir al inicio de Kensar Electronic">
-                  <Image
-                    src="/branding/texto-kensar.png"
-                    alt="Kensar Electronic"
-                    width={420}
-                    height={108}
-                    className="footer-logo-image"
-                  />
-                </Link>
-                <p className="footer-brand-copy">
-                  Tecnologia, servicio y atencion comercial para una operacion real en Palmira.
-                </p>
-              </div>
-            </Reveal>
+            <div className="footer-brand-block">
+              <Link href="/" className="footer-logo-link" aria-label="Ir al inicio de Kensar Electronic">
+                <Image
+                  src="/branding/texto-kensar.png"
+                  alt="Kensar Electronic"
+                  width={420}
+                  height={108}
+                  className="footer-logo-image"
+                />
+              </Link>
+              <p className="footer-brand-copy">
+                Kensar Electronic, comercio especializado en audio, tecnologia y servicio tecnico en Palmira, Valle del Cauca.
+              </p>
+            </div>
 
             <div className="footer-grid">
-              <Reveal delay="short">
-                <section className="footer-column">
-                  <p className="footer-label">Ubicacion</p>
-                  <p>Cra 24 #30-75</p>
-                  <p>Palmira, Colombia</p>
-                  <p>NIT 94385333-1</p>
-                </section>
-              </Reveal>
+              <section className="footer-column">
+                <p className="footer-label">Ubicacion</p>
+                <p>Cra 24 #30-75</p>
+                <p>Palmira, Colombia</p>
+                <a
+                  href="https://maps.google.com/?q=Cra+24+%2330-75+Palmira+Colombia"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Ver en Google Maps
+                </a>
+              </section>
 
-              <Reveal delay="mid">
-                <section className="footer-column">
-                  <p className="footer-label">Contacto</p>
-                  <a href="tel:+573185657508">(+57) 318 565 7508</a>
-                  <a href="https://wa.me/573185657508" target="_blank" rel="noreferrer">
-                    WhatsApp directo
-                  </a>
-                  <a href="mailto:kensarelec@gmail.com">kensarelec@gmail.com</a>
-                </section>
-              </Reveal>
+              <section className="footer-column">
+                <p className="footer-label">Contacto</p>
+                <a href="tel:+573185657508">(+57) 318 565 7508</a>
+                <a href="https://wa.me/573185657508" target="_blank" rel="noreferrer">
+                  WhatsApp directo
+                </a>
+                <a href="mailto:kensarelec@gmail.com">kensarelec@gmail.com</a>
+              </section>
 
-              <Reveal delay="long">
-                <section className="footer-column">
-                  <p className="footer-label">Horario</p>
-                  <p>Lunes a sabado</p>
-                  <p>8:30am a 6:30pm</p>
-                  <p>Domingos y festivos</p>
-                  <p>9:00am a 1:30pm</p>
-                </section>
-              </Reveal>
+              <section className="footer-column">
+                <p className="footer-label">Horario</p>
+                <p>Lunes a sabado</p>
+                <p>8:30am a 6:30pm</p>
+                <p>Domingos y festivos</p>
+                <p>9:00am a 1:30pm</p>
+                <p>Soporte tecnico: Lunes a sabado, 9:00am a 6:00pm</p>
+              </section>
             </div>
           </div>
 
-          <Reveal delay="mid">
-            <div className="site-footer-bottom">
-              <p>© 2026 Kensar Electronic. Todos los derechos reservados.</p>
-              <p>Titular del sitio: Kensar Electronic</p>
-            </div>
-          </Reveal>
+          <div className="footer-legal-strip">
+            <Link href="/empresa">Informacion de contacto</Link>
+            <Link href="/contacto">Politica de privacidad</Link>
+            <Link href="/contacto">Terminos y condiciones</Link>
+            <Link href="/contacto">Politica de envios</Link>
+            <Link href="/contacto">Cambios y devoluciones</Link>
+            <Link href="/contacto">Garantias</Link>
+            <a href="mailto:kensarelec@gmail.com?subject=Tratamiento%20de%20datos%20personales">Tratamiento de datos</a>
+          </div>
+
+          <div className="site-footer-bottom">
+            <p>© 2026 Kensar Electronic. Todos los derechos reservados.</p>
+            <p>Precios expresados en COP. Aplican terminos, politicas de garantia y condiciones de despacho.</p>
+          </div>
         </footer>
         </WebCartProvider>
         </WebCustomerProvider>

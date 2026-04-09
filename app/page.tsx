@@ -473,61 +473,6 @@ export default async function HomePage() {
           </video>
         </div>
       </section>
-      <section className="commerce-service-mini-section" aria-label="Beneficios de compra">
-        <div className="commerce-service-strip">
-          <div className="commerce-service-item" role="presentation">
-            <span className="commerce-service-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none">
-                <path d="M3 7h10v8H3zM13 9h4l3 3v3h-3" />
-                <circle cx="7" cy="17" r="2" />
-                <circle cx="17" cy="17" r="2" />
-              </svg>
-            </span>
-            <p>Envíos nacionales</p>
-          </div>
-
-          <div className="commerce-service-item" role="presentation">
-            <span className="commerce-service-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="8" />
-                <path d="M10 9h3a2 2 0 0 1 0 4h-2a2 2 0 0 0 0 4h3M12 7v10" />
-              </svg>
-            </span>
-            <p>Pago seguro</p>
-          </div>
-
-          <div className="commerce-service-item" role="presentation">
-            <span className="commerce-service-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="7" r="3" />
-                <path d="M5 20a7 7 0 0 1 14 0M4 11h3M17 11h3" />
-              </svg>
-            </span>
-            <p>Atención inmediata</p>
-          </div>
-
-          <div className="commerce-service-item is-service-tech" role="presentation">
-            <span className="commerce-service-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none">
-                <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" />
-                <circle cx="12" cy="12" r="4" />
-              </svg>
-            </span>
-            <p>Servicio técnico e instalaciones</p>
-          </div>
-
-          <div className="commerce-service-item" role="presentation">
-            <span className="commerce-service-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none">
-                <path d="M6 5h12v14H6zM9 9h6M9 13h6" />
-                <path d="M6 7 3 9v10h3" />
-              </svg>
-            </span>
-            <p>Devoluciones</p>
-          </div>
-        </div>
-      </section>
-
       <section className="commerce-financing-showcase" aria-label="Métodos de pago a crédito">
         <div className="commerce-financing-shell">
           <Reveal className="commerce-financing-head" delay="short">
@@ -654,11 +599,8 @@ export default async function HomePage() {
           <article className="commerce-social-info-item is-social">
             <span className="commerce-social-info-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none">
-                <circle cx="7" cy="7" r="2.2" />
-                <circle cx="17" cy="7" r="2.2" />
-                <circle cx="7" cy="17" r="2.2" />
-                <circle cx="17" cy="17" r="2.2" />
-                <path d="M9 7h6M7 9v6M17 9v6M9 17h6" />
+                <circle cx="12" cy="12" r="8" />
+                <path d="M4 12h16M12 4c3 2.6 3 13.4 0 16M12 4c-3 2.6-3 13.4 0 16M6.8 8.6h10.4M6.8 15.4h10.4" />
               </svg>
             </span>
             <div className="commerce-social-info-copy">
@@ -703,13 +645,13 @@ export default async function HomePage() {
           <article className="commerce-social-info-item">
             <span className="commerce-social-info-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none">
-                <path d="M5 8.5 12 5l7 3.5V16L12 19l-7-3V8.5Z" />
-                <path d="M5 8.5 12 12l7-3.5M12 12v7" />
+                <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V22a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H2a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.08a1.65 1.65 0 0 0 1-1.51V2a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.08a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.08a1.65 1.65 0 0 0 1.51 1H22a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
               </svg>
             </span>
             <div className="commerce-social-info-copy">
-              <strong>Envíos a Colombia</strong>
-              <p>Despachos nacionales y retiro en tienda en Palmira.</p>
+              <strong>Servicio técnico</strong>
+              <p>Instalaciones, soporte y mantenimiento para tus equipos.</p>
             </div>
           </article>
 
