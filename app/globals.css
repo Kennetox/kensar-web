@@ -5234,13 +5234,41 @@ body.mini-cart-open .main-wrapper {
   align-items: center;
   justify-content: center;
   white-space: nowrap;
+  overflow: hidden;
+  isolation: isolate;
+  transform-origin: center;
   transition: transform 0.24s ease, filter 0.24s ease, box-shadow 0.24s ease;
-  animation: sliderCtaPulse 2.4s ease-in-out infinite;
+  animation: sliderCtaGlow 2.6s ease-in-out infinite;
+}
+
+.commerce-slider-cta::before {
+  content: "";
+  position: absolute;
+  top: -120%;
+  left: -36%;
+  width: 26%;
+  height: 340%;
+  background: linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.56) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(18deg) translateX(-160%);
+  pointer-events: none;
+  z-index: 0;
+  animation: sliderCtaSheen 3.4s ease-in-out infinite;
 }
 
 .commerce-slider-cta:hover {
   transform: translateY(-1px) scale(1.02);
   filter: brightness(1.03);
+}
+
+.commerce-slider-frame.is-active:not(.is-clone) .commerce-slider-cta {
+  animation:
+    sliderCtaPopIn 0.62s cubic-bezier(0.22, 1, 0.36, 1) 0.34s both,
+    sliderCtaGlow 2.6s ease-in-out 0.34s infinite;
 }
 
 .commerce-slider-cta--guitarras {
@@ -5276,13 +5304,46 @@ body.mini-cart-open .main-wrapper {
   box-shadow: 0 8px 22px -14px rgba(15, 23, 42, 0.8);
 }
 
-@keyframes sliderCtaPulse {
+@keyframes sliderCtaGlow {
   0%,
   100% {
-    box-shadow: 0 8px 20px -14px rgba(15, 23, 42, 0.5);
+    box-shadow: 0 12px 24px -16px rgba(15, 23, 42, 0.52);
+    filter: saturate(1) brightness(1);
+    transform: scale(1);
   }
   50% {
-    box-shadow: 0 12px 28px -14px rgba(29, 78, 216, 0.55);
+    box-shadow: 0 16px 34px -16px rgba(29, 78, 216, 0.6);
+    filter: saturate(1.08) brightness(1.04);
+    transform: scale(1.018);
+  }
+}
+
+@keyframes sliderCtaPopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes sliderCtaSheen {
+  0%,
+  58%,
+  100% {
+    transform: rotate(18deg) translateX(-160%);
+    opacity: 0;
+  }
+  66% {
+    opacity: 0.92;
+  }
+  79% {
+    transform: rotate(18deg) translateX(460%);
+    opacity: 0;
   }
 }
 
@@ -5741,12 +5802,20 @@ body.mini-cart-open .main-wrapper {
 
 .commerce-after-home-divider {
   margin: 78px 0 24px;
+  display: none;
 }
 
 .commerce-next-placeholder-section {
   width: 100vw;
   margin-left: calc(50% - 50vw);
+  margin-top: 128px;
   padding: 0;
+}
+
+.commerce-service-mini-section {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-top: 28px;
 }
 
 .commerce-next-placeholder-container {
@@ -5912,6 +5981,371 @@ body.mini-cart-open .main-wrapper {
   animation: serviceTechSpinPulse 1.2s ease;
 }
 
+.commerce-financing-showcase {
+  width: 100%;
+  margin-top: 44px;
+  margin-bottom: 16px;
+}
+
+.commerce-financing-shell {
+  position: relative;
+  width: min(100%, 1320px);
+  margin: 0 auto;
+  border-radius: 30px;
+  padding: clamp(30px, 4vw, 52px);
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  background:
+    radial-gradient(340px 180px at 10% 8%, rgba(59, 130, 246, 0.14), transparent 72%),
+    radial-gradient(380px 190px at 90% 92%, rgba(34, 197, 94, 0.13), transparent 74%),
+    linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  overflow: hidden;
+}
+
+.commerce-financing-shell::before,
+.commerce-financing-shell::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.commerce-financing-shell::before {
+  width: clamp(160px, 19vw, 280px);
+  height: clamp(120px, 15vw, 220px);
+  right: -70px;
+  top: -44px;
+  background: radial-gradient(circle at 35% 40%, rgba(29, 78, 216, 0.2), rgba(29, 78, 216, 0.05) 68%, transparent);
+  animation: financingBlobFloat 10.5s ease-in-out infinite;
+}
+
+.commerce-financing-shell::after {
+  width: clamp(220px, 25vw, 360px);
+  height: clamp(140px, 17vw, 240px);
+  left: -86px;
+  bottom: -70px;
+  background: radial-gradient(circle at 64% 36%, rgba(22, 163, 74, 0.18), rgba(22, 163, 74, 0.04) 68%, transparent);
+  animation: financingBlobFloatReverse 12.5s ease-in-out infinite;
+}
+
+.commerce-financing-head {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+
+.commerce-financing-head h2 {
+  color: #0f172a;
+  font-size: clamp(1.5rem, 3.2vw, 2.45rem);
+  line-height: 1.08;
+  letter-spacing: -0.028em;
+}
+
+.commerce-financing-head p {
+  color: #334155;
+  font-size: clamp(0.9rem, 1.3vw, 1.06rem);
+  line-height: 1.5;
+  max-width: 52ch;
+}
+
+.commerce-financing-grid {
+  position: relative;
+  z-index: 1;
+  margin-top: clamp(20px, 2.6vw, 34px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(310px, 0.9fr) minmax(0, 1fr);
+  gap: clamp(14px, 2vw, 22px);
+  align-items: stretch;
+}
+
+.commerce-financing-card {
+  border-radius: 22px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: rgba(255, 255, 255, 0.76);
+  backdrop-filter: blur(3px);
+  box-shadow: 0 18px 36px -28px rgba(15, 23, 42, 0.42);
+  padding: clamp(16px, 2.2vw, 24px);
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.commerce-financing-logo-wrap {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+}
+
+.commerce-financing-logo {
+  width: auto;
+  height: clamp(30px, 2.7vw, 38px);
+  object-fit: contain;
+}
+
+.commerce-financing-card h3 {
+  color: #0f172a;
+  font-size: clamp(1.14rem, 2.2vw, 1.42rem);
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+}
+
+.commerce-financing-card p {
+  color: #334155;
+  font-size: 0.94rem;
+  line-height: 1.45;
+}
+
+.commerce-financing-card ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 7px;
+}
+
+.commerce-financing-card li {
+  color: #1e293b;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.commerce-financing-actions {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.commerce-financing-btn {
+  min-height: 38px;
+  padding: 0 15px;
+  border-radius: 999px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, background-color 0.22s ease, color 0.22s ease;
+}
+
+.commerce-financing-btn:hover {
+  transform: translateY(-1px);
+}
+
+.commerce-financing-btn.is-primary {
+  background: linear-gradient(120deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  box-shadow: 0 14px 24px -18px rgba(37, 99, 235, 0.72);
+}
+
+.commerce-financing-btn.is-primary:hover {
+  box-shadow: 0 18px 28px -18px rgba(37, 99, 235, 0.78);
+}
+
+.commerce-financing-btn.is-ghost {
+  color: #1d4ed8;
+  background: rgba(219, 234, 254, 0.78);
+  border: 1px solid rgba(59, 130, 246, 0.34);
+}
+
+.commerce-financing-btn.is-ghost:hover {
+  background: rgba(191, 219, 254, 0.86);
+}
+
+.commerce-financing-visual {
+  position: relative;
+  border-radius: 22px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(241, 245, 249, 0.84) 100%);
+  display: grid;
+  place-items: end center;
+  min-height: clamp(350px, 36vw, 520px);
+  overflow: hidden;
+}
+
+.commerce-financing-person {
+  width: auto;
+  height: 100%;
+  max-height: clamp(340px, 35vw, 500px);
+  object-fit: contain;
+  object-position: bottom center;
+  filter: drop-shadow(0 26px 38px rgba(15, 23, 42, 0.24));
+}
+
+.commerce-financing-float-logo {
+  position: absolute;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(3px);
+  box-shadow: 0 14px 30px -22px rgba(15, 23, 42, 0.6);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  z-index: 2;
+}
+
+.commerce-financing-float-image {
+  width: auto;
+  height: 26px;
+  object-fit: contain;
+}
+
+.commerce-financing-float-image.is-kensar-logo {
+  height: 28px;
+}
+
+.commerce-financing-float-logo.is-addi {
+  top: 16%;
+  left: 8%;
+  animation: financingFloatA 4.8s ease-in-out infinite;
+}
+
+.commerce-financing-float-logo.is-sistecredito {
+  top: 12%;
+  right: 7%;
+  animation: financingFloatB 5.4s ease-in-out infinite;
+}
+
+.commerce-financing-float-logo.is-kensar {
+  bottom: 18%;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: financingFloatC 6.1s ease-in-out infinite;
+}
+
+.commerce-financing-legal {
+  position: relative;
+  z-index: 1;
+  margin-top: 48px;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.commerce-social-strip {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-top: 12px;
+  background: #e5e7eb;
+  border-top: 1px solid rgba(15, 23, 42, 0.14);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.14);
+}
+
+.commerce-social-strip-inner {
+  width: min(100%, 1560px);
+  margin: 0 auto;
+  min-height: 146px;
+  padding: 20px 72px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.commerce-social-info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 4px 10px;
+  border-right: 1px solid rgba(15, 23, 42, 0.14);
+}
+
+.commerce-social-info-item:last-child {
+  border-right: 0;
+}
+
+.commerce-social-info-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  color: #334155;
+  background: rgba(255, 255, 255, 0.68);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.commerce-social-info-icon svg {
+  width: 23px;
+  height: 23px;
+}
+
+.commerce-social-info-icon path,
+.commerce-social-info-icon circle {
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.commerce-social-info-copy {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+}
+
+.commerce-social-info-copy strong {
+  color: #111827;
+  font-size: 1rem;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.commerce-social-info-copy p {
+  color: #374151;
+  font-size: 0.95rem;
+  line-height: 1.42;
+}
+
+.commerce-social-info-copy a {
+  color: #0f172a;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.commerce-social-info-copy a:hover {
+  text-decoration: underline;
+}
+
+.commerce-social-info-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.commerce-social-info-link {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  background: rgba(255, 255, 255, 0.75);
+  color: #1f2937;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.commerce-social-info-link svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.commerce-social-info-link:hover {
+  transform: translateY(-1px);
+  border-color: rgba(37, 99, 235, 0.35);
+  background: #ffffff;
+}
+
 @keyframes serviceTechSpinPulse {
   0% {
     transform: rotate(0deg) scale(1);
@@ -5924,6 +6358,56 @@ body.mini-cart-open .main-wrapper {
   }
   100% {
     transform: rotate(0deg) scale(1);
+  }
+}
+
+@keyframes financingFloatA {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -9px, 0);
+  }
+}
+
+@keyframes financingFloatB {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -12px, 0);
+  }
+}
+
+@keyframes financingBlobFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, 10px, 0) scale(1.03);
+  }
+}
+
+@keyframes financingBlobFloatReverse {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -10px, 0) scale(1.02);
+  }
+}
+
+@keyframes financingFloatC {
+  0%,
+  100% {
+    transform: translateX(-50%) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translateX(-50%) translate3d(0, -8px, 0);
   }
 }
 
@@ -6612,7 +7096,67 @@ body.mini-cart-open .main-wrapper {
   }
 
   .commerce-next-placeholder-section {
+    margin-top: 84px;
     padding: 0;
+  }
+
+  .commerce-service-mini-section {
+    margin-top: 20px;
+  }
+
+  .commerce-financing-showcase {
+    margin-top: 28px;
+  }
+
+  .commerce-financing-shell {
+    border-radius: 22px;
+    padding: 22px 18px;
+  }
+
+  .commerce-financing-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-top: 18px;
+  }
+
+  .commerce-financing-visual {
+    order: -1;
+    min-height: 320px;
+  }
+
+  .commerce-financing-person {
+    max-height: 300px;
+  }
+
+  .commerce-financing-float-logo.is-addi {
+    top: 10%;
+    left: 6%;
+  }
+
+  .commerce-financing-float-logo.is-sistecredito {
+    top: 9%;
+    right: 6%;
+  }
+
+  .commerce-financing-float-logo.is-kensar {
+    bottom: 16%;
+  }
+
+  .commerce-social-strip-inner {
+    min-height: 132px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .commerce-social-info-item {
+    border-right: 0;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.14);
+    padding-bottom: 10px;
+  }
+
+  .commerce-social-info-item:nth-last-child(-n + 2) {
+    border-bottom: 0;
   }
 
   .commerce-next-placeholder-container {
@@ -6698,7 +7242,98 @@ body.mini-cart-open .main-wrapper {
   }
 
   .commerce-next-placeholder-section {
+    margin-top: 56px;
     padding: 0;
+  }
+
+  .commerce-service-mini-section {
+    margin-top: 16px;
+  }
+
+  .commerce-financing-showcase {
+    margin-top: 24px;
+  }
+
+  .commerce-financing-shell {
+    border-radius: 20px;
+    padding: 20px 14px 18px;
+  }
+
+  .commerce-financing-head {
+    text-align: left;
+    justify-items: start;
+  }
+
+  .commerce-financing-head h2 {
+    font-size: clamp(1.36rem, 7.2vw, 1.9rem);
+  }
+
+  .commerce-financing-head p {
+    font-size: 0.9rem;
+  }
+
+  .commerce-financing-card {
+    border-radius: 16px;
+    gap: 9px;
+  }
+
+  .commerce-financing-card p,
+  .commerce-financing-card li {
+    font-size: 0.86rem;
+  }
+
+  .commerce-financing-visual {
+    min-height: 280px;
+  }
+
+  .commerce-financing-person {
+    max-height: 264px;
+  }
+
+  .commerce-financing-float-logo {
+    padding: 7px 12px;
+  }
+
+  .commerce-financing-float-image {
+    height: 20px;
+  }
+
+  .commerce-financing-float-image.is-kensar-logo {
+    height: 22px;
+  }
+
+  .commerce-financing-btn {
+    min-height: 36px;
+    font-size: 0.78rem;
+  }
+
+  .commerce-social-strip {
+    margin-top: 10px;
+  }
+
+  .commerce-social-strip-inner {
+    min-height: 116px;
+    grid-template-columns: 1fr;
+    padding-left: 16px;
+    padding-right: 16px;
+    gap: 8px;
+  }
+
+  .commerce-social-info-item {
+    border-bottom: 1px solid rgba(15, 23, 42, 0.14);
+    padding: 2px 4px 10px;
+  }
+
+  .commerce-social-info-item:last-child {
+    border-bottom: 0;
+  }
+
+  .commerce-social-info-copy strong {
+    font-size: 0.95rem;
+  }
+
+  .commerce-social-info-copy p {
+    font-size: 0.88rem;
   }
 
   .brand-marquee-track {
@@ -7522,11 +8157,17 @@ body.mini-cart-open .main-wrapper {
   .reveal-visible,
   .footer-column,
   .footer-brand-block,
-  .site-footer-bottom {
+  .site-footer-bottom,
+  .commerce-slider-cta,
+  .commerce-slider-cta::before,
+  .commerce-financing-float-logo,
+  .commerce-financing-shell::before,
+  .commerce-financing-shell::after {
     opacity: 1;
     transform: none;
     filter: none;
     transition: none;
+    animation: none;
   }
 
   .hero-slide-content .hero-anim-item,

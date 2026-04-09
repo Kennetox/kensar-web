@@ -28,7 +28,7 @@ export default function TopNav({ categories }: TopNavProps) {
       </Link>
 
       <div className={`nav-item-dropdown${isCatalogActive ? " active" : ""}`}>
-        <Link href="/catalogo" className="nav-link nav-link-with-caret">
+        <Link href="/catalogo" className={`nav-link nav-link-with-caret${isCatalogActive ? " active" : ""}`}>
           Catalogo
           <span className="nav-caret" aria-hidden="true">
             <svg viewBox="0 0 14 14" fill="none">

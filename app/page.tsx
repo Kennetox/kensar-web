@@ -4,6 +4,7 @@ import CatalogProductCard from "@/app/catalogo/CatalogProductCard";
 import AddToCartButton from "@/app/components/AddToCartButton";
 import CommerceSlider from "@/app/components/CommerceSlider";
 import HomeProductCarousel from "@/app/components/HomeProductCarousel";
+import Reveal from "@/app/components/Reveal";
 import {
   getCatalogCategories,
   getCatalogProducts,
@@ -309,6 +310,28 @@ export default async function HomePage() {
       imageUrl: preferred.imageUrl,
     };
   });
+  const socialConnectLinks = [
+    {
+      id: "instagram",
+      label: "Instagram",
+      href: "https://instagram.com/",
+    },
+    {
+      id: "facebook",
+      label: "Facebook",
+      href: "https://facebook.com/",
+    },
+    {
+      id: "tiktok",
+      label: "TikTok",
+      href: "https://www.tiktok.com/",
+    },
+    {
+      id: "whatsapp",
+      label: "WhatsApp",
+      href: "https://wa.me/573185657508?text=Hola%2C%20quiero%20informaci%C3%B3n%20sobre%20productos%20disponibles%20en%20la%20tienda%20web%20de%20Kensar.",
+    },
+  ];
 
   return (
     <div id="inicio" className="commerce-home home-anchor-section">
@@ -449,7 +472,9 @@ export default async function HomePage() {
             <source src="/media/home/home-strip-video.mp4" type="video/mp4" />
           </video>
         </div>
-        <section className="commerce-service-strip" aria-label="Beneficios de compra">
+      </section>
+      <section className="commerce-service-mini-section" aria-label="Beneficios de compra">
+        <div className="commerce-service-strip">
           <div className="commerce-service-item" role="presentation">
             <span className="commerce-service-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none">
@@ -500,7 +525,221 @@ export default async function HomePage() {
             </span>
             <p>Devoluciones</p>
           </div>
-        </section>
+        </div>
+      </section>
+
+      <section className="commerce-financing-showcase" aria-label="Métodos de pago a crédito">
+        <div className="commerce-financing-shell">
+          <Reveal className="commerce-financing-head" delay="short">
+            <p className="commerce-section-kicker">Métodos de pago a crédito</p>
+            <h2>Paga a cuotas con Addi o Sistecrédito</h2>
+            <p>Elige la opción que mejor se adapte a ti y compra hoy.</p>
+          </Reveal>
+
+          <div className="commerce-financing-grid">
+            <Reveal className="commerce-financing-card is-addi" direction="left" speed="normal">
+              <div className="commerce-financing-logo-wrap">
+                <Image
+                  src="/payments/logos/addi.png"
+                  alt="Logo de Addi"
+                  width={320}
+                  height={110}
+                  className="commerce-financing-logo"
+                />
+              </div>
+              <h3>Compra con Addi</h3>
+              <p>Solicita tu cupo en minutos y paga en cuotas según aprobación.</p>
+              <ul>
+                <li>Respuesta rápida en línea</li>
+                <li>Proceso 100% digital</li>
+                <li>Sin trámites en tienda</li>
+              </ul>
+              <div className="commerce-financing-actions">
+                <a
+                  href="https://co.addi.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="commerce-financing-btn is-primary"
+                >
+                  Solicitar con Addi
+                </a>
+                <a
+                  href="https://co.addi.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="commerce-financing-btn is-ghost"
+                >
+                  Conocer más
+                </a>
+              </div>
+            </Reveal>
+
+            <Reveal className="commerce-financing-visual" delay="mid" speed="slow">
+              <div className="commerce-financing-float-logo is-addi" aria-hidden="true">
+                <Image src="/payments/logos/addi.png" alt="" width={156} height={52} className="commerce-financing-float-image" />
+              </div>
+              <div className="commerce-financing-float-logo is-sistecredito" aria-hidden="true">
+                <Image
+                  src="/payments/logos/sistecredito.png"
+                  alt=""
+                  width={206}
+                  height={52}
+                  className="commerce-financing-float-image"
+                />
+              </div>
+              <div className="commerce-financing-float-logo is-kensar" aria-hidden="true">
+                <Image
+                  src="/payments/logos/kensarlog.png"
+                  alt=""
+                  width={220}
+                  height={68}
+                  className="commerce-financing-float-image is-kensar-logo"
+                />
+              </div>
+              <Image
+                src="/payments/people/hero-woman.png"
+                alt="Asesora de crédito para compras a cuotas"
+                width={900}
+                height={1100}
+                className="commerce-financing-person"
+              />
+            </Reveal>
+
+            <Reveal className="commerce-financing-card is-sistecredito" direction="right" speed="normal">
+              <div className="commerce-financing-logo-wrap">
+                <Image
+                  src="/payments/logos/sistecredito.png"
+                  alt="Logo de Sistecrédito"
+                  width={420}
+                  height={110}
+                  className="commerce-financing-logo"
+                />
+              </div>
+              <h3>Compra con Sistecrédito</h3>
+              <p>Usa tu cupo para comprar hoy y paga en cuotas cómodas.</p>
+              <ul>
+                <li>Aprobación sujeta a política de la entidad</li>
+                <li>Cuotas según monto y perfil</li>
+                <li>Acompañamiento por WhatsApp</li>
+              </ul>
+              <div className="commerce-financing-actions">
+                <a
+                  href="https://www.sistecredito.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="commerce-financing-btn is-primary"
+                >
+                  Aplicar a Sistecrédito
+                </a>
+                <a
+                  href="https://www.sistecredito.com/teescuchamos/#prueba-iframe"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="commerce-financing-btn is-ghost"
+                >
+                  Conocer más
+                </a>
+              </div>
+            </Reveal>
+          </div>
+
+          <p className="commerce-financing-legal">
+            Financiación sujeta a aprobación y condiciones de Addi y Sistecrédito.
+          </p>
+        </div>
+      </section>
+
+      <section className="commerce-social-strip" aria-label="Redes sociales de Kensar">
+        <div className="commerce-social-strip-inner">
+          <article className="commerce-social-info-item is-social">
+            <span className="commerce-social-info-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <circle cx="7" cy="7" r="2.2" />
+                <circle cx="17" cy="7" r="2.2" />
+                <circle cx="7" cy="17" r="2.2" />
+                <circle cx="17" cy="17" r="2.2" />
+                <path d="M9 7h6M7 9v6M17 9v6M9 17h6" />
+              </svg>
+            </span>
+            <div className="commerce-social-info-copy">
+              <strong>Comunidad Kensar</strong>
+              <p>Síguenos en nuestras redes</p>
+              <div className="commerce-social-info-links">
+                {socialConnectLinks.map((social) => (
+                  <a
+                    key={social.id}
+                    href={social.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={`commerce-social-info-link is-${social.id}`}
+                    aria-label={`Abrir ${social.label} de Kensar`}
+                  >
+                    {social.id === "instagram" ? (
+                      <svg viewBox="0 0 24 24">
+                        <path d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9a5.5 5.5 0 0 1-5.5 5.5h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2Zm0 1.8A3.7 3.7 0 0 0 3.8 7.5v9a3.7 3.7 0 0 0 3.7 3.7h9a3.7 3.7 0 0 0 3.7-3.7v-9a3.7 3.7 0 0 0-3.7-3.7h-9Zm9.65 1.5a1.15 1.15 0 1 1 0 2.3 1.15 1.15 0 0 1 0-2.3ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 1.8A3.2 3.2 0 1 0 12 15.2 3.2 3.2 0 0 0 12 8.8Z" />
+                      </svg>
+                    ) : null}
+                    {social.id === "facebook" ? (
+                      <svg viewBox="0 0 24 24">
+                        <path d="M13.6 22v-8.1h2.8l.42-3.2h-3.22V8.7c0-.92.26-1.54 1.58-1.54h1.68V4.3c-.3-.04-1.3-.12-2.47-.12-2.45 0-4.12 1.5-4.12 4.25v2.37H7.5v3.2h2.75V22h3.35Z" />
+                      </svg>
+                    ) : null}
+                    {social.id === "tiktok" ? (
+                      <svg viewBox="0 0 24 24">
+                        <path d="M14.9 2h2.63a5.4 5.4 0 0 0 3.75 3.75v2.69a8.1 8.1 0 0 1-3.78-.94v7.05a6.54 6.54 0 1 1-5.66-6.49v2.82a3.72 3.72 0 1 0 2.42 3.49V2Z" />
+                      </svg>
+                    ) : null}
+                    {social.id === "whatsapp" ? (
+                      <svg viewBox="0 0 24 24">
+                        <path d="M12 3a8.95 8.95 0 0 0-7.77 13.37L3 21l4.8-1.2A9 9 0 1 0 12 3Zm0 16.2a7.17 7.17 0 0 1-3.66-1.01l-.26-.15-2.84.71.76-2.77-.17-.28A7.2 7.2 0 1 1 12 19.2Zm3.95-5.4c-.22-.11-1.3-.64-1.5-.71-.2-.08-.35-.11-.5.11-.15.22-.57.71-.7.86-.13.15-.26.17-.49.06-.22-.11-.94-.34-1.8-1.09-.66-.58-1.1-1.3-1.23-1.52-.13-.22-.01-.34.1-.45.1-.1.22-.26.34-.39.11-.13.15-.22.22-.37.08-.15.04-.28-.02-.39-.06-.11-.5-1.21-.69-1.66-.18-.43-.36-.38-.5-.39h-.43c-.15 0-.39.06-.6.28-.2.22-.78.76-.78 1.86s.8 2.16.91 2.31c.11.15 1.57 2.4 3.8 3.37.53.23.95.37 1.28.47.54.17 1.04.15 1.43.09.44-.07 1.3-.53 1.49-1.04.18-.5.18-.93.13-1.02-.06-.09-.2-.15-.42-.26Z" />
+                      </svg>
+                    ) : null}
+                  </a>
+                ))}
+              </div>
+            </div>
+          </article>
+
+          <article className="commerce-social-info-item">
+            <span className="commerce-social-info-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M5 8.5 12 5l7 3.5V16L12 19l-7-3V8.5Z" />
+                <path d="M5 8.5 12 12l7-3.5M12 12v7" />
+              </svg>
+            </span>
+            <div className="commerce-social-info-copy">
+              <strong>Envíos a Colombia</strong>
+              <p>Despachos nacionales y retiro en tienda en Palmira.</p>
+            </div>
+          </article>
+
+          <article className="commerce-social-info-item">
+            <span className="commerce-social-info-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M12 21s7-5.76 7-11a7 7 0 1 0-14 0c0 5.24 7 11 7 11Z" />
+                <circle cx="12" cy="10" r="2.8" />
+              </svg>
+            </span>
+            <div className="commerce-social-info-copy">
+              <strong>Punto de atención</strong>
+              <p>Cra 24 #30-75, Palmira, Valle del Cauca.</p>
+            </div>
+          </article>
+
+          <article className="commerce-social-info-item">
+            <span className="commerce-social-info-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M6.8 3.5h2.4l1.2 3.6-1.8 1.7a13 13 0 0 0 6.7 6.7l1.7-1.8 3.6 1.2v2.4a2 2 0 0 1-2 2A16.9 16.9 0 0 1 4.8 5.5a2 2 0 0 1 2-2Z" />
+              </svg>
+            </span>
+            <div className="commerce-social-info-copy">
+              <strong>Atención comercial</strong>
+              <p>
+                <a href="tel:+573185657508">(+57) 318 565 7508</a>
+              </p>
+            </div>
+          </article>
+        </div>
       </section>
     </div>
   );

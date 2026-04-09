@@ -95,7 +95,12 @@ export default function CommerceSlider({ slides, categories, intervalMs = 8000 }
           onTransitionEnd={handleTrackTransitionEnd}
         >
           {loopSlides.map((slide, index) => (
-            <div key={`${slide.id}-${index}`} className={`commerce-slider-frame commerce-slider-frame-${slide.id}`}>
+            <div
+              key={`${slide.id}-${index}`}
+              className={`commerce-slider-frame commerce-slider-frame-${slide.id}${index === internalIndex ? " is-active" : ""}${
+                hasLoop && (index === 0 || index === loopSlides.length - 1) ? " is-clone" : ""
+              }`}
+            >
               <Link href={slide.href} className="commerce-slider-link" aria-label={slide.alt} />
               <div
                 className="commerce-slider-layer"

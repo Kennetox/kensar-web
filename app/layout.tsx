@@ -9,7 +9,6 @@ import AccountAccess from "./components/AccountAccess";
 import CartAccess from "./components/CartAccess";
 import HeaderCatalogSearch from "./components/HeaderCatalogSearch";
 import FloatingWhatsAppButton from "./components/FloatingWhatsAppButton";
-import GlobalBackToTop from "./components/GlobalBackToTop";
 import WebCartProvider from "./components/WebCartProvider";
 import WebCustomerProvider from "./components/WebCustomerProvider";
 import TopbarScrollBehavior from "./components/TopbarScrollBehavior";
@@ -163,7 +162,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
         <main className="main-wrapper">{children}</main>
         <FloatingWhatsAppButton />
-        <GlobalBackToTop />
 
         <footer className="site-footer">
           <div className="site-footer-inner">
