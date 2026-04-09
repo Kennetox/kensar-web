@@ -414,6 +414,11 @@ export default async function HomePage() {
             )}
           </div>
         </div>
+        <div className="commerce-home-video-strip" aria-label="Video de vitrina hogar">
+          <video className="commerce-home-video" autoPlay muted loop playsInline preload="auto">
+            <source src="/media/home/home-strip-video.mp4" type="video/mp4" />
+          </video>
+        </div>
       </section>
     </div>
   );
