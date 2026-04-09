@@ -279,6 +279,20 @@ export default async function HomePage() {
       ctaLabel: "EXPLORAR TIENDA",
     },
   ];
+  const marqueeLogos = [
+    { name: "Yamaha", src: "/brands/marquee/yamaha.svg" },
+    { name: "Pro DJ", src: "/brands/marquee/prodj.svg" },
+    { name: "RM", src: "/brands/marquee/rm.svg" },
+    { name: "Spain", src: "/brands/marquee/spain.svg" },
+    { name: "Audio Sound", src: "/brands/marquee/audiosound.svg", scaleClass: "is-scale-audiosound" },
+    { name: "Ayson", src: "/brands/marquee/ayson.svg", scaleClass: "is-scale-ayson" },
+    { name: "EZVIZ", src: "/brands/marquee/ezviz.svg" },
+    { name: "Hikvision", src: "/brands/marquee/hikvision.svg" },
+    { name: "HiLook", src: "/brands/marquee/hilook.svg" },
+    { name: "iSmart", src: "/brands/marquee/ismart.svg" },
+    { name: "Jaltech", src: "/brands/marquee/jaltech.svg", scaleClass: "is-scale-jaltech" },
+    { name: "Proel", src: "/brands/marquee/proel.svg" },
+  ];
   const preferredFeaturedCategories = [
     { key: "audio-profesional", name: "Audio profesional", imageUrl: "/categories/home/cat-01-audio.webp" },
     { key: "accesorios", name: "Accesorios", imageUrl: "/categories/home/cat-02-accesorios.webp" },
@@ -383,7 +397,23 @@ export default async function HomePage() {
       </section>
       <div className="commerce-categories-divider commerce-after-home-divider" aria-hidden="true" />
       <section className="commerce-next-placeholder-section" aria-label="Seccion pendiente">
-        <div className="commerce-next-placeholder-container" />
+        <div className="brand-marquee-strip" aria-label="Marcas aliadas">
+          <div className="brand-marquee-fade brand-marquee-fade-left" aria-hidden="true" />
+          <div className="brand-marquee-fade brand-marquee-fade-right" aria-hidden="true" />
+          <div className="brand-marquee-track">
+            {[0, 1].map((loop) =>
+              marqueeLogos.map((logo) => (
+                <div
+                  key={`brand-marquee-${loop}-${logo.src}`}
+                  className={`brand-marquee-item${logo.scaleClass ? ` ${logo.scaleClass}` : ""}`}
+                  aria-hidden={loop === 1}
+                >
+                  <Image src={logo.src} alt={logo.name} width={160} height={40} />
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </section>
     </div>
   );
