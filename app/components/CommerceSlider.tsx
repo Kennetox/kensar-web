@@ -164,6 +164,10 @@ export default function CommerceSlider({ slides, categories, intervalMs = 8000 }
           </Link>
         ))}
       </div>
+
+      <div className="commerce-featured-more">
+        <Link href="/catalogo">Ver mas</Link>
+      </div>
     </section>
   );
 }

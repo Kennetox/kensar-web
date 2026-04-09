@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import CatalogProductCard from "@/app/catalogo/CatalogProductCard";
 import CommerceSlider from "@/app/components/CommerceSlider";
+import HomeProductCarousel from "@/app/components/HomeProductCarousel";
 import {
   getCatalogCategories,
   getCatalogProducts,
@@ -180,10 +181,81 @@ function buildCategoryHref(path: string | null) {
   return `/catalogo?category=${encodeURIComponent(path)}`;
 }
 
+function normalizeCategoryValue(value: string | null) {
+  return (value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function isHomeCategoryProduct(product: WebCatalogProductCard) {
+  const categoryPath = normalizeCategoryValue(product.category_path);
+  const categoryName = normalizeCategoryValue(product.category_name);
+  return (
+    categoryPath.includes("camara") ||
+    categoryPath.includes("tecnologia") ||
+    categoryName.includes("camara") ||
+    categoryName.includes("tecnologia")
+  );
+}
+
+function shuffleProducts(items: WebCatalogProductCard[]) {
+  const shuffled = [...items];
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]];
+  }
+
+  return shuffled;
+}
+
+async function fetchCategoryProducts(category: string, targetCount = 10) {
+  const collected: WebCatalogProductCard[] = [];
+  let page = 1;
+
+  while (collected.length < targetCount) {
+    const response = await getCatalogProducts({ category, page });
+    collected.push(...response.items);
+
+    const reachedEnd = response.items.length === 0 || page * response.page_size >= response.total;
+    if (reachedEnd) break;
+    page += 1;
+  }
+
+  return collected;
+}
+
+async function loadHomeLivingProducts(seedProducts: WebCatalogProductCard[]) {
+  const mergedById = new Map<number, WebCatalogProductCard>();
+
+  try {
+    const [cameraProducts, technologyProducts] = await Promise.all([
+      fetchCategoryProducts("camaras", 10),
+      fetchCategoryProducts("tecnologia", 10),
+    ]);
+
+    [...cameraProducts, ...technologyProducts].forEach((product) => {
+      mergedById.set(product.id, product);
+    });
+  } catch {
+    // Si alguna consulta por categoría falla, mantenemos fallback local.
+  }
+
+  if (mergedById.size < 10) {
+    seedProducts.filter(isHomeCategoryProduct).forEach((product) => {
+      mergedById.set(product.id, product);
+    });
+  }
+
+  return shuffleProducts([...mergedById.values()]).slice(0, 10);
+}
+
 export default async function HomePage() {
   const { categories, products } = await loadHomeData();
 
   const discoverProducts = products.slice(0, 5);
+  const livingProducts = await loadHomeLivingProducts(products);
   const sliderSlides = [
     {
       id: "guitarras",
@@ -287,7 +359,6 @@ export default async function HomePage() {
           </Link>
         </div>
       </section>
-      <div className="commerce-categories-divider commerce-next-section-divider" aria-hidden="true" />
       <section className="commerce-next-clean-section" aria-label="Banner hogar">
         <Image
           src="/sliders/home/banner-hogar.png"
@@ -297,6 +368,22 @@ export default async function HomePage() {
           sizes="100vw"
           className="commerce-next-banner-image"
         />
+
+        {livingProducts.length > 0 ? (
+          <div className="commerce-home-living-products">
+            <HomeProductCarousel ariaLabel="Carrusel de productos del hogar">
+              {livingProducts.map((product) => (
+                <div key={`hogar-${product.id}`} className="home-product-carousel-item">
+                  <CatalogProductCard product={product} />
+                </div>
+              ))}
+            </HomeProductCarousel>
+          </div>
+        ) : null}
+      </section>
+      <div className="commerce-categories-divider commerce-after-home-divider" aria-hidden="true" />
+      <section className="commerce-next-placeholder-section" aria-label="Seccion pendiente">
+        <div className="commerce-next-placeholder-container" />
       </section>
     </div>
   );
