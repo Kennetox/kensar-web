@@ -8,6 +8,8 @@ import AccountAccess from "./components/AccountAccess";
 import CartAccess from "./components/CartAccess";
 import HeaderCatalogSearch from "./components/HeaderCatalogSearch";
 import FloatingWhatsAppButton from "./components/FloatingWhatsAppButton";
+import KoraChat from "./components/KoraChat";
+import BackToTopButton from "./components/BackToTopButton";
 import WebCartProvider from "./components/WebCartProvider";
 import WebCustomerProvider from "./components/WebCustomerProvider";
 import TopbarScrollBehavior from "./components/TopbarScrollBehavior";
@@ -30,8 +32,8 @@ export const metadata: Metadata = {
     "Catálogo web de Kensar Electronic con productos de audio, videovigilancia, accesorios y atención comercial directa en Palmira.",
   applicationName: "Kensar Electronic",
   icons: {
-    icon: [{ url: "/branding/icono-white.svg", type: "image/svg+xml" }],
-    shortcut: [{ url: "/branding/icono-white.svg", type: "image/svg+xml" }],
+    icon: [{ url: "/branding/favicon2026.png", type: "image/png" }],
+    shortcut: [{ url: "/branding/favicon2026.png", type: "image/png" }],
     apple: "/branding/icono-transparent.png",
   },
   openGraph: {
@@ -160,6 +162,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </header>
 
         <main className="main-wrapper">{children}</main>
+        <BackToTopButton />
+        <KoraChat />
         <FloatingWhatsAppButton />
 
         <footer className="site-footer">
@@ -214,13 +218,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </div>
 
           <div className="footer-legal-strip">
-            <Link href="/empresa">Informacion de contacto</Link>
-            <Link href="/contacto">Politica de privacidad</Link>
-            <Link href="/contacto">Terminos y condiciones</Link>
-            <Link href="/contacto">Politica de envios</Link>
-            <Link href="/contacto">Cambios y devoluciones</Link>
-            <Link href="/contacto">Garantias</Link>
-            <a href="mailto:kensarelec@gmail.com?subject=Tratamiento%20de%20datos%20personales">Tratamiento de datos</a>
+            <Link href="/contacto">Informacion de contacto</Link>
+            <Link href="/legal/privacidad">Politica de privacidad</Link>
+            <Link href="/legal/terminos">Terminos y condiciones</Link>
+            <span>Politica de envios</span>
+            <Link href="/legal/cambios-devoluciones-garantias#cambios-devoluciones">Cambios y devoluciones</Link>
+            <Link href="/legal/cambios-devoluciones-garantias#garantias">Garantias</Link>
+            <Link href="/legal/tratamiento-datos">Tratamiento de datos</Link>
           </div>
 
           <div className="site-footer-bottom">

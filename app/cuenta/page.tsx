@@ -319,227 +319,189 @@ function CuentaPageContent() {
   return (
     <main className={`account-page-shell${isGuestView ? " account-page-shell-guest" : ""}`}>
       {isGuestView ? (
-        <section className="account-guest-layout">
-          <div className="account-guest-main">
-            <section className="account-page-hero-card">
-              <div className="account-page-hero">
-                <p className="section-label">Cuenta cliente</p>
-                <h1 className="page-title">Tu cuenta para comprar, seguir pedidos y guardar tu proceso en Kensar.</h1>
-                <p className="section-intro">
-                  Inicia sesión o crea tu cuenta para consultar pedidos, continuar tu carrito y gestionar tu compra desde la web de Kensar.
-                </p>
-                <div className="account-status-strip">
-                  <span className={`account-status-pill${authenticated ? " is-authenticated" : ""}`}>
-                    {loading ? "Verificando sesión" : authenticated ? "Sesión activa" : "Invitado"}
-                  </span>
-                  <p>
-                    {loading
-                      ? "Estamos validando tu sesión actual."
-                      : authenticated
-                        ? "Ya puedes seguir tus órdenes, gestionar el carrito y continuar tu compra."
-                        : "Inicia sesión o crea tu cuenta para guardar tu proceso de compra."}
-                  </p>
-                </div>
+        <>
+          {formError ? <p className="account-feedback error">{formError}</p> : null}
+          {formSuccess ? <p className="account-feedback success">{formSuccess}</p> : null}
+
+          <section className="account-guest-auth-layout">
+            <article className="account-guest-auth-copy">
+              <h1>Ingresa tu e-mail o teléfono para iniciar sesión</h1>
+              <p className="account-section-copy">
+                Accede para continuar compras, revisar pedidos y guardar tu proceso en Kensar.
+              </p>
+            </article>
+
+            <article className="account-card account-auth-card-wide">
+              <div className="account-mode-switch">
+                <button
+                  type="button"
+                  className={mode === "login" ? "active" : ""}
+                  onClick={() => setMode("login")}
+                >
+                  Ingresar
+                </button>
+                <button
+                  type="button"
+                  className={mode === "register" ? "active" : ""}
+                  onClick={() => setMode("register")}
+                >
+                  Crear cuenta
+                </button>
               </div>
-            </section>
 
-            {formError ? <p className="account-feedback error">{formError}</p> : null}
-            {formSuccess ? <p className="account-feedback success">{formSuccess}</p> : null}
-
-            <section className="account-auth-grid account-auth-grid-single">
-              <article className="account-card">
-                <div className="account-mode-switch">
-                  <button
-                    type="button"
-                    className={mode === "login" ? "active" : ""}
-                    onClick={() => setMode("login")}
-                  >
-                    Ingresar
+              {mode === "login" ? (
+                <form className="account-form" onSubmit={handleLoginSubmit}>
+                  <label>
+                    <span>Correo</span>
+                    <input
+                      type="email"
+                      required
+                      value={loginForm.email}
+                      onChange={(event) =>
+                        setLoginForm((current) => ({ ...current, email: event.target.value }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>Contraseña</span>
+                    <div className="account-password-input-wrap">
+                      <input
+                        type={showLoginPassword ? "text" : "password"}
+                        required
+                        value={loginForm.password}
+                        onChange={(event) =>
+                          setLoginForm((current) => ({ ...current, password: event.target.value }))
+                        }
+                      />
+                      <button
+                        type="button"
+                        className="account-password-toggle"
+                        onClick={() => setShowLoginPassword((current) => !current)}
+                        aria-label={showLoginPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                        title={showLoginPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                      >
+                        <PasswordVisibilityIcon visible={showLoginPassword} />
+                      </button>
+                    </div>
+                  </label>
+                  <button type="submit" disabled={isPending} className="account-primary-btn">
+                    {isPending ? "Ingresando..." : "Entrar a mi cuenta"}
                   </button>
-                  <button
-                    type="button"
-                    className={mode === "register" ? "active" : ""}
-                    onClick={() => setMode("register")}
-                  >
-                    Crear cuenta
-                  </button>
-                </div>
-
-                {mode === "login" ? (
-                  <form className="account-form" onSubmit={handleLoginSubmit}>
+                </form>
+              ) : (
+                <form className="account-form" onSubmit={handleRegisterSubmit}>
+                  <label>
+                    <span>Nombre completo <strong className="account-required-asterisk">*</strong></span>
+                    <input
+                      type="text"
+                      required
+                      value={registerForm.name}
+                      onChange={(event) =>
+                        setRegisterForm((current) => ({ ...current, name: event.target.value }))
+                      }
+                    />
+                  </label>
+                  <div className="account-form-grid">
                     <label>
-                      <span>Correo</span>
+                      <span>Correo <strong className="account-required-asterisk">*</strong></span>
                       <input
                         type="email"
                         required
-                        value={loginForm.email}
+                        value={registerForm.email}
                         onChange={(event) =>
-                          setLoginForm((current) => ({ ...current, email: event.target.value }))
+                          setRegisterForm((current) => ({ ...current, email: event.target.value }))
                         }
                       />
                     </label>
                     <label>
-                      <span>Contraseña</span>
+                      <span>Teléfono</span>
+                      <input
+                        type="tel"
+                        value={registerForm.phone}
+                        onChange={(event) =>
+                          setRegisterForm((current) => ({ ...current, phone: event.target.value }))
+                        }
+                      />
+                    </label>
+                  </div>
+                  <div className="account-form-grid">
+                    <label>
+                      <span>Contraseña <strong className="account-required-asterisk">*</strong></span>
                       <div className="account-password-input-wrap">
                         <input
-                          type={showLoginPassword ? "text" : "password"}
+                          type={showRegisterPassword ? "text" : "password"}
+                          minLength={8}
                           required
-                          value={loginForm.password}
+                          value={registerForm.password}
                           onChange={(event) =>
-                            setLoginForm((current) => ({ ...current, password: event.target.value }))
+                            setRegisterForm((current) => ({ ...current, password: event.target.value }))
                           }
                         />
                         <button
                           type="button"
                           className="account-password-toggle"
-                          onClick={() => setShowLoginPassword((current) => !current)}
-                          aria-label={showLoginPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                          title={showLoginPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                          onClick={() => setShowRegisterPassword((current) => !current)}
+                          aria-label={showRegisterPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                          title={showRegisterPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                         >
-                          <PasswordVisibilityIcon visible={showLoginPassword} />
+                          <PasswordVisibilityIcon visible={showRegisterPassword} />
                         </button>
                       </div>
                     </label>
-                    <button type="submit" disabled={isPending} className="account-primary-btn">
-                      {isPending ? "Ingresando..." : "Entrar a mi cuenta"}
-                    </button>
-                  </form>
-                ) : (
-                  <form className="account-form" onSubmit={handleRegisterSubmit}>
                     <label>
-                      <span>Nombre completo <strong className="account-required-asterisk">*</strong></span>
+                      <span>Confirmar contraseña <strong className="account-required-asterisk">*</strong></span>
+                      <div className="account-password-input-wrap">
+                        <input
+                          type={showRegisterConfirmPassword ? "text" : "password"}
+                          minLength={8}
+                          required
+                          value={registerForm.confirm_password}
+                          onChange={(event) =>
+                            setRegisterForm((current) => ({ ...current, confirm_password: event.target.value }))
+                          }
+                        />
+                        <button
+                          type="button"
+                          className="account-password-toggle"
+                          onClick={() => setShowRegisterConfirmPassword((current) => !current)}
+                          aria-label={showRegisterConfirmPassword ? "Ocultar confirmación de contraseña" : "Mostrar confirmación de contraseña"}
+                          title={showRegisterConfirmPassword ? "Ocultar confirmación de contraseña" : "Mostrar confirmación de contraseña"}
+                        >
+                          <PasswordVisibilityIcon visible={showRegisterConfirmPassword} />
+                        </button>
+                      </div>
+                    </label>
+                  </div>
+                  <div className="account-form-grid">
+                    <label>
+                      <span>Documento</span>
                       <input
                         type="text"
-                        required
-                        value={registerForm.name}
+                        value={registerForm.tax_id}
                         onChange={(event) =>
-                          setRegisterForm((current) => ({ ...current, name: event.target.value }))
+                          setRegisterForm((current) => ({ ...current, tax_id: event.target.value }))
                         }
                       />
                     </label>
-                    <div className="account-form-grid">
-                      <label>
-                        <span>Correo <strong className="account-required-asterisk">*</strong></span>
-                        <input
-                          type="email"
-                          required
-                          value={registerForm.email}
-                          onChange={(event) =>
-                            setRegisterForm((current) => ({ ...current, email: event.target.value }))
-                          }
-                        />
-                      </label>
-                      <label>
-                        <span>Teléfono</span>
-                        <input
-                          type="tel"
-                          value={registerForm.phone}
-                          onChange={(event) =>
-                            setRegisterForm((current) => ({ ...current, phone: event.target.value }))
-                          }
-                        />
-                      </label>
-                    </div>
-                    <div className="account-form-grid">
-                      <label>
-                        <span>Contraseña <strong className="account-required-asterisk">*</strong></span>
-                        <div className="account-password-input-wrap">
-                          <input
-                            type={showRegisterPassword ? "text" : "password"}
-                            minLength={8}
-                            required
-                            value={registerForm.password}
-                            onChange={(event) =>
-                              setRegisterForm((current) => ({ ...current, password: event.target.value }))
-                            }
-                          />
-                          <button
-                            type="button"
-                            className="account-password-toggle"
-                            onClick={() => setShowRegisterPassword((current) => !current)}
-                            aria-label={showRegisterPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                            title={showRegisterPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                          >
-                            <PasswordVisibilityIcon visible={showRegisterPassword} />
-                          </button>
-                        </div>
-                      </label>
-                      <label>
-                        <span>Confirmar contraseña <strong className="account-required-asterisk">*</strong></span>
-                        <div className="account-password-input-wrap">
-                          <input
-                            type={showRegisterConfirmPassword ? "text" : "password"}
-                            minLength={8}
-                            required
-                            value={registerForm.confirm_password}
-                            onChange={(event) =>
-                              setRegisterForm((current) => ({ ...current, confirm_password: event.target.value }))
-                            }
-                          />
-                          <button
-                            type="button"
-                            className="account-password-toggle"
-                            onClick={() => setShowRegisterConfirmPassword((current) => !current)}
-                            aria-label={showRegisterConfirmPassword ? "Ocultar confirmación de contraseña" : "Mostrar confirmación de contraseña"}
-                            title={showRegisterConfirmPassword ? "Ocultar confirmación de contraseña" : "Mostrar confirmación de contraseña"}
-                          >
-                            <PasswordVisibilityIcon visible={showRegisterConfirmPassword} />
-                          </button>
-                        </div>
-                      </label>
-                    </div>
-                    <div className="account-form-grid">
-                      <label>
-                        <span>Documento</span>
-                        <input
-                          type="text"
-                          value={registerForm.tax_id}
-                          onChange={(event) =>
-                            setRegisterForm((current) => ({ ...current, tax_id: event.target.value }))
-                          }
-                        />
-                      </label>
-                      <label>
-                        <span>Dirección</span>
-                        <input
-                          type="text"
-                          value={registerForm.address}
-                          onChange={(event) =>
-                            setRegisterForm((current) => ({ ...current, address: event.target.value }))
-                          }
-                        />
-                      </label>
-                    </div>
-                    <button type="submit" disabled={isPending} className="account-primary-btn">
-                      {isPending ? "Creando..." : "Crear cuenta"}
-                    </button>
-                  </form>
-                )}
-              </article>
-            </section>
-          </div>
-
-          <aside className="account-side-panel">
-            <p className="account-section-kicker">Compra guiada</p>
-            <h2>Tu proceso web queda guardado.</h2>
-            <p className="account-section-copy">
-              Al iniciar sesión puedes retomar tu carrito, seguir órdenes y mantener tus datos listos para próximas compras.
-            </p>
-            <ul className="account-feature-list">
-              <li>Continúa compras sin empezar de cero.</li>
-              <li>Consulta tus órdenes web desde un solo lugar.</li>
-              <li>Guarda datos de contacto para un checkout más rápido.</li>
-            </ul>
-            <div className="account-action-row">
-              <Link href="/catalogo" className="account-secondary-btn">
-                Ver catálogo
-              </Link>
-              <Link href="/carrito" className="account-secondary-btn">
-                Ir al carrito
-              </Link>
-            </div>
-          </aside>
-        </section>
+                    <label>
+                      <span>Dirección</span>
+                      <input
+                        type="text"
+                        value={registerForm.address}
+                        onChange={(event) =>
+                          setRegisterForm((current) => ({ ...current, address: event.target.value }))
+                        }
+                      />
+                    </label>
+                  </div>
+                  <button type="submit" disabled={isPending} className="account-primary-btn">
+                    {isPending ? "Creando..." : "Crear cuenta"}
+                  </button>
+                </form>
+              )}
+            </article>
+          </section>
+        </>
       ) : (
         <>
           <section className="account-page-hero-card">

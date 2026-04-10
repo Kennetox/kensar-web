@@ -240,7 +240,7 @@ export default function CartAccess() {
                 <div className="mini-cart-head">
                   <div className="mini-cart-head-main">
                     <strong>Tu carrito ({productsCountLabel})</strong>
-                    {!authenticated ? (
+                    {!authenticated && items.length > 0 ? (
                       <p className="guest-mode-note mini-cart-guest-note">
                         Compra como invitado.{" "}
                         <Link
@@ -260,10 +260,31 @@ export default function CartAccess() {
 
                 {items.length === 0 ? (
                   <div className="mini-cart-empty">
-                    <p>Tu carrito está vacío.</p>
-                    <button type="button" className="account-secondary-btn" onClick={() => goTo("/catalogo")}>
-                      Ver catálogo
-                    </button>
+                    <div className="mini-cart-empty-main">
+                      <p className="mini-cart-empty-title">Tu carrito está vacío</p>
+                      <button
+                        type="button"
+                        className="account-primary-btn mini-cart-empty-cta"
+                        onClick={() => goTo("/catalogo")}
+                      >
+                        Seguir comprando
+                      </button>
+                    </div>
+                    {!authenticated ? (
+                      <div className="mini-cart-empty-login">
+                        <p className="mini-cart-empty-login-title">¿Tienes una cuenta?</p>
+                        <p className="mini-cart-empty-login-copy">
+                          <Link
+                            href={guestLoginHref}
+                            className="guest-mode-note-link guest-mode-note-link-dark"
+                            onClick={() => setOpen(false)}
+                          >
+                            Inicia sesión
+                          </Link>{" "}
+                          para finalizar tus compras con mayor rapidez.
+                        </p>
+                      </div>
+                    ) : null}
                   </div>
                 ) : (
                   <>

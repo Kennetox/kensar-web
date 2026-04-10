@@ -11,9 +11,12 @@ export default function CheckoutHeaderMode() {
 
   useEffect(() => {
     const isCheckoutPage = pathname === "/pago" || pathname.startsWith("/pago/");
-    const isCheckoutPaymentPage = pathname === "/pago" || pathname.startsWith("/pago/");
-    document.body.classList.toggle(CHECKOUT_HEADER_CLASS, isCheckoutPage);
-    document.body.classList.toggle(CHECKOUT_PAYMENT_CLASS, isCheckoutPaymentPage);
+    const isLegalPage = pathname === "/legal" || pathname.startsWith("/legal/");
+    const useMinimalHeader = isCheckoutPage || isLegalPage;
+    const hideFooterAndFloating = isCheckoutPage || isLegalPage;
+
+    document.body.classList.toggle(CHECKOUT_HEADER_CLASS, useMinimalHeader);
+    document.body.classList.toggle(CHECKOUT_PAYMENT_CLASS, hideFooterAndFloating);
 
     return () => {
       document.body.classList.remove(CHECKOUT_HEADER_CLASS);
