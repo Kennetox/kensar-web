@@ -192,7 +192,7 @@ export default async function CatalogProductDetailPage({
                     </span>
                     <span>¿Necesitas ayuda? Te orientamos para elegir el producto ideal.</span>
                   </p>
-                  <Link href="/empresa#contacto" className="product-pickup-link">
+                  <Link href="/empresa" className="product-pickup-link">
                     Solicitar asesoría
                   </Link>
                 </div>

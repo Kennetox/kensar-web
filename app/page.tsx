@@ -277,7 +277,7 @@ export default async function HomePage() {
       id: "contacto",
       image: "/sliders/home/slide-03-desktop.webp",
       alt: "Marcas premium en audio profesional",
-      href: "/empresa#contacto",
+      href: "/empresa",
       ctaLabel: "EXPLORAR TIENDA",
     },
   ];

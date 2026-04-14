@@ -792,6 +792,25 @@ body.checkout-payment-page .kora-chat-root {
   cursor: pointer;
 }
 
+.kora-chat-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kora-chat-reset {
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0 10px;
+  cursor: pointer;
+}
+
 .kora-chat-messages {
   max-height: 60vh;
   min-height: 180px;
@@ -871,12 +890,56 @@ body.checkout-payment-page .kora-chat-root {
   border-top: 1px solid rgba(148, 163, 184, 0.24);
   background: #ffffff;
   padding: 10px 12px;
+  display: grid;
+  gap: 8px;
 }
 
 .kora-chat-footer p {
   margin: 0;
   font-size: 0.74rem;
   color: #64748b;
+}
+
+.kora-chat-input-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.kora-chat-input {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 10px;
+  padding: 0 12px;
+  font-size: 0.83rem;
+  color: #0f172a;
+  background: #f8fafc;
+}
+
+.kora-chat-input:focus {
+  outline: none;
+  border-color: rgba(37, 99, 235, 0.62);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16);
+  background: #ffffff;
+}
+
+.kora-chat-send {
+  height: 38px;
+  border: 1px solid #1d4ed8;
+  border-radius: 10px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.kora-chat-send:disabled {
+  opacity: 0.56;
+  cursor: not-allowed;
 }
 
 @media (max-width: 720px) {
@@ -4029,6 +4092,103 @@ body.mini-cart-open .main-wrapper {
 
 .legal-page-note a:hover {
   text-decoration: underline;
+}
+
+.empresa-legal-shell {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 22px 22px 52px;
+  display: grid;
+  gap: 16px;
+}
+
+.empresa-legal-card {
+  grid-template-columns: minmax(0, 1.12fr) minmax(300px, 0.88fr);
+  align-items: stretch;
+  gap: 24px;
+  padding: 22px 24px 24px;
+}
+
+.empresa-legal-content {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.empresa-legal-content .legal-page-kicker {
+  font-size: 0.78rem;
+}
+
+.empresa-legal-content h1 {
+  margin: 0;
+  color: #0f172a;
+  font-size: clamp(1.8rem, 2.75vw, 2.35rem);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+
+.empresa-legal-content h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: clamp(1.24rem, 2.05vw, 1.65rem);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+
+.empresa-legal-content p {
+  font-size: 1.01rem;
+  line-height: 1.65;
+}
+
+.empresa-legal-content .legal-page-note {
+  margin-top: 2px;
+}
+
+.empresa-legal-media {
+  border: 1px dashed rgba(148, 163, 184, 0.55);
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.95), rgba(241, 245, 249, 0.95));
+  min-height: 260px;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.empresa-legal-media p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.empresa-legal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+@media (max-width: 720px) {
+  .empresa-legal-shell {
+    padding: 16px 12px 28px;
+    gap: 12px;
+  }
+
+  .empresa-legal-card {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 16px 14px 18px;
+  }
+
+  .empresa-legal-media {
+    min-height: 148px;
+  }
+
+  .empresa-legal-content p {
+    font-size: 0.94rem;
+    line-height: 1.58;
+  }
 }
 
 .checkout-layout {

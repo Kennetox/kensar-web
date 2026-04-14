@@ -77,7 +77,7 @@ export default function TopNav({ categories }: TopNavProps) {
         </div>
       </div>
 
-      <Link href="/empresa#contacto" className={`nav-link${isContactActive ? " active" : ""}`}>
+      <Link href="/empresa" className={`nav-link${isContactActive ? " active" : ""}`}>
         Contacto
       </Link>
     </nav>
