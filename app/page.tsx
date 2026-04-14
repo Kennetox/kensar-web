@@ -471,6 +471,10 @@ export default async function HomePage() {
           <video className="commerce-home-video" autoPlay muted loop playsInline preload="auto">
             <source src="/media/home/home-strip-video.mp4" type="video/mp4" />
           </video>
+          <div className="commerce-home-video-cta" aria-label="Información de visita">
+            <p>VISÍTANOS</p>
+            <strong>Cra 24 #30-75, Palmira, Valle del Cauca</strong>
+          </div>
         </div>
       </section>
       <section className="commerce-financing-showcase" aria-label="Métodos de pago a crédito">

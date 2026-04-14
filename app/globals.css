@@ -697,9 +697,38 @@ body.checkout-payment-page .kora-chat-root {
   z-index: 1210;
 }
 
+.kora-chat-nudge {
+  position: absolute;
+  left: 2px;
+  bottom: calc(100% + 10px);
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(125, 211, 252, 0.42);
+  background: rgba(30, 64, 175, 0.92);
+  color: #eff6ff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.015em;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  box-shadow: 0 14px 26px -20px rgba(30, 64, 175, 0.95);
+  opacity: 0;
+  transform: translateY(9px) scale(0.96);
+  pointer-events: none;
+  transition: opacity 0.22s ease, transform 0.24s cubic-bezier(0.2, 0.78, 0.24, 1);
+}
+
+.kora-chat-nudge.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
 .kora-chat-toggle {
-  width: 94px;
-  height: 94px;
+  width: 82px;
+  height: 82px;
+  position: relative;
   border-radius: 999px;
   border: 2px solid #ffffff;
   background: linear-gradient(160deg, #3b82f6 0%, #2563eb 100%);
@@ -714,14 +743,57 @@ body.checkout-payment-page .kora-chat-root {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+.kora-chat-toggle.is-notify-wave {
+  animation: koraNotifyWave 0.86s cubic-bezier(0.2, 0.78, 0.24, 1);
+}
+
+.kora-chat-toggle.is-notify-wave::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  border: 2px solid rgba(191, 219, 254, 0.72);
+  animation: koraNotifyRing 0.86s cubic-bezier(0.2, 0.78, 0.24, 1);
+}
+
+@keyframes koraNotifyWave {
+  0% {
+    transform: scale(1) rotate(0deg);
+    box-shadow: 0 18px 32px -18px rgba(37, 99, 235, 0.78);
+  }
+  26% {
+    transform: scale(1.05) rotate(-2deg);
+    box-shadow: 0 24px 42px -18px rgba(59, 130, 246, 0.88);
+  }
+  58% {
+    transform: scale(0.985) rotate(1deg);
+    box-shadow: 0 20px 34px -18px rgba(37, 99, 235, 0.8);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    box-shadow: 0 18px 32px -18px rgba(37, 99, 235, 0.78);
+  }
+}
+
+@keyframes koraNotifyRing {
+  0% {
+    transform: scale(1);
+    opacity: 0.72;
+  }
+  100% {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+}
+
 .kora-chat-toggle:hover {
   transform: translateY(-1px);
   box-shadow: 0 22px 38px -18px rgba(37, 99, 235, 0.88);
 }
 
 .kora-chat-toggle-icon {
-  width: 38px;
-  height: 38px;
+  width: 32px;
+  height: 32px;
   color: #ecfeff;
 }
 
@@ -738,7 +810,7 @@ body.checkout-payment-page .kora-chat-root {
   position: absolute;
   left: 0;
   bottom: calc(100% + 14px);
-  width: min(360px, calc(100vw - 28px));
+  width: min(400px, calc(100vw - 28px));
   border-radius: 16px;
   border: 1px solid rgba(148, 163, 184, 0.3);
   background: #ffffff;
@@ -760,29 +832,67 @@ body.checkout-payment-page .kora-chat-root {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: 12px;
+  padding: 14px 16px;
   background: #2563eb;
   color: #ffffff;
 }
 
+.kora-chat-header-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.kora-chat-avatar {
+  width: 54px;
+  height: 54px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.46);
+  background-color: rgba(255, 255, 255, 0.18);
+  background-image: radial-gradient(circle at 40% 30%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.14));
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 10px 18px -12px rgba(2, 6, 23, 0.78);
+}
+
 .kora-chat-title {
   margin: 0;
-  font-size: 0.92rem;
+  font-size: 1.08rem;
   font-weight: 800;
   letter-spacing: 0.1em;
 }
 
 .kora-chat-subtitle {
-  margin: 2px 0 0;
-  font-size: 0.66rem;
+  margin: 3px 0 0;
+  font-size: 0.82rem;
   line-height: 1.32;
   color: rgba(255, 255, 255, 0.82);
 }
 
+.kora-chat-status {
+  margin: 5px 0 0;
+  font-size: 0.8rem;
+  line-height: 1;
+  color: rgba(239, 246, 255, 0.88);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kora-chat-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #22c55e;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.24);
+}
+
 .kora-chat-close {
-  width: 32px;
-  height: 32px;
+  width: 38px;
+  height: 38px;
   border: 1px solid rgba(255, 255, 255, 0.28);
   background: rgba(255, 255, 255, 0.12);
   border-radius: 8px;
@@ -799,25 +909,25 @@ body.checkout-payment-page .kora-chat-root {
 }
 
 .kora-chat-reset {
-  height: 32px;
+  height: 38px;
   border: 1px solid rgba(255, 255, 255, 0.28);
   background: rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   color: #ffffff;
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.02em;
-  padding: 0 10px;
+  padding: 0 12px;
   cursor: pointer;
 }
 
 .kora-chat-messages {
   max-height: 60vh;
-  min-height: 180px;
+  min-height: 200px;
   overflow-y: auto;
-  padding: 12px;
+  padding: 14px;
   display: grid;
-  gap: 10px;
+  gap: 12px;
   background: #f8fafc;
 }
 
@@ -830,9 +940,9 @@ body.checkout-payment-page .kora-chat-root {
 .kora-chat-message p {
   margin: 0;
   white-space: pre-line;
-  font-size: 0.88rem;
-  line-height: 1.45;
-  padding: 10px 12px;
+  font-size: 0.98rem;
+  line-height: 1.42;
+  padding: 12px 14px;
   border-radius: 12px;
 }
 
@@ -861,13 +971,13 @@ body.checkout-payment-page .kora-chat-root {
   border: 1px solid rgba(148, 163, 184, 0.38);
   background: #ffffff;
   color: #0f172a;
-  border-radius: 11px;
-  padding: 9px 10px;
+  border-radius: 12px;
+  padding: 11px 12px;
   text-align: left;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
+  gap: 10px;
+  font-size: 0.98rem;
   font-weight: 600;
   cursor: pointer;
   transition: border-color 0.2s ease, transform 0.2s ease;
@@ -881,7 +991,7 @@ body.checkout-payment-page .kora-chat-root {
 .kora-chat-typing {
   margin: 0;
   color: #475569;
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   font-weight: 600;
   padding: 0 2px;
 }
@@ -889,14 +999,14 @@ body.checkout-payment-page .kora-chat-root {
 .kora-chat-footer {
   border-top: 1px solid rgba(148, 163, 184, 0.24);
   background: #ffffff;
-  padding: 10px 12px;
+  padding: 12px 14px;
   display: grid;
   gap: 8px;
 }
 
 .kora-chat-footer p {
   margin: 0;
-  font-size: 0.74rem;
+  font-size: 0.86rem;
   color: #64748b;
 }
 
@@ -909,11 +1019,11 @@ body.checkout-payment-page .kora-chat-root {
 .kora-chat-input {
   width: 100%;
   min-width: 0;
-  height: 38px;
+  height: 42px;
   border: 1px solid rgba(148, 163, 184, 0.4);
   border-radius: 10px;
   padding: 0 12px;
-  font-size: 0.83rem;
+  font-size: 0.94rem;
   color: #0f172a;
   background: #f8fafc;
 }
@@ -926,12 +1036,12 @@ body.checkout-payment-page .kora-chat-root {
 }
 
 .kora-chat-send {
-  height: 38px;
+  height: 42px;
   border: 1px solid #1d4ed8;
   border-radius: 10px;
   background: #2563eb;
   color: #ffffff;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   font-weight: 700;
   padding: 0 12px;
   cursor: pointer;
@@ -948,19 +1058,50 @@ body.checkout-payment-page .kora-chat-root {
     bottom: 12px;
   }
 
+  .kora-chat-nudge {
+    left: 0;
+    bottom: calc(100% + 8px);
+    min-height: 30px;
+    padding: 0 10px;
+    font-size: 0.72rem;
+  }
+
   .kora-chat-toggle {
-    width: 84px;
-    height: 84px;
+    width: 76px;
+    height: 76px;
   }
 
   .kora-chat-toggle-icon {
-    width: 34px;
-    height: 34px;
+    width: 30px;
+    height: 30px;
   }
 
   .kora-chat-panel {
-    width: min(350px, calc(100vw - 24px));
+    width: min(372px, calc(100vw - 24px));
     bottom: calc(100% + 10px);
+  }
+
+  .kora-chat-header {
+    padding: 12px 14px;
+  }
+
+  .kora-chat-avatar {
+    width: 48px;
+    height: 48px;
+  }
+
+  .kora-chat-title {
+    font-size: 1rem;
+  }
+
+  .kora-chat-subtitle,
+  .kora-chat-status {
+    font-size: 0.76rem;
+  }
+
+  .kora-chat-close,
+  .kora-chat-reset {
+    height: 34px;
   }
 
   .kora-chat-messages {
@@ -4095,9 +4236,9 @@ body.mini-cart-open .main-wrapper {
 }
 
 .empresa-legal-shell {
-  max-width: 1240px;
+  max-width: 1560px;
   margin: 0 auto;
-  padding: 22px 22px 52px;
+  padding: 22px 72px 52px;
   display: grid;
   gap: 16px;
 }
@@ -4162,6 +4303,34 @@ body.mini-cart-open .main-wrapper {
   text-transform: uppercase;
 }
 
+.empresa-legal-media-image {
+  border-style: solid;
+  border-color: rgba(148, 163, 184, 0.32);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.empresa-legal-media-services-image {
+  background-position: 72% center;
+}
+
+.empresa-legal-media-map {
+  border-style: solid;
+  border-color: rgba(148, 163, 184, 0.26);
+  padding: 0;
+  overflow: hidden;
+  background: #e2e8f0;
+}
+
+.empresa-legal-media-map iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 260px;
+  border: 0;
+  display: block;
+}
+
 .empresa-legal-actions {
   display: flex;
   flex-wrap: wrap;
@@ -4169,9 +4338,85 @@ body.mini-cart-open .main-wrapper {
   margin-top: 4px;
 }
 
+.empresa-services-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.empresa-service-item {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: #ffffff;
+  padding: 10px 12px;
+  display: grid;
+  gap: 3px;
+}
+
+.empresa-service-item h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 0.92rem;
+  line-height: 1.3;
+}
+
+.empresa-service-item p {
+  margin: 0;
+  color: #475569;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.empresa-services-note {
+  margin: 0;
+  color: #1e293b;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  font-weight: 600;
+}
+
+.empresa-contact-facts {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: #ffffff;
+}
+
+.empresa-contact-facts p {
+  margin: 0;
+  color: #334155;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.empresa-contact-facts strong {
+  color: #0f172a;
+}
+
+.empresa-contact-note {
+  margin: 0;
+  color: #334155;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 1260px) {
+  .empresa-legal-shell {
+    padding-left: 38px;
+    padding-right: 38px;
+  }
+}
+
+@media (max-width: 920px) {
+  .empresa-legal-shell {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
 @media (max-width: 720px) {
   .empresa-legal-shell {
-    padding: 16px 12px 28px;
+    padding: 16px 16px 28px;
     gap: 12px;
   }
 
@@ -4185,9 +4430,23 @@ body.mini-cart-open .main-wrapper {
     min-height: 148px;
   }
 
+  .empresa-legal-media-map iframe {
+    min-height: 220px;
+  }
+
   .empresa-legal-content p {
     font-size: 0.94rem;
     line-height: 1.58;
+  }
+
+  .empresa-service-item h3 {
+    font-size: 0.9rem;
+  }
+
+  .empresa-service-item p,
+  .empresa-contact-facts p,
+  .empresa-contact-note {
+    font-size: 0.88rem;
   }
 }
 
@@ -6608,10 +6867,25 @@ body.mini-cart-open .main-wrapper {
 }
 
 .commerce-home-video-strip {
+  position: relative;
   width: 100%;
-  aspect-ratio: 1920 / 520;
+  aspect-ratio: 1920 / 720;
   overflow: hidden;
   background: #0b0f14;
+}
+
+.commerce-home-video-strip::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(3, 7, 18, 0.38) 0%,
+    rgba(3, 7, 18, 0.2) 45%,
+    rgba(3, 7, 18, 0.48) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
 }
 
 .commerce-home-video {
@@ -6619,6 +6893,36 @@ body.mini-cart-open .main-wrapper {
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+.commerce-home-video-cta {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 6px;
+  text-align: center;
+  padding: 16px;
+  color: #ffffff;
+}
+
+.commerce-home-video-cta p {
+  margin: 0;
+  font-size: clamp(1.08rem, 2vw, 1.58rem);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-shadow: 0 6px 20px rgba(2, 6, 23, 0.95);
+}
+
+.commerce-home-video-cta strong {
+  margin: 0;
+  font-size: clamp(0.92rem, 1.5vw, 1.18rem);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-shadow: 0 6px 20px rgba(2, 6, 23, 0.95);
 }
 
 .commerce-service-strip {

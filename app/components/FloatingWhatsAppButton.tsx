@@ -48,6 +48,11 @@ export default function FloatingWhatsAppButton() {
       const startId = window.setTimeout(() => {
         if (!active) return;
         setNotifyPulse(true);
+        window.dispatchEvent(
+          new CustomEvent("kensar:whatsapp-nudge", {
+            detail: { timestamp: Date.now() },
+          })
+        );
       }, 20);
       const endId = window.setTimeout(() => {
         if (!active) return;

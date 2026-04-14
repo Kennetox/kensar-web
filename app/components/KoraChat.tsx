@@ -48,13 +48,19 @@ const EVENTS_SESSION_KEY = "kensar_kora_events_v1";
 const WHATSAPP_PHONE = "573185657508";
 const RESPONSE_DELAYS = [520, 640, 760] as const;
 const QUICK_HINTS = "Ejemplo: “métodos de pago”, “envíos”, “garantía”, “quiero audio”";
+const KORA_NUDGE_TEXT = "Asistente 24/7";
+const KORA_AVATAR_SRC = "/branding/kora-avatar.png";
+const KORA_NUDGE_INITIAL_DELAY_MS = 9000;
+const KORA_NUDGE_VISIBLE_MS = 3200;
+const KORA_NUDGE_PULSE_MS = 920;
+const KORA_WHATSAPP_MIN_GAP_MS = 4500;
 
 const MAIN_ACTIONS: ChatAction[] = [
-  { id: "products", label: "Ver productos", icon: "🛍️", type: "command", value: "products" },
+  { id: "products", label: "Ver catálogo", icon: "🛍️", type: "command", value: "products" },
   { id: "payments", label: "Métodos de pago", icon: "💳", type: "command", value: "payments" },
   { id: "shipping", label: "Envíos", icon: "🚚", type: "command", value: "shipping" },
   { id: "warranty", label: "Garantías", icon: "🛡️", type: "command", value: "warranty" },
-  { id: "advisor", label: "Hablar con asesor", icon: "📞", type: "command", value: "advisor" },
+  { id: "advisor", label: "Hablar por WhatsApp", icon: "📞", type: "command", value: "advisor" },
 ];
 
 const FALLBACK_PRODUCT_ACTIONS: ChatAction[] = [
@@ -74,7 +80,7 @@ function createWelcomeMessage(): ChatMessage {
   return {
     id: createId(),
     role: "bot",
-    text: "Hola, soy KORA 👋\nAsistente de Kensar.\nPuedo ayudarte a encontrar productos, resolver dudas o guiarte en tu compra.",
+    text: "Hola, soy KORA 👋\nAsistente comercial de Kensar.\nTe ayudo con catálogo, pagos, envíos y soporte de compra.",
     actions: MAIN_ACTIONS,
   };
 }
@@ -289,11 +295,16 @@ export default function KoraChat() {
   const [isTyping, setIsTyping] = useState(false);
   const [draft, setDraft] = useState("");
   const [productActions, setProductActions] = useState<ChatAction[]>(FALLBACK_PRODUCT_ACTIONS);
+  const [nudgeVisible, setNudgeVisible] = useState(false);
+  const [nudgePulse, setNudgePulse] = useState(false);
   const endRef = useRef<HTMLDivElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const timeoutRef = useRef<number | null>(null);
   const delayIndexRef = useRef(0);
+  const lastWhatsappNudgeRef = useRef(0);
   const isDisabledRoute = pathname === "/pago" || pathname.startsWith("/pago/") || pathname === "/legal" || pathname.startsWith("/legal/");
+  const isCatalogRoute = pathname === "/catalogo" || pathname.startsWith("/catalogo/");
+  const koraNudgeLoopMs = isCatalogRoute ? 45000 : 27000;
 
   useEffect(() => {
     if (!hydrated || !messages.length || isDisabledRoute) return;
@@ -337,6 +348,57 @@ export default function KoraChat() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!hydrated || isDisabledRoute || isOpen) return;
+
+    let active = true;
+    const timeouts: number[] = [];
+
+    function schedule(callback: () => void, delay: number) {
+      const timeoutId = window.setTimeout(() => {
+        if (!active) return;
+        callback();
+      }, delay);
+      timeouts.push(timeoutId);
+    }
+
+    function onWhatsAppNudge(event: Event) {
+      const detail = (event as CustomEvent<{ timestamp?: number }>).detail;
+      const timestamp = Number(detail?.timestamp);
+      lastWhatsappNudgeRef.current = Number.isFinite(timestamp) ? timestamp : Date.now();
+    }
+
+    function triggerKoraPulse() {
+      setNudgePulse(false);
+      schedule(() => setNudgePulse(true), 20);
+      schedule(() => setNudgePulse(false), KORA_NUDGE_PULSE_MS);
+    }
+
+    function runCycle() {
+      const deltaWithWhatsApp = Date.now() - lastWhatsappNudgeRef.current;
+      if (deltaWithWhatsApp < KORA_WHATSAPP_MIN_GAP_MS) {
+        schedule(runCycle, KORA_WHATSAPP_MIN_GAP_MS - deltaWithWhatsApp + 700);
+        return;
+      }
+
+      triggerKoraPulse();
+      setNudgeVisible(true);
+      schedule(() => {
+        setNudgeVisible(false);
+        schedule(runCycle, koraNudgeLoopMs);
+      }, KORA_NUDGE_VISIBLE_MS);
+    }
+
+    window.addEventListener("kensar:whatsapp-nudge", onWhatsAppNudge as EventListener);
+    schedule(runCycle, KORA_NUDGE_INITIAL_DELAY_MS);
+
+    return () => {
+      active = false;
+      timeouts.forEach((id) => window.clearTimeout(id));
+      window.removeEventListener("kensar:whatsapp-nudge", onWhatsAppNudge as EventListener);
+    };
+  }, [hydrated, isDisabledRoute, isOpen, koraNudgeLoopMs]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -482,9 +544,12 @@ export default function KoraChat() {
 
   return (
     <div className="kora-chat-root" ref={rootRef}>
+      <div className={`kora-chat-nudge${nudgeVisible && !isOpen ? " is-visible" : ""}`} aria-hidden={isOpen || !nudgeVisible}>
+        {KORA_NUDGE_TEXT}
+      </div>
       <button
         type="button"
-        className="kora-chat-toggle"
+        className={`kora-chat-toggle${nudgePulse ? " is-notify-wave" : ""}`}
         onClick={() => (isOpen ? closeChat("toggle_button") : openChat("toggle_button"))}
         aria-label={isOpen ? "Cerrar asistente KORA" : "Abrir asistente KORA"}
         aria-expanded={isOpen}
@@ -498,8 +563,20 @@ export default function KoraChat() {
 
       <section className={`kora-chat-panel${isOpen ? " is-open" : ""}`} aria-label="Asistente KORA" role="dialog">
         <header className="kora-chat-header">
-          <div>
-            <p className="kora-chat-title">KORA</p>
+          <div className="kora-chat-header-main">
+            <span
+              className="kora-chat-avatar"
+              style={{ backgroundImage: `url('${KORA_AVATAR_SRC}')` }}
+              aria-hidden="true"
+            />
+            <div>
+              <p className="kora-chat-title">KORA</p>
+              <p className="kora-chat-subtitle">Asistente comercial</p>
+              <p className="kora-chat-status">
+                <span className="kora-chat-status-dot" aria-hidden="true" />
+                En línea
+              </p>
+            </div>
           </div>
           <div className="kora-chat-header-actions">
             <button
