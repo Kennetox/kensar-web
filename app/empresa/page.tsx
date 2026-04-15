@@ -23,7 +23,7 @@ export default function EmpresaPage() {
         </div>
         <aside
           className="empresa-legal-media empresa-legal-media-image"
-          style={{ backgroundImage: "url('/branding/hero/empresa-hero.jpg')" }}
+          style={{ backgroundImage: "url('/branding/hero/empresa-hero.png')" }}
           aria-label="Imagen principal de la empresa Kensar Electronic"
         />
       </article>
@@ -88,13 +88,13 @@ export default function EmpresaPage() {
             <p>
               <strong>WhatsApp:</strong> +57 318 565 7508
             </p>
+            <p>
+              <strong>Correo:</strong> kensarelec@gmail.com
+            </p>
           </div>
           <div className="empresa-legal-actions">
             <Link href="https://wa.me/573185657508" target="_blank" rel="noreferrer" className="account-primary-btn">
               Escribir por WhatsApp
-            </Link>
-            <Link href="/catalogo" className="account-secondary-btn">
-              Ver catálogo
             </Link>
           </div>
           <p className="empresa-contact-note">

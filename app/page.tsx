@@ -24,6 +24,8 @@ const fallbackCategories: WebCatalogCategory[] = [
     name: "Audio profesional",
     image_url: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?q=80&w=1200&auto=format&fit=crop",
     tile_color: null,
+    home_featured: true,
+    home_featured_order: 10,
     product_count: 0,
   },
   {
@@ -32,6 +34,8 @@ const fallbackCategories: WebCatalogCategory[] = [
     name: "Instrumentos",
     image_url: "https://images.unsplash.com/photo-1461784180009-21121b2f204c?q=80&w=1200&auto=format&fit=crop",
     tile_color: null,
+    home_featured: true,
+    home_featured_order: 30,
     product_count: 0,
   },
   {
@@ -40,6 +44,8 @@ const fallbackCategories: WebCatalogCategory[] = [
     name: "Microfonos",
     image_url: "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?q=80&w=1200&auto=format&fit=crop",
     tile_color: null,
+    home_featured: true,
+    home_featured_order: 40,
     product_count: 0,
   },
   {
@@ -48,6 +54,8 @@ const fallbackCategories: WebCatalogCategory[] = [
     name: "Accesorios",
     image_url: "https://images.unsplash.com/photo-1580894894513-a9760f4c4d53?q=80&w=1200&auto=format&fit=crop",
     tile_color: null,
+    home_featured: true,
+    home_featured_order: 20,
     product_count: 0,
   },
   {
@@ -56,6 +64,8 @@ const fallbackCategories: WebCatalogCategory[] = [
     name: "Camaras",
     image_url: "https://images.unsplash.com/photo-1557324232-b8917d3c3dcb?q=80&w=1200&auto=format&fit=crop",
     tile_color: null,
+    home_featured: false,
+    home_featured_order: 0,
     product_count: 0,
   },
   {
@@ -64,6 +74,8 @@ const fallbackCategories: WebCatalogCategory[] = [
     name: "Servicio tecnico",
     image_url: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?q=80&w=1200&auto=format&fit=crop",
     tile_color: null,
+    home_featured: false,
+    home_featured_order: 0,
     product_count: 0,
   },
 ];
@@ -295,21 +307,37 @@ export default async function HomePage() {
     { name: "Jaltech", src: "/brands/marquee/jaltech.svg", scaleClass: "is-scale-jaltech" },
     { name: "Proel", src: "/brands/marquee/proel.svg" },
   ];
-  const preferredFeaturedCategories = [
-    { key: "audio-profesional", name: "Audio profesional", imageUrl: "/categories/home/cat-01-audio.webp" },
-    { key: "accesorios", name: "Accesorios", imageUrl: "/categories/home/cat-02-accesorios.webp" },
-    { key: "instrumentos", name: "Instrumentos", imageUrl: "/categories/home/cat-03-instrumentos.webp" },
-    { key: "microfonos", name: "Microfonos", imageUrl: "/categories/home/cat-04-microfonos.webp" },
-  ];
-  const featuredCategories = preferredFeaturedCategories.map((preferred, index) => {
-    const matchedCategory = categories.find((category) => category.path === preferred.key);
-    return {
-      id: matchedCategory?.id || `featured-${index}`,
-      href: matchedCategory ? buildCategoryHref(matchedCategory.path) : buildCategoryHref(preferred.key),
-      name: matchedCategory?.name || preferred.name,
-      imageUrl: preferred.imageUrl,
-    };
-  });
+  const HOME_FEATURED_CATEGORY_LIMIT = 5;
+  const featuredCategoriesFromConfig = categories
+    .filter((category) => category.home_featured)
+    .sort((a, b) => {
+      const normalizedOrderA =
+        (a.home_featured_order || 0) > 0 ? (a.home_featured_order || 0) : 999;
+      const normalizedOrderB =
+        (b.home_featured_order || 0) > 0 ? (b.home_featured_order || 0) : 999;
+      const byHomeOrder = normalizedOrderA - normalizedOrderB;
+      if (byHomeOrder !== 0) return byHomeOrder;
+      return (b.product_count || 0) - (a.product_count || 0);
+    })
+    .slice(0, HOME_FEATURED_CATEGORY_LIMIT)
+    .map((category) => ({
+      id: category.id,
+      href: buildCategoryHref(category.path),
+      name: category.name,
+      imageUrl: category.image_url,
+    }));
+  const featuredCategoriesFallback = categories
+    .slice()
+    .sort((a, b) => (b.product_count || 0) - (a.product_count || 0))
+    .slice(0, HOME_FEATURED_CATEGORY_LIMIT)
+    .map((category) => ({
+      id: category.id,
+      href: buildCategoryHref(category.path),
+      name: category.name,
+      imageUrl: category.image_url,
+    }));
+  const featuredCategories =
+    featuredCategoriesFromConfig.length > 0 ? featuredCategoriesFromConfig : featuredCategoriesFallback;
   const socialConnectLinks = [
     {
       id: "instagram",

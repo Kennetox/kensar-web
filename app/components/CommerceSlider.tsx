@@ -82,6 +82,9 @@ export default function CommerceSlider({ slides, categories, intervalMs = 8000 }
     setIsAnimating(false);
   }
 
+  const firstCategoryLink = categories[0]?.href || "/catalogo";
+  const firstCategoryName = categories[0]?.name || "categorias";
+
   return (
     <section className="commerce-slider-block" aria-label="Slider principal">
       <div className="commerce-slider-placeholder">
@@ -153,25 +156,43 @@ export default function CommerceSlider({ slides, categories, intervalMs = 8000 }
         ) : null}
       </div>
 
-      <div className="commerce-featured-categories" aria-label="Categorias principales">
-        {categories.map((category) => (
-          <Link key={`featured-${category.id}`} href={category.href} className="commerce-featured-card">
-            <div
-              className={`commerce-featured-card-image${category.imageUrl ? " has-image" : ""}`}
-              style={
-                category.imageUrl
-                  ? { backgroundImage: `url('${category.imageUrl}')` }
-                  : undefined
-              }
-              aria-hidden="true"
-            />
-            <h3>{category.name}</h3>
-          </Link>
-        ))}
-      </div>
+      <div className="commerce-featured-shell">
+        <div className="commerce-featured-intro" aria-label="Accesos rapidos de categorias">
+          <div className="commerce-featured-intro-copy">
+            <p className="commerce-section-kicker">Categorias destacadas</p>
+            <h2>Explora por tipo de producto</h2>
+            <p>Elige una categoria y compra mas rapido.</p>
+          </div>
+          <div className="commerce-featured-intro-actions">
+            <Link href="/catalogo" className="commerce-featured-intro-cta is-primary">
+              Explorar catalogo
+            </Link>
+            <Link href={firstCategoryLink} className="commerce-featured-intro-cta is-secondary">
+              Ver {firstCategoryName}
+            </Link>
+          </div>
+        </div>
 
-      <div className="commerce-featured-more">
-        <Link href="/catalogo">Ver mas</Link>
+        <div className="commerce-featured-categories" aria-label="Categorias principales">
+          {categories.map((category) => (
+            <Link key={`featured-${category.id}`} href={category.href} className="commerce-featured-card">
+              <div
+                className={`commerce-featured-card-image${category.imageUrl ? " has-image" : ""}`}
+                style={
+                  category.imageUrl
+                    ? { backgroundImage: `url('${category.imageUrl}')` }
+                    : undefined
+                }
+                aria-hidden="true"
+              />
+              <h3>{category.name}</h3>
+            </Link>
+          ))}
+        </div>
+
+        <div className="commerce-featured-more">
+          <Link href="/catalogo">Ver mas</Link>
+        </div>
       </div>
     </section>
   );
