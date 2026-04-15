@@ -35,11 +35,56 @@ function buildCatalogHref(input: {
 
 function buildFallbackCategories(): WebCatalogCategory[] {
   return [
-    { id: "fallback-audio", name: "Audio profesional", path: "", image_url: null, tile_color: null, product_count: 0 },
-    { id: "fallback-instruments", name: "Instrumentos", path: "", image_url: null, tile_color: null, product_count: 0 },
-    { id: "fallback-mics", name: "Microfonos", path: "", image_url: null, tile_color: null, product_count: 0 },
-    { id: "fallback-accessories", name: "Accesorios", path: "", image_url: null, tile_color: null, product_count: 0 },
-    { id: "fallback-cameras", name: "Camaras", path: "", image_url: null, tile_color: null, product_count: 0 },
+    {
+      id: "fallback-audio",
+      name: "Audio profesional",
+      path: "",
+      image_url: null,
+      tile_color: null,
+      home_featured: false,
+      home_featured_order: 0,
+      product_count: 0,
+    },
+    {
+      id: "fallback-instruments",
+      name: "Instrumentos",
+      path: "",
+      image_url: null,
+      tile_color: null,
+      home_featured: false,
+      home_featured_order: 0,
+      product_count: 0,
+    },
+    {
+      id: "fallback-mics",
+      name: "Microfonos",
+      path: "",
+      image_url: null,
+      tile_color: null,
+      home_featured: false,
+      home_featured_order: 0,
+      product_count: 0,
+    },
+    {
+      id: "fallback-accessories",
+      name: "Accesorios",
+      path: "",
+      image_url: null,
+      tile_color: null,
+      home_featured: false,
+      home_featured_order: 0,
+      product_count: 0,
+    },
+    {
+      id: "fallback-cameras",
+      name: "Camaras",
+      path: "",
+      image_url: null,
+      tile_color: null,
+      home_featured: false,
+      home_featured_order: 0,
+      product_count: 0,
+    },
   ];
 }
 
