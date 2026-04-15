@@ -7565,6 +7565,11 @@ body.mini-cart-open .main-wrapper {
   isolation: isolate;
 }
 
+.home-product-carousel.is-static::before,
+.home-product-carousel.is-static::after {
+  display: none;
+}
+
 .home-product-carousel::before,
 .home-product-carousel::after {
   content: "";
@@ -7594,6 +7599,11 @@ body.mini-cart-open .main-wrapper {
   padding: 2px 0 2px;
 }
 
+.home-product-carousel-viewport.is-static {
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
 .home-product-carousel-track {
   position: relative;
   z-index: 1;
@@ -7601,6 +7611,12 @@ body.mini-cart-open .main-wrapper {
   align-items: stretch;
   gap: 24px;
   will-change: transform;
+}
+
+.home-product-carousel-track.is-static {
+  width: max-content;
+  will-change: auto;
+  padding: 0 14px;
 }
 
 .home-product-carousel-track.is-animated {

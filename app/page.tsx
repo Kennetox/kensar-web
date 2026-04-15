@@ -228,8 +228,9 @@ function shuffleProducts(items: WebCatalogProductCard[]) {
 async function fetchCategoryProducts(category: string, targetCount = 10) {
   const collected: WebCatalogProductCard[] = [];
   let page = 1;
+  const MAX_PAGES = 2;
 
-  while (collected.length < targetCount) {
+  while (collected.length < targetCount && page <= MAX_PAGES) {
     const response = await getCatalogProducts({ category, page });
     collected.push(...response.items);
 

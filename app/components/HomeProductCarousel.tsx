@@ -19,6 +19,7 @@ type HomeProductCarouselProps = {
 
 const LOOP_CYCLES = 15;
 const MIDDLE_CYCLE_INDEX = Math.floor(LOOP_CYCLES / 2);
+const MIN_ITEMS_FOR_LOOP = 7;
 
 export default function HomeProductCarousel({
   children,
@@ -29,8 +30,10 @@ export default function HomeProductCarousel({
   const frameRef = useRef<number | null>(null);
   const items = useMemo(() => Children.toArray(children), [children]);
   const logicalCount = items.length;
+  const loopEnabled = logicalCount >= MIN_ITEMS_FOR_LOOP;
   const loopItems = useMemo(() => {
     if (!logicalCount) return [];
+    if (!loopEnabled) return items;
     const repeated: ReactNode[] = [];
 
     for (let cycle = 0; cycle < LOOP_CYCLES; cycle += 1) {
@@ -48,9 +51,11 @@ export default function HomeProductCarousel({
     }
 
     return repeated;
-  }, [items, logicalCount]);
+  }, [items, logicalCount, loopEnabled]);
   const [itemStep, setItemStep] = useState(0);
-  const [index, setIndex] = useState(MIDDLE_CYCLE_INDEX * Math.max(1, logicalCount));
+  const [index, setIndex] = useState(
+    loopEnabled ? MIDDLE_CYCLE_INDEX * Math.max(1, logicalCount) : 0
+  );
   const [transitionEnabled, setTransitionEnabled] = useState(true);
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -94,7 +99,7 @@ export default function HomeProductCarousel({
   }
 
   function move(direction: 1 | -1) {
-    if (!logicalCount || isAnimating) return;
+    if (!loopEnabled || !logicalCount || isAnimating) return;
     setIsAnimating(true);
     setTransitionEnabled(true);
     setIndex((prev) => prev + direction);
@@ -102,7 +107,7 @@ export default function HomeProductCarousel({
 
   function handleTransitionEnd(event: TransitionEvent<HTMLDivElement>) {
     if (event.target !== trackRef.current) return;
-    if (!logicalCount) return;
+    if (!logicalCount || !loopEnabled) return;
 
     const cycleOffset = ((index % logicalCount) + logicalCount) % logicalCount;
     const recenterIndex = MIDDLE_CYCLE_INDEX * logicalCount + cycleOffset;
@@ -120,25 +125,34 @@ export default function HomeProductCarousel({
   }
 
   return (
-    <div className="home-product-carousel">
-      <button
-        type="button"
-        className="home-product-carousel-nav home-product-carousel-nav-left"
-        onClick={() => move(-1)}
-        aria-label="Ver productos anteriores"
-        disabled={isAnimating}
-      >
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M14.5 5 7.5 12l7 7" />
-        </svg>
-      </button>
+    <div className={`home-product-carousel${loopEnabled ? "" : " is-static"}`}>
+      {loopEnabled ? (
+        <button
+          type="button"
+          className="home-product-carousel-nav home-product-carousel-nav-left"
+          onClick={() => move(-1)}
+          aria-label="Ver productos anteriores"
+          disabled={isAnimating}
+        >
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M14.5 5 7.5 12l7 7" />
+          </svg>
+        </button>
+      ) : null}
 
-      <div ref={viewportRef} className="home-product-carousel-viewport" aria-label={ariaLabel}>
+      <div
+        ref={viewportRef}
+        className={`home-product-carousel-viewport${loopEnabled ? "" : " is-static"}`}
+        aria-label={ariaLabel}
+      >
         <div
           ref={trackRef}
-          className={`home-product-carousel-track${transitionEnabled ? " is-animated" : ""}`}
+          className={`home-product-carousel-track${transitionEnabled && loopEnabled ? " is-animated" : ""}${loopEnabled ? "" : " is-static"}`}
           style={{
-            transform: itemStep > 0 ? `translate3d(-${index * itemStep}px, 0, 0)` : undefined,
+            transform:
+              loopEnabled && itemStep > 0
+                ? `translate3d(-${index * itemStep}px, 0, 0)`
+                : undefined,
           }}
           onTransitionEnd={handleTransitionEnd}
         >
@@ -146,17 +160,19 @@ export default function HomeProductCarousel({
         </div>
       </div>
 
-      <button
-        type="button"
-        className="home-product-carousel-nav home-product-carousel-nav-right"
-        onClick={() => move(1)}
-        aria-label="Ver más productos"
-        disabled={isAnimating}
-      >
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="m9.5 5 7 7-7 7" />
-        </svg>
-      </button>
+      {loopEnabled ? (
+        <button
+          type="button"
+          className="home-product-carousel-nav home-product-carousel-nav-right"
+          onClick={() => move(1)}
+          aria-label="Ver más productos"
+          disabled={isAnimating}
+        >
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="m9.5 5 7 7-7 7" />
+          </svg>
+        </button>
+      ) : null}
     </div>
   );
 }
