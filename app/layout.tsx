@@ -23,23 +23,27 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://kensar-web.vercel.app"),
+  metadataBase: new URL("https://kensarelectronic.com"),
   title: {
-    default: "Kensar Electronic | Audio, seguridad y servicio técnico",
+    default: "Kensar Electronic | Audio, seguridad y servicio tecnico en Palmira",
     template: "%s | Kensar Electronic",
   },
   description:
-    "Catálogo web de Kensar Electronic con productos de audio, videovigilancia, accesorios y atención comercial directa en Palmira.",
+    "Kensar Electronic: audio, videovigilancia, accesorios y servicio tecnico en Palmira. WhatsApp +57 318 565 7508.",
+  alternates: {
+    canonical: "/",
+  },
   applicationName: "Kensar Electronic",
   icons: {
-    icon: [{ url: "/branding/favicon2026.png", type: "image/png" }],
-    shortcut: [{ url: "/branding/favicon2026.png", type: "image/png" }],
-    apple: "/branding/icono-transparent.png",
+    icon: [{ url: "/branding/icono.png", type: "image/png" }],
+    shortcut: [{ url: "/branding/icono.png", type: "image/png" }],
+    apple: "/branding/icono.png",
   },
   openGraph: {
-    title: "Kensar Electronic | Audio, seguridad y servicio técnico",
+    title: "Kensar Electronic | Audio, seguridad y servicio tecnico en Palmira",
     description:
-      "Compra, consulta y sigue tu proceso comercial con Kensar Electronic desde una web conectada a su operación real.",
+      "Compra, consulta y sigue tu proceso comercial con Kensar Electronic desde una web conectada a su operacion real.",
+    url: "https://kensarelectronic.com",
     siteName: "Kensar Electronic",
     locale: "es_CO",
     type: "website",
@@ -54,9 +58,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Kensar Electronic | Audio, seguridad y servicio técnico",
+    title: "Kensar Electronic | Audio, seguridad y servicio tecnico en Palmira",
     description:
-      "Catálogo web de Kensar Electronic con atención comercial directa y operación conectada a tienda.",
+      "Catalogo web de Kensar Electronic con atencion comercial directa y operacion conectada a tienda.",
     images: ["/branding/kensar-logo.png"],
   },
 };
