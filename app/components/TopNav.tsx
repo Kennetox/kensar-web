@@ -11,15 +11,19 @@ type HeaderCategory = {
 
 type TopNavProps = {
   categories: HeaderCategory[];
+  brands: {
+    value: string;
+    label: string;
+    count: number;
+  }[];
 };
 
-const brandMocks = ["Yamaha", "Pioneer", "Shure", "JBL"];
-
-export default function TopNav({ categories }: TopNavProps) {
+export default function TopNav({ categories, brands }: TopNavProps) {
   const pathname = usePathname();
   const isHomeActive = pathname === "/";
   const isCatalogActive = pathname === "/catalogo" || pathname.startsWith("/catalogo/");
   const isContactActive = pathname === "/empresa" || pathname.startsWith("/empresa/");
+  const hasBrands = brands.length > 0;
 
   return (
     <nav className="top-nav" aria-label="Navegacion principal">
@@ -64,16 +68,22 @@ export default function TopNav({ categories }: TopNavProps) {
           </span>
         </Link>
         <div className="nav-dropdown-panel" role="menu" aria-label="Marcas">
-          {brandMocks.map((brand) => (
-            <Link
-              key={brand}
-              href={`/catalogo?brand=${encodeURIComponent(brand.toLowerCase())}`}
-              className="nav-dropdown-link"
-              role="menuitem"
-            >
-              {brand}
+          {hasBrands ? (
+            brands.map((brand) => (
+              <Link
+                key={brand.value}
+                href={`/catalogo?brand=${encodeURIComponent(brand.value)}`}
+                className="nav-dropdown-link"
+                role="menuitem"
+              >
+                {brand.label}
+              </Link>
+            ))
+          ) : (
+            <Link href="/catalogo" className="nav-dropdown-link" role="menuitem">
+              Ver todas las marcas
             </Link>
-          ))}
+          )}
         </div>
       </div>
 

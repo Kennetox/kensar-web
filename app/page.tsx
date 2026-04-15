@@ -206,10 +206,11 @@ function isHomeCategoryProduct(product: WebCatalogProductCard) {
   const categoryPath = normalizeCategoryValue(product.category_path);
   const categoryName = normalizeCategoryValue(product.category_name);
   return (
-    categoryPath.includes("camara") ||
-    categoryPath.includes("tecnologia") ||
-    categoryName.includes("camara") ||
-    categoryName.includes("tecnologia")
+    categoryPath.includes("hogar-y-entretenimiento") ||
+    categoryPath.includes("seguridad") ||
+    categoryName.includes("hogar") ||
+    categoryName.includes("entretenimiento") ||
+    categoryName.includes("seguridad")
   );
 }
 
@@ -244,12 +245,12 @@ async function loadHomeLivingProducts(seedProducts: WebCatalogProductCard[]) {
   const mergedById = new Map<number, WebCatalogProductCard>();
 
   try {
-    const [cameraProducts, technologyProducts] = await Promise.all([
-      fetchCategoryProducts("camaras", 10),
-      fetchCategoryProducts("tecnologia", 10),
+    const [homeProducts, securityProducts] = await Promise.all([
+      fetchCategoryProducts("hogar-y-entretenimiento", 10),
+      fetchCategoryProducts("seguridad", 10),
     ]);
 
-    [...cameraProducts, ...technologyProducts].forEach((product) => {
+    [...homeProducts, ...securityProducts].forEach((product) => {
       mergedById.set(product.id, product);
     });
   } catch {

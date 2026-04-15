@@ -14,7 +14,7 @@ import WebCartProvider from "./components/WebCartProvider";
 import WebCustomerProvider from "./components/WebCustomerProvider";
 import TopbarScrollBehavior from "./components/TopbarScrollBehavior";
 import CheckoutHeaderMode from "./components/CheckoutHeaderMode";
-import { getCatalogCategories } from "@/app/lib/metrikCatalog";
+import { getCatalogCategories, getCatalogProducts } from "@/app/lib/metrikCatalog";
 import "./globals.css";
 
 const inter = Inter({
@@ -71,6 +71,12 @@ type HeaderCategory = {
   name: string;
 };
 
+type HeaderBrand = {
+  value: string;
+  label: string;
+  count: number;
+};
+
 const fallbackHeaderCategories: HeaderCategory[] = [
   { id: "audio", path: "audio-profesional", name: "Audio profesional" },
   { id: "instrumentos", path: "instrumentos", name: "Instrumentos" },
@@ -99,8 +105,24 @@ async function loadHeaderCategories(): Promise<HeaderCategory[]> {
   }
 }
 
+async function loadHeaderBrands(): Promise<HeaderBrand[]> {
+  try {
+    const rows = await getCatalogProducts({ page: 1 });
+    return rows.filters.brands
+      .filter((item) => item.value && item.count > 0)
+      .slice(0, 12)
+      .map((item) => ({
+        value: item.value,
+        label: item.label,
+        count: item.count,
+      }));
+  } catch {
+    return [];
+  }
+}
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const headerCategories = await loadHeaderCategories();
+  const [headerCategories, headerBrands] = await Promise.all([loadHeaderCategories(), loadHeaderBrands()]);
 
   return (
     <html lang="es">
@@ -160,7 +182,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   </div>
                 </div>
               </div>
-              <TopNav categories={headerCategories} />
+              <TopNav categories={headerCategories} brands={headerBrands} />
             </div>
           </div>
         </header>
