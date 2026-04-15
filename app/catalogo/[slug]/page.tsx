@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import CatalogProductCard from "@/app/catalogo/CatalogProductCard";
 import ProductDetailGallery from "@/app/catalogo/ProductDetailGallery";
 import ProductPurchaseCta from "@/app/catalogo/ProductPurchaseCta";
+import ProductKoraAssistLink from "@/app/catalogo/ProductKoraAssistLink";
 import {
   formatCatalogPrice,
   getCatalogProduct,
@@ -192,9 +193,12 @@ export default async function CatalogProductDetailPage({
                     </span>
                     <span>¿Necesitas ayuda? Te orientamos para elegir el producto ideal.</span>
                   </p>
-                  <Link href="/empresa" className="product-pickup-link">
+                  <ProductKoraAssistLink
+                    className="product-pickup-link"
+                    prompt={`Quiero asesoría para ${product.name}${product.sku ? ` (SKU ${product.sku})` : ""}`}
+                  >
                     Solicitar asesoría
-                  </Link>
+                  </ProductKoraAssistLink>
                 </div>
               </section>
 

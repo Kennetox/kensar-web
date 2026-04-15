@@ -2,8 +2,9 @@
 
 import { FormEvent, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useWebCart } from "@/app/components/WebCartProvider";
 
-type ActionType = "command" | "link" | "whatsapp";
+type ActionType = "command" | "link" | "whatsapp" | "prompt" | "add_to_cart";
 type CommandValue = "menu" | "products" | "payments" | "shipping" | "warranty" | "advisor";
 type KoraEventName =
   | "chat_opened"
@@ -20,6 +21,17 @@ type ChatAction = {
   icon?: string;
   type: ActionType;
   value: string;
+  payload?: {
+    product_id?: number;
+    product_name?: string;
+    product_slug?: string;
+    product_sku?: string | null;
+    image_url?: string | null;
+    brand?: string | null;
+    stock_status?: "in_stock" | "low_stock" | "out_of_stock" | "service" | "consultar";
+    unit_price?: number;
+    compare_price?: number | null;
+  };
 };
 
 type ChatMessage = {
@@ -42,9 +54,27 @@ type KoraEvent = {
   payload?: Record<string, string | number | boolean | null>;
 };
 
+type KoraAskResponse = {
+  handled: boolean;
+  intent: CommandValue | "orders" | "unknown";
+  answer: string;
+  actions?: ChatAction[];
+  suggestions?: string[];
+  emotion?: "neutral" | "frustrated" | "urgent" | "happy" | "doubtful";
+  companion_mode?: boolean;
+  memory_updates?: {
+    preferred_category?: string | null;
+    budget_cop?: number | null;
+    tone_mode?: "friendly" | "professional" | null;
+    customer_goal?: "gift" | "home" | "business" | "studio" | null;
+    last_emotion?: "neutral" | "frustrated" | "urgent" | "happy" | "doubtful" | null;
+  };
+};
+
 const SESSION_KEY = "kensar_kora_session_v1";
 const SESSION_OPEN_KEY = "kensar_kora_open_v1";
 const EVENTS_SESSION_KEY = "kensar_kora_events_v1";
+const MEMORY_SESSION_KEY = "kensar_kora_memory_v1";
 const WHATSAPP_PHONE = "573185657508";
 const RESPONSE_DELAYS = [520, 640, 760] as const;
 const QUICK_HINTS = "Ejemplo: “métodos de pago”, “envíos”, “garantía”, “quiero audio”";
@@ -80,8 +110,7 @@ function createWelcomeMessage(): ChatMessage {
   return {
     id: createId(),
     role: "bot",
-    text: "Hola, soy KORA 👋\nAsistente comercial de Kensar.\nTe ayudo con catálogo, pagos, envíos y soporte de compra.",
-    actions: MAIN_ACTIONS,
+    text: "Hola, soy KORA, asistente de Kensar 👋\n¿En qué te ayudo hoy?",
   };
 }
 
@@ -215,6 +244,12 @@ function normalizeCategoryLabel(name: string) {
   return name.replace(/\s+/g, " ").trim();
 }
 
+function getCurrentProductSlugFromPath(pathname: string): string | null {
+  if (!pathname.startsWith("/catalogo/")) return null;
+  const slug = pathname.replace(/^\/catalogo\//, "").split("/")[0]?.trim();
+  return slug ? decodeURIComponent(slug) : null;
+}
+
 function buildProductActionsFromCategories(items: KoraCategoryItem[]) {
   const mapped = items
     .filter((item) => item.path)
@@ -282,6 +317,54 @@ function buildWhatsAppHrefWithContext(pathname: string, messages: ChatMessage[],
   return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(text)}`;
 }
 
+type KoraSessionMemory = {
+  preferred_category?: string | null;
+  budget_cop?: number | null;
+  tone_mode?: "friendly" | "professional" | null;
+  customer_goal?: "gift" | "home" | "business" | "studio" | null;
+  last_emotion?: "neutral" | "frustrated" | "urgent" | "happy" | "doubtful" | null;
+};
+
+function loadKoraMemory(): KoraSessionMemory {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.sessionStorage.getItem(MEMORY_SESSION_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as KoraSessionMemory;
+    return {
+      preferred_category: typeof parsed?.preferred_category === "string" ? parsed.preferred_category : undefined,
+      budget_cop: Number.isFinite(Number(parsed?.budget_cop)) ? Number(parsed?.budget_cop) : undefined,
+      tone_mode: parsed?.tone_mode === "professional" ? "professional" : parsed?.tone_mode === "friendly" ? "friendly" : undefined,
+      customer_goal:
+        parsed?.customer_goal === "gift" ||
+        parsed?.customer_goal === "home" ||
+        parsed?.customer_goal === "business" ||
+        parsed?.customer_goal === "studio"
+          ? parsed.customer_goal
+          : undefined,
+      last_emotion:
+        parsed?.last_emotion === "frustrated" ||
+        parsed?.last_emotion === "urgent" ||
+        parsed?.last_emotion === "happy" ||
+        parsed?.last_emotion === "doubtful" ||
+        parsed?.last_emotion === "neutral"
+          ? parsed.last_emotion
+          : undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
+function persistKoraMemory(memory: KoraSessionMemory) {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(MEMORY_SESSION_KEY, JSON.stringify(memory));
+  } catch {
+    return;
+  }
+}
+
 export default function KoraChat() {
   const pathname = usePathname();
   const router = useRouter();
@@ -297,14 +380,23 @@ export default function KoraChat() {
   const [productActions, setProductActions] = useState<ChatAction[]>(FALLBACK_PRODUCT_ACTIONS);
   const [nudgeVisible, setNudgeVisible] = useState(false);
   const [nudgePulse, setNudgePulse] = useState(false);
+  const [memory, setMemory] = useState<KoraSessionMemory>(loadKoraMemory);
   const endRef = useRef<HTMLDivElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const timeoutRef = useRef<number | null>(null);
   const delayIndexRef = useRef(0);
   const lastWhatsappNudgeRef = useRef(0);
+  const openChatRef = useRef<(source: string) => void>(() => undefined);
+  const processUserInputRef = useRef<(input: string, source?: "message" | "prompt") => void>(() => undefined);
   const isDisabledRoute = pathname === "/pago" || pathname.startsWith("/pago/") || pathname === "/legal" || pathname.startsWith("/legal/");
   const isCatalogRoute = pathname === "/catalogo" || pathname.startsWith("/catalogo/");
   const koraNudgeLoopMs = isCatalogRoute ? 45000 : 27000;
+  const { addItem } = useWebCart();
+
+  useEffect(() => {
+    if (!hydrated || isDisabledRoute) return;
+    persistKoraMemory(memory);
+  }, [hydrated, isDisabledRoute, memory]);
 
   useEffect(() => {
     if (!hydrated || !messages.length || isDisabledRoute) return;
@@ -425,10 +517,6 @@ export default function KoraChat() {
     };
   }, [isOpen, pathname]);
 
-  if (!hydrated || isDisabledRoute) {
-    return null;
-  }
-
   function pushUserMessage(text: string) {
     setMessages((current) => [...current, { id: createId(), role: "user", text }]);
   }
@@ -469,6 +557,140 @@ export default function KoraChat() {
     }, delay);
   }
 
+  async function askKora(query: string): Promise<KoraAskResponse | null> {
+    try {
+      const currentProductSlug = getCurrentProductSlugFromPath(pathname);
+      const response = await fetch("/api/kora/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query,
+          path: pathname,
+          context: currentProductSlug ? { currentProductSlug } : undefined,
+          memory,
+        }),
+      });
+      if (!response.ok) return null;
+      const data = (await response.json()) as KoraAskResponse;
+      if (!data || typeof data.answer !== "string") return null;
+      return data;
+    } catch {
+      return null;
+    }
+  }
+
+  function buildSuggestionActions(suggestions: string[] | undefined): ChatAction[] {
+    if (!Array.isArray(suggestions) || suggestions.length === 0) return [];
+    return suggestions
+      .slice(0, 3)
+      .map((text) => String(text || "").trim())
+      .filter(Boolean)
+      .map((text, index) => ({
+        id: `sug-${index}-${text.slice(0, 18).replace(/\s+/g, "-").toLowerCase()}`,
+        label: text,
+        type: "prompt" as const,
+        value: text,
+      }));
+  }
+
+  function sanitizeApiActions(actions: ChatAction[] | undefined): ChatAction[] {
+    if (!Array.isArray(actions)) return [];
+    return actions
+      .slice(0, 6)
+      .filter((action) => {
+        if (!action || typeof action !== "object") return false;
+        if (!action.id || !action.label || !action.type || !action.value) return false;
+        return true;
+      });
+  }
+
+  function processUserInput(input: string, source: "message" | "prompt" = "message") {
+    if (timeoutRef.current) {
+      window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+
+    pushUserMessage(input);
+    emitEvent("message_submitted", { length: input.length, source });
+    setIsTyping(true);
+
+    const delay = RESPONSE_DELAYS[delayIndexRef.current % RESPONSE_DELAYS.length];
+    delayIndexRef.current += 1;
+    timeoutRef.current = window.setTimeout(async () => {
+      const aiReply = await askKora(input);
+      if (aiReply) {
+        emitEvent("intent_detected", {
+          detected_intent: aiReply.intent,
+          emotion: aiReply.emotion ?? null,
+          companion_mode: Boolean(aiReply.companion_mode),
+        });
+        if (aiReply.memory_updates && typeof aiReply.memory_updates === "object") {
+          setMemory((prev) => ({
+            ...prev,
+            preferred_category:
+              typeof aiReply.memory_updates?.preferred_category === "string"
+                ? aiReply.memory_updates.preferred_category
+                : prev.preferred_category,
+            budget_cop: Number.isFinite(Number(aiReply.memory_updates?.budget_cop))
+              ? Number(aiReply.memory_updates?.budget_cop)
+              : prev.budget_cop,
+            tone_mode:
+              aiReply.memory_updates?.tone_mode === "professional" || aiReply.memory_updates?.tone_mode === "friendly"
+                ? aiReply.memory_updates.tone_mode
+                : prev.tone_mode,
+            customer_goal:
+              aiReply.memory_updates?.customer_goal === "gift" ||
+              aiReply.memory_updates?.customer_goal === "home" ||
+              aiReply.memory_updates?.customer_goal === "business" ||
+              aiReply.memory_updates?.customer_goal === "studio"
+                ? aiReply.memory_updates.customer_goal
+                : prev.customer_goal,
+            last_emotion:
+              aiReply.memory_updates?.last_emotion === "frustrated" ||
+              aiReply.memory_updates?.last_emotion === "urgent" ||
+              aiReply.memory_updates?.last_emotion === "happy" ||
+              aiReply.memory_updates?.last_emotion === "doubtful" ||
+              aiReply.memory_updates?.last_emotion === "neutral"
+                ? aiReply.memory_updates.last_emotion
+                : prev.last_emotion,
+          }));
+        }
+        const apiActions = sanitizeApiActions(aiReply.actions);
+        const suggestionActions = buildSuggestionActions(aiReply.suggestions);
+        const mergedActions = [...apiActions, ...suggestionActions].slice(0, 7);
+        setMessages((current) => [
+          ...current,
+          {
+            id: createId(),
+            role: "bot",
+            text: aiReply.answer.trim() || createUnknownMessage().text,
+            actions: mergedActions.length ? mergedActions : undefined,
+          },
+        ]);
+        setIsTyping(false);
+        timeoutRef.current = null;
+        return;
+      }
+
+      const command = resolveCommandFromText(input);
+      emitEvent("intent_detected", { detected_intent: command });
+
+      if (command === "unknown") {
+        setMessages((current) => [...current, createUnknownMessage()]);
+        setIsTyping(false);
+        timeoutRef.current = null;
+        return;
+      }
+
+      setIsTyping(false);
+      timeoutRef.current = null;
+      if (command === "advisor") {
+        openWhatsAppWithContext(input);
+      }
+      runCommand(command);
+    }, delay);
+  }
+
   function openWhatsAppWithContext(latestInput: string) {
     const href = buildWhatsAppHrefWithContext(pathname, messages, latestInput);
     window.open(href, "_blank", "noopener,noreferrer");
@@ -476,6 +698,72 @@ export default function KoraChat() {
   }
 
   function handleAction(action: ChatAction) {
+    if (action.type === "prompt") {
+      processUserInput(action.value, "prompt");
+      return;
+    }
+
+    if (action.type === "add_to_cart") {
+      const productId =
+        Number(action.payload?.product_id) || Number.parseInt(action.value, 10);
+      if (!Number.isFinite(productId) || productId <= 0) {
+        setMessages((current) => [
+          ...current,
+          { id: createId(), role: "bot", text: "No pude resolver ese producto para agregar al carrito." },
+        ]);
+        return;
+      }
+
+      pushUserMessage(`${action.icon ? `${action.icon} ` : ""}${action.label}`);
+      emitEvent("action_clicked", {
+        action_id: action.id,
+        action_type: action.type,
+        action_value: action.value,
+      });
+      void (async () => {
+        try {
+          await addItem(productId, 1, {
+            product_name: action.payload?.product_name || `Producto ${productId}`,
+            product_slug: action.payload?.product_slug || "",
+            product_sku: action.payload?.product_sku || null,
+            image_url: action.payload?.image_url || null,
+            brand: action.payload?.brand || null,
+            stock_status: action.payload?.stock_status || "in_stock",
+            unit_price: Number(action.payload?.unit_price) || 0,
+            compare_price:
+              typeof action.payload?.compare_price === "number"
+                ? action.payload.compare_price
+                : null,
+          });
+          setMessages((current) => [
+            ...current,
+            {
+              id: createId(),
+              role: "bot",
+              text: "Listo, lo agregué al carrito.",
+              actions: [
+                { id: `cart-open-${productId}`, label: "Ver carrito", type: "link", value: "/carrito" },
+                { id: "cart-continue-shopping", label: "Seguir comprando", type: "link", value: "/catalogo" },
+              ],
+            },
+          ]);
+        } catch {
+          setMessages((current) => [
+            ...current,
+            {
+              id: createId(),
+              role: "bot",
+              text: "No pude agregarlo al carrito en este momento. ¿Quieres que te lleve al producto?",
+              actions: action.payload?.product_slug
+                ? [{ id: `go-product-${productId}`, label: "Ver producto", type: "link", value: `/catalogo/${action.payload.product_slug}` }]
+                : undefined,
+            },
+          ]);
+        }
+      })();
+      return;
+    }
+
     pushUserMessage(`${action.icon ? `${action.icon} ` : ""}${action.label}`);
     emitEvent("action_clicked", {
       action_id: action.id,
@@ -506,6 +794,10 @@ export default function KoraChat() {
     setIsTyping(false);
     setDraft("");
     setMessages([createWelcomeMessage()]);
+    setMemory({});
+    if (typeof window !== "undefined") {
+      window.sessionStorage.removeItem(MEMORY_SESSION_KEY);
+    }
     emitEvent("conversation_reset");
   }
 
@@ -515,31 +807,35 @@ export default function KoraChat() {
 
     const input = draft.trim();
     if (!input) return;
-
-    pushUserMessage(input);
     setDraft("");
-    emitEvent("message_submitted", { length: input.length });
+    processUserInput(input, "message");
+  }
 
-    const command = resolveCommandFromText(input);
-    emitEvent("intent_detected", { detected_intent: command });
+  useEffect(() => {
+    openChatRef.current = openChat;
+    processUserInputRef.current = processUserInput;
+  });
 
-    if (command === "unknown") {
-      setIsTyping(true);
-      const delay = RESPONSE_DELAYS[delayIndexRef.current % RESPONSE_DELAYS.length];
-      delayIndexRef.current += 1;
-      timeoutRef.current = window.setTimeout(() => {
-        setMessages((current) => [...current, createUnknownMessage()]);
-        setIsTyping(false);
-        timeoutRef.current = null;
-      }, delay);
-      return;
+  useEffect(() => {
+    if (!hydrated || isDisabledRoute) return;
+
+    function onOpenKora(event: Event) {
+      const detail = (event as CustomEvent<{ prompt?: string }>).detail;
+      const prompt = String(detail?.prompt || "").trim();
+      openChatRef.current("product_assist_link");
+      if (prompt) {
+        processUserInputRef.current(prompt, "prompt");
+      }
     }
 
-    if (command === "advisor") {
-      openWhatsAppWithContext(input);
-    }
+    window.addEventListener("kensar:kora-open", onOpenKora as EventListener);
+    return () => {
+      window.removeEventListener("kensar:kora-open", onOpenKora as EventListener);
+    };
+  }, [hydrated, isDisabledRoute]);
 
-    runCommand(command);
+  if (!hydrated || isDisabledRoute) {
+    return null;
   }
 
   return (

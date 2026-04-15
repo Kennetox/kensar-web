@@ -3120,6 +3120,12 @@ body.mini-cart-open .main-wrapper {
 }
 
 .product-pickup-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
   margin-left: 26px;
   width: fit-content;
   color: #111827;
@@ -6522,6 +6528,7 @@ body.mini-cart-open .main-wrapper {
 .commerce-featured-card-image {
   height: 188px;
   min-height: 188px;
+  box-sizing: border-box;
   background: linear-gradient(145deg, #ffffff 0%, #f2f4f7 100%);
   background-size: 70% auto;
   background-position: center;
@@ -6530,7 +6537,11 @@ body.mini-cart-open .main-wrapper {
 }
 
 .commerce-featured-card-image.has-image {
-  background-size: 70% auto;
+  padding: 12px 14px;
+  background-size: contain;
+  background-position: center center;
+  background-origin: content-box;
+  background-clip: content-box;
 }
 
 .commerce-featured-card:hover .commerce-featured-card-image {

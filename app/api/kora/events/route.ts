@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { mkdir, appendFile } from "node:fs/promises";
+import path from "node:path";
 
 type KoraEventBody = {
   event?: string;
@@ -16,21 +18,26 @@ export async function POST(request: Request) {
   try {
     const body = (await request.json()) as KoraEventBody;
     const event = sanitizeText(body.event, 64);
-    const path = sanitizeText(body.path, 140);
+    const eventPath = sanitizeText(body.path, 140);
     const timestamp = sanitizeText(body.timestamp, 64);
 
-    if (!event || !path || !timestamp) {
+    if (!event || !eventPath || !timestamp) {
       return NextResponse.json({ ok: false, detail: "Invalid event payload" }, { status: 400 });
     }
 
     const payload = body.payload && typeof body.payload === "object" ? body.payload : {};
-
-    console.info("[KORA_EVENT]", {
+    const eventRecord = {
       event,
-      path,
+      path: eventPath,
       timestamp,
       payload,
-    });
+    };
+
+    const dateKey = new Date(timestamp).toISOString().slice(0, 10);
+    const dir = pathJoinSafe("/tmp", "kensar-kora-events");
+    const filePath = pathJoinSafe(dir, `${dateKey}.jsonl`);
+    await mkdir(dir, { recursive: true });
+    await appendFile(filePath, `${JSON.stringify(eventRecord)}\n`, "utf-8");
 
     return NextResponse.json({ ok: true }, { status: 202 });
   } catch {
@@ -40,4 +47,8 @@ export async function POST(request: Request) {
 
 export async function GET() {
   return NextResponse.json({ ok: true }, { status: 200 });
+}
+
+function pathJoinSafe(...parts: string[]) {
+  return path.join(...parts);
 }
