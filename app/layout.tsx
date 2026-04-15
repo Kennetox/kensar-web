@@ -35,9 +35,9 @@ export const metadata: Metadata = {
   },
   applicationName: "Kensar Electronic",
   icons: {
-    icon: [{ url: "/branding/icono.png", type: "image/png" }],
-    shortcut: [{ url: "/branding/icono.png", type: "image/png" }],
-    apple: "/branding/icono.png",
+    icon: [{ url: "/branding/favicon2026.png", type: "image/png" }],
+    shortcut: [{ url: "/branding/icono-black.svg", type: "image/svg+xml" }],
+    apple: "/branding/favicon2026.png",
   },
   openGraph: {
     title: "Kensar Electronic | Audio, seguridad y servicio tecnico en Palmira",
