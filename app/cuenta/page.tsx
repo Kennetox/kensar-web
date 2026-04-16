@@ -1,12 +1,11 @@
 "use client";
 
 import { Suspense, useMemo, useState, useTransition } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   useWebCustomer,
 } from "@/app/components/WebCustomerProvider";
-import { useWebCart } from "@/app/components/WebCartProvider";
+import AccountSectionTabs from "@/app/components/AccountSectionTabs";
 
 type AuthMode = "login" | "register";
 
@@ -63,29 +62,6 @@ function splitCustomerName(fullName?: string | null) {
   return { first_name: parts[0], last_name: parts.slice(1).join(" ") };
 }
 
-function translateOrderStatus(status?: string | null): string {
-  const normalized = (status || "").trim().toLowerCase();
-  if (normalized === "pending_payment") return "Pendiente de pago";
-  if (normalized === "paid") return "Pagada";
-  if (normalized === "processing") return "En proceso";
-  if (normalized === "ready") return "Lista";
-  if (normalized === "fulfilled") return "Entregada";
-  if (normalized === "payment_failed") return "Pago fallido";
-  if (normalized === "cancelled") return "Cancelada";
-  if (normalized === "refunded") return "Reembolsada";
-  return status || "Sin estado";
-}
-
-function translatePaymentStatus(status?: string | null): string {
-  const normalized = (status || "").trim().toLowerCase();
-  if (normalized === "pending") return "Pendiente";
-  if (normalized === "approved") return "Aprobado";
-  if (normalized === "failed" || normalized === "rejected") return "Rechazado";
-  if (normalized === "cancelled") return "Cancelado";
-  if (normalized === "refunded") return "Reembolsado";
-  return status || "Sin estado";
-}
-
 function buildProfileFormFromCustomer(customer: {
   name?: string | null;
   first_name?: string | null;
@@ -127,7 +103,6 @@ function PasswordVisibilityIcon({ visible }: { visible: boolean }) {
 
 function CuentaPageContent() {
   const { authenticated, customer, loading, login, register, updateProfile, logout } = useWebCustomer();
-  const { orders, ordersLoading } = useWebCart();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<AuthMode>("login");
@@ -317,7 +292,24 @@ function CuentaPageContent() {
   }
 
   return (
-    <main className={`account-page-shell${isGuestView ? " account-page-shell-guest" : ""}`}>
+    <main className="site-shell internal-page section-space cart-page-shell">
+      <section className="catalog-breadcrumbs">
+        <span>Cuenta</span>
+        <span>Mi cuenta</span>
+      </section>
+
+      <AccountSectionTabs />
+
+      <section className="cart-intro-card">
+        <div className="cart-intro-copy">
+          <p className="section-label">Cuenta cliente</p>
+          <h1 className="page-title">Perfil y datos personales</h1>
+          <p className="section-intro">
+            Gestiona tu información de contacto para mantener tu proceso de compra actualizado.
+          </p>
+        </div>
+      </section>
+
       {isGuestView ? (
         <>
           {formError ? <p className="account-feedback error">{formError}</p> : null}
@@ -504,28 +496,6 @@ function CuentaPageContent() {
         </>
       ) : (
         <>
-          <section className="account-page-hero-card">
-            <div className="account-page-hero">
-              <p className="section-label">Cuenta cliente</p>
-              <h1 className="page-title">Tu cuenta para comprar, seguir pedidos y guardar tu proceso en Kensar.</h1>
-              <p className="section-intro">
-                Inicia sesión o crea tu cuenta para consultar pedidos, continuar tu carrito y gestionar tu compra desde la web de Kensar.
-              </p>
-              <div className="account-status-strip">
-                <span className={`account-status-pill${authenticated ? " is-authenticated" : ""}`}>
-                  {loading ? "Verificando sesión" : authenticated ? "Sesión activa" : "Invitado"}
-                </span>
-                <p>
-                  {loading
-                    ? "Estamos validando tu sesión actual."
-                    : authenticated
-                      ? "Ya puedes seguir tus órdenes, gestionar el carrito y continuar tu compra."
-                      : "Inicia sesión o crea tu cuenta para guardar tu proceso de compra."}
-                </p>
-              </div>
-            </div>
-          </section>
-
           {formError ? <p className="account-feedback error">{formError}</p> : null}
           {formSuccess ? <p className="account-feedback success">{formSuccess}</p> : null}
         </>
@@ -536,7 +506,7 @@ function CuentaPageContent() {
           <p>Consultando tu sesión actual…</p>
         </section>
       ) : authenticated && customer ? (
-        <section className="account-dashboard-grid">
+        <section className="account-auth-grid account-auth-grid-single">
           <article className="account-card">
             <p className="account-section-kicker">Perfil conectado</p>
             <h2>{customer.name}</h2>
@@ -643,52 +613,6 @@ function CuentaPageContent() {
               <button type="button" onClick={handleLogout} disabled={isPending} className="account-primary-btn">
                 {isPending ? "Procesando..." : "Cerrar sesión"}
               </button>
-              <Link href="/carrito" className="account-secondary-btn">
-                Ver carrito
-              </Link>
-              <Link href="/catalogo" className="account-secondary-btn">
-                Ir al catálogo
-              </Link>
-            </div>
-          </article>
-
-          <article className="account-card">
-            <p className="account-section-kicker">Órdenes y operación</p>
-            <h2>Tu historial web inicial</h2>
-            <p className="account-section-copy">
-              Desde aquí ya puedes seguir las órdenes web que has creado en Kensar y entrar a su
-              confirmación individual.
-            </p>
-            <div className="account-orders-list">
-              {ordersLoading ? (
-                <p className="account-section-copy">Cargando órdenes…</p>
-              ) : orders.length === 0 ? (
-                <p className="account-section-copy">
-                  Aún no has creado órdenes web desde esta cuenta.
-                </p>
-              ) : (
-                orders.slice(0, 4).map((order) => (
-                  <Link key={order.id} href={`/ordenes/${order.id}`} className="account-order-link">
-                    <div>
-                      <strong>{order.document_number || `Orden #${order.id}`}</strong>
-                      <span>{translateOrderStatus(order.status)} · pago {translatePaymentStatus(order.payment_status)}</span>
-                    </div>
-                    <small>{new Intl.NumberFormat("es-CO", {
-                      style: "currency",
-                      currency: "COP",
-                      maximumFractionDigits: 0,
-                    }).format(order.total)}</small>
-                  </Link>
-                ))
-              )}
-            </div>
-            <div className="account-action-row">
-              <Link href="/carrito" className="account-secondary-btn">
-                Continuar compra
-              </Link>
-              <Link href="/catalogo" className="account-secondary-btn">
-                Seguir viendo productos
-              </Link>
             </div>
           </article>
         </section>

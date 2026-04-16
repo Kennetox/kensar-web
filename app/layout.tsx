@@ -88,8 +88,8 @@ const fallbackHeaderCategories: HeaderCategory[] = [
 async function loadHeaderCategories(): Promise<HeaderCategory[]> {
   try {
     const categories = await getCatalogCategories();
-    const activeCategories = categories.filter((category) => category.product_count > 0);
-    const source = (activeCategories.length ? activeCategories : categories).slice(0, 8);
+    const activeCategories = categories.filter((category) => category.is_active !== false);
+    const source = activeCategories.length ? activeCategories : categories;
 
     if (!source.length) {
       return fallbackHeaderCategories;

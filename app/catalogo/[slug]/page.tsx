@@ -4,6 +4,7 @@ import CatalogProductCard from "@/app/catalogo/CatalogProductCard";
 import ProductDetailGallery from "@/app/catalogo/ProductDetailGallery";
 import ProductPurchaseCta from "@/app/catalogo/ProductPurchaseCta";
 import ProductKoraAssistLink from "@/app/catalogo/ProductKoraAssistLink";
+import ProductViewTracker from "@/app/catalogo/ProductViewTracker";
 import {
   formatCatalogPrice,
   getCatalogProduct,
@@ -236,6 +237,17 @@ export default async function CatalogProductDetailPage({
           </div>
         </section>
       ) : null}
+      <ProductViewTracker
+        product={{
+          id: product.id,
+          slug: product.slug,
+          name: product.name,
+          image_url: product.image_url,
+          price: product.price,
+          compare_price: product.compare_price,
+          brand: product.brand,
+        }}
+      />
     </main>
   );
 }

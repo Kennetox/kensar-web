@@ -4,6 +4,7 @@ export type WebCatalogCategory = {
   name: string;
   image_url: string | null;
   tile_color: string | null;
+  is_active?: boolean;
   home_featured: boolean;
   home_featured_order: number;
   product_count: number;

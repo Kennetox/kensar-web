@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import AccountSectionTabs from "@/app/components/AccountSectionTabs";
 import { useWebCart } from "@/app/components/WebCartProvider";
 import { useWebCustomer } from "@/app/components/WebCustomerProvider";
+import { fetchWebOrder, type WebOrderDetail, type WebOrderSummary } from "@/app/lib/webCart";
 
 function formatMoney(value: number) {
   return new Intl.NumberFormat("es-CO", {
@@ -56,34 +58,74 @@ function translateFulfillmentStatus(status?: string | null): string {
 }
 
 export default function MisPedidosPage() {
-  const router = useRouter();
   const { authenticated } = useWebCustomer();
   const { orders, ordersLoading } = useWebCart();
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [selectedOrderDetail, setSelectedOrderDetail] = useState<WebOrderDetail | null>(null);
+  const [detailError, setDetailError] = useState<string | null>(null);
+  const [detailErrorOrderId, setDetailErrorOrderId] = useState<number | null>(null);
 
-  function handleGoBack() {
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      router.back();
-      return;
+  const sortedOrders = useMemo(() => {
+    return [...orders].sort((a, b) => {
+      const aTime = new Date(a.created_at).getTime();
+      const bTime = new Date(b.created_at).getTime();
+      return bTime - aTime;
+    });
+  }, [orders]);
+
+  const effectiveSelectedOrderId = useMemo<number | null>(() => {
+    if (!sortedOrders.length) return null;
+    if (selectedOrderId && sortedOrders.some((order) => order.id === selectedOrderId)) {
+      return selectedOrderId;
     }
-    router.push("/cuenta");
-  }
+    return sortedOrders[0].id;
+  }, [selectedOrderId, sortedOrders]);
+
+  const selectedOrderSummary = useMemo<WebOrderSummary | null>(() => {
+    if (!effectiveSelectedOrderId) return null;
+    return sortedOrders.find((order) => order.id === effectiveSelectedOrderId) ?? null;
+  }, [effectiveSelectedOrderId, sortedOrders]);
+
+  useEffect(() => {
+    if (!effectiveSelectedOrderId || !authenticated) return;
+
+    let active = true;
+
+    fetchWebOrder(effectiveSelectedOrderId)
+      .then((detail) => {
+        if (!active) return;
+        setSelectedOrderDetail(detail);
+        setDetailError(null);
+        setDetailErrorOrderId(null);
+      })
+      .catch((error) => {
+        if (!active) return;
+        setDetailError(error instanceof Error ? error.message : "No se pudo cargar el detalle.");
+        setDetailErrorOrderId(effectiveSelectedOrderId);
+        setSelectedOrderDetail(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [effectiveSelectedOrderId, authenticated]);
 
   return (
     <main className="site-shell internal-page section-space cart-page-shell">
       <section className="catalog-breadcrumbs">
-        <button type="button" className="catalog-breadcrumb-back-btn" onClick={handleGoBack}>
-          ← Volver
-        </button>
         <span>Cuenta</span>
-        <span>Mis pedidos</span>
+        <span>Compras</span>
       </section>
+
+      <AccountSectionTabs />
 
       <section className="cart-intro-card">
         <div className="cart-intro-copy">
-          <p className="section-label">Órdenes web</p>
-          <h1 className="page-title">Historial reciente</h1>
+          <p className="section-label">Compras</p>
+          <h1 className="page-title">Historial de compras</h1>
           <p className="section-intro">
-            Revisa tus pedidos recientes, su estado y entra a cada orden para seguimiento.
+            Consulta todas tus ventas web registradas, exitosas o rechazadas, y revisa el detalle
+            de cada orden en el panel derecho.
           </p>
         </div>
       </section>
@@ -102,42 +144,94 @@ export default function MisPedidosPage() {
           </div>
         </section>
       ) : (
-        <section className="cart-orders-section">
-          <div className="cart-orders-grid">
+        <section className="purchase-history-layout">
+          <aside className="purchase-history-list-card">
             {ordersLoading ? (
-              <article className="cart-order-card">
-                <p>Cargando tus órdenes…</p>
-              </article>
-            ) : orders.length === 0 ? (
-              <article className="cart-order-card">
-                <p>Aún no hay órdenes web creadas desde esta cuenta.</p>
-              </article>
+              <p className="account-section-copy">Cargando tus órdenes…</p>
+            ) : sortedOrders.length === 0 ? (
+              <p className="account-section-copy">Aún no hay órdenes web creadas desde esta cuenta.</p>
             ) : (
-              orders.map((order) => (
-                <article key={order.id} className="cart-order-card">
-                  <div className="cart-order-head">
-                    <strong>{order.document_number || `Orden #${order.id}`}</strong>
-                    <span>{translateOrderStatus(order.status)}</span>
-                  </div>
-                  <p>{formatMoney(order.total)}</p>
-                  <small>{formatDate(order.created_at)}</small>
-                  <div className="cart-order-meta">
-                    <span>Pago: {translatePaymentStatus(order.payment_status)}</span>
-                    <span>Fulfillment: {translateFulfillmentStatus(order.fulfillment_status)}</span>
-                  </div>
-                  <div className="account-action-row">
-                    <Link
-                      href={`/ordenes/${order.id}`}
-                      className="account-secondary-btn"
-                      prefetch={false}
+              <div className="purchase-order-list">
+                {sortedOrders.map((order) => {
+                  const active = effectiveSelectedOrderId === order.id;
+                  return (
+                    <button
+                      key={order.id}
+                      type="button"
+                      className={`purchase-order-row${active ? " active" : ""}`}
+                      onClick={() => {
+                        setSelectedOrderId(order.id);
+                        setDetailError(null);
+                        setDetailErrorOrderId(null);
+                      }}
                     >
-                      Ver detalle
-                    </Link>
-                  </div>
-                </article>
-              ))
+                      <div className="purchase-order-row-top">
+                        <strong>{order.document_number || `Orden #${order.id}`}</strong>
+                        <span>{translateOrderStatus(order.status)}</span>
+                      </div>
+                      <p>{formatMoney(order.total)}</p>
+                      <small>{formatDate(order.created_at)}</small>
+                    </button>
+                  );
+                })}
+              </div>
             )}
-          </div>
+          </aside>
+
+          <article className="purchase-history-detail-card">
+            {!selectedOrderSummary ? (
+              <p className="account-section-copy">Selecciona una orden para ver su detalle.</p>
+            ) : detailError && detailErrorOrderId === effectiveSelectedOrderId ? (
+              <p className="account-feedback error">{detailError}</p>
+            ) : selectedOrderDetail && selectedOrderDetail.id === effectiveSelectedOrderId ? (
+              <div className="purchase-detail-body">
+                <div className="purchase-detail-head">
+                  <div>
+                    <p className="account-section-kicker">Orden seleccionada</p>
+                    <h2>{selectedOrderDetail.document_number || `Orden #${selectedOrderDetail.id}`}</h2>
+                    <p className="account-section-copy">Creada: {formatDate(selectedOrderDetail.created_at)}</p>
+                  </div>
+                  <strong>{formatMoney(selectedOrderDetail.total)}</strong>
+                </div>
+
+                <div className="purchase-detail-meta">
+                  <p>
+                    <span>Estado</span>
+                    <strong>{translateOrderStatus(selectedOrderDetail.status)}</strong>
+                  </p>
+                  <p>
+                    <span>Pago</span>
+                    <strong>{translatePaymentStatus(selectedOrderDetail.payment_status)}</strong>
+                  </p>
+                  <p>
+                    <span>Fulfillment</span>
+                    <strong>{translateFulfillmentStatus(selectedOrderDetail.fulfillment_status)}</strong>
+                  </p>
+                </div>
+
+                <div className="purchase-detail-items">
+                  <h3>Productos</h3>
+                  {selectedOrderDetail.items.length === 0 ? (
+                    <p className="account-section-copy">Esta orden no tiene productos registrados.</p>
+                  ) : (
+                    <ul>
+                      {selectedOrderDetail.items.map((item) => (
+                        <li key={item.id}>
+                          <div>
+                            <strong>{item.product_name}</strong>
+                            <span>Cantidad: {item.quantity}</span>
+                          </div>
+                          <p>{formatMoney(item.line_total)}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="account-section-copy">Cargando detalle de la orden…</p>
+            )}
+          </article>
         </section>
       )}
     </main>
