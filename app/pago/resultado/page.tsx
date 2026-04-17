@@ -72,6 +72,7 @@ function CheckoutResultContent() {
   const searchParams = useSearchParams();
   const orderIdParam = searchParams.get("orderId");
   const paymentHint = (searchParams.get("payment") || "").toLowerCase();
+  const providerHint = (searchParams.get("provider") || "").trim().toLowerCase();
   const hintFailure = paymentHint === "failure";
   const hintPending = paymentHint === "pending";
   const hintSuccess = paymentHint === "success";
@@ -138,7 +139,8 @@ function CheckoutResultContent() {
         const next = await fetchCheckoutOrderPaymentStatus(
           orderId,
           accessToken || undefined,
-          paymentHint || undefined
+          paymentHint || undefined,
+          providerHint || undefined
         );
         if (cancelled) return;
         setStatus(next);
@@ -173,7 +175,7 @@ function CheckoutResultContent() {
     return () => {
       cancelled = true;
     };
-  }, [accessToken, hintFailure, hintSuccess, invalidOrder, orderId, paymentHint, tokenReady]);
+  }, [accessToken, hintFailure, hintSuccess, invalidOrder, orderId, paymentHint, providerHint, tokenReady]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

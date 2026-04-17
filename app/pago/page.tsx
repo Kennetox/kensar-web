@@ -9,6 +9,7 @@ import { useWebCustomer } from "@/app/components/WebCustomerProvider";
 import {
   createMercadoPagoGuestCheckout,
   createUnifiedCheckout,
+  createWompiGuestCheckout,
   type WebCartItem,
 } from "@/app/lib/webCart";
 
@@ -493,17 +494,6 @@ function PagoPageContent() {
       focusFirstError(nextErrors);
       return;
     }
-    if (selectedPaymentMethod === "wompi" && !authenticated) {
-      setCheckoutError("Para pagar con Wompi debes iniciar sesión en tu cuenta.");
-      return;
-    }
-    if (Object.keys(nextErrors).length > 0) {
-      setFieldErrors(nextErrors);
-      setCheckoutError("Completa los campos obligatorios marcados en rojo.");
-      focusFirstError(nextErrors);
-      return;
-    }
-
     const checkoutPhone = getFieldValue("checkout_phone");
     const checkoutCountryCode = getFieldValue("checkout_country") || "CO";
     const checkoutAddress = getFieldValue("checkout_address");
@@ -618,11 +608,8 @@ function PagoPageContent() {
     setCheckoutLoading(true);
     try {
       if (!authenticated) {
-        if (selectedPaymentMethod !== "card") {
-          throw new Error("Para pagar con Wompi debes iniciar sesión.");
-        }
         const guestName = [firstName, lastName].filter(Boolean).join(" ").trim();
-        const init = await createMercadoPagoGuestCheckout({
+        const guestPayload = {
           items: items.map((item) => ({
             product_id: item.product_id,
             quantity: Math.max(1, Number(item.quantity) || 1),
@@ -633,24 +620,42 @@ function PagoPageContent() {
           customer_tax_id: identification || undefined,
           customer_address: resolvedShippingAddress || undefined,
           checkout_context: checkoutContextPayload,
-          payer: {
-            email,
-            first_name: firstName || undefined,
-            last_name: lastName || undefined,
-            identification: identification
-              ? {
-                  type: "CC",
-                  number: identification,
-                }
-              : undefined,
-          },
-        });
+        };
+        const init =
+          selectedPaymentMethod === "card"
+            ? await createMercadoPagoGuestCheckout({
+                ...guestPayload,
+                payer: {
+                  email,
+                  first_name: firstName || undefined,
+                  last_name: lastName || undefined,
+                  identification: identification
+                    ? {
+                        type: "CC",
+                        number: identification,
+                      }
+                    : undefined,
+                },
+              })
+            : await createWompiGuestCheckout(guestPayload);
         setOrderId(init.order_id);
         if (init.order_access_token) {
           persistGuestOrderAccessToken(init.order_id, init.order_access_token);
         }
         persistCheckoutResultContext(init.order_id, checkoutResultContext);
-        window.location.href = resolveMercadoPagoUrl(init);
+        if (selectedPaymentMethod === "card") {
+          window.location.href = resolveMercadoPagoUrl(init);
+          return;
+        }
+        const wompiGuestUrl =
+          (typeof init.checkout_url === "string" ? init.checkout_url : "") ||
+          (typeof init.async_payment_url === "string" ? init.async_payment_url : "") ||
+          (typeof init.redirect_url === "string" ? init.redirect_url : "");
+        if (!wompiGuestUrl) {
+          window.location.href = `/pago/resultado?orderId=${encodeURIComponent(String(init.order_id))}&provider=wompi&payment=pending`;
+          return;
+        }
+        window.location.href = wompiGuestUrl;
         return;
       }
 
@@ -1014,11 +1019,6 @@ function PagoPageContent() {
                     <p className="checkout-muted">
                       Al continuar te redirigiremos al checkout de Wompi para elegir el método (PSE o Nequi) y completar el pago.
                     </p>
-                    {!authenticated ? (
-                      <p className="checkout-field-error">
-                        Para usar Wompi debes <Link href={loginHref}>iniciar sesión</Link>.
-                      </p>
-                    ) : null}
                   </div>
                 ) : null}
 

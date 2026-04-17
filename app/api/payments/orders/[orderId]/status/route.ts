@@ -55,6 +55,7 @@ export async function GET(request: Request, context: RouteContext) {
   const { orderId } = await context.params;
   const requestUrl = new URL(request.url);
   const paymentHint = (requestUrl.searchParams.get("payment") || "").trim().toLowerCase();
+  const providerHint = (requestUrl.searchParams.get("provider") || "").trim().toLowerCase();
   const paymentQuery = paymentHint ? `?payment=${encodeURIComponent(paymentHint)}` : "";
   let accessToken = (requestUrl.searchParams.get("accessToken") || "").trim();
 
@@ -65,8 +66,12 @@ export async function GET(request: Request, context: RouteContext) {
 
   // Guest fallback: keep compatibility for existing MP guest checkout.
   if (accessToken) {
+    const guestStatusPath =
+      providerHint === "wompi"
+        ? `/web/payments/wompi/guest/orders/${orderId}/status`
+        : `/web/payments/mercadopago/guest/orders/${orderId}/status`;
     const response = await fetchMetrikApi(
-      `/web/payments/mercadopago/guest/orders/${orderId}/status?access_token=${encodeURIComponent(accessToken)}${
+      `${guestStatusPath}?access_token=${encodeURIComponent(accessToken)}${
         paymentHint ? `&payment=${encodeURIComponent(paymentHint)}` : ""
       }`,
       {

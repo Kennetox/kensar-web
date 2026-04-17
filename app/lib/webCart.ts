@@ -113,6 +113,7 @@ export type WebWompiCheckoutInit = {
   async_payment_url?: string | null;
   acceptance_token_permalink?: string | null;
   personal_data_auth_permalink?: string | null;
+  order_access_token?: string | null;
 };
 
 export type WebCheckoutInit = WebMercadoPagoCheckoutInit | WebWompiCheckoutInit;
@@ -360,6 +361,25 @@ export async function createMercadoPagoGuestCheckout(input: {
   return parseJsonResponse<WebMercadoPagoCheckoutInit>(response);
 }
 
+export async function createWompiGuestCheckout(input: {
+  items: Array<{ product_id: number; quantity: number }>;
+  customer_email: string;
+  customer_name?: string;
+  customer_phone?: string;
+  customer_tax_id?: string;
+  customer_address?: string;
+  notes?: string;
+  checkout_context?: Record<string, unknown>;
+}): Promise<WebWompiCheckoutInit> {
+  const response = await fetch("/api/payments/wompi/guest-checkout", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(input),
+  });
+  return parseJsonResponse<WebWompiCheckoutInit>(response);
+}
+
 export async function fetchMercadoPagoOrderPaymentStatus(
   orderId: number,
   accessToken?: string,
@@ -409,11 +429,13 @@ export async function createUnifiedCheckout(input: {
 export async function fetchCheckoutOrderPaymentStatus(
   orderId: number,
   accessToken?: string,
-  paymentHint?: string
+  paymentHint?: string,
+  provider?: string
 ): Promise<WebCheckoutOrderPaymentStatus> {
   const params = new URLSearchParams();
   if (accessToken) params.set("accessToken", accessToken);
   if (paymentHint) params.set("payment", paymentHint);
+  if (provider) params.set("provider", provider);
   const qs = params.toString() ? `?${params.toString()}` : "";
   const response = await fetch(`/api/payments/orders/${orderId}/status${qs}`, {
     method: "GET",
