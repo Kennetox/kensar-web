@@ -91,7 +91,7 @@ export type WebOrderStatusLog = {
 
 export type WebMercadoPagoCheckoutInit = {
   order_id: number;
-  provider: string;
+  provider: "mercadopago";
   preference_id: string;
   init_point?: string | null;
   sandbox_init_point?: string | null;
