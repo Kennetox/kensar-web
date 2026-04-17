@@ -99,6 +99,24 @@ export type WebMercadoPagoCheckoutInit = {
   order_access_token?: string | null;
 };
 
+export type WebCheckoutMethod = "card" | "pse" | "nequi" | "wompi";
+
+export type WebWompiCheckoutInit = {
+  order_id: number;
+  provider: "wompi";
+  payment_method: "pse" | "nequi" | "wompi";
+  transaction_id: string;
+  status: WebOrderSummary["payment_status"];
+  reference: string;
+  redirect_url?: string | null;
+  checkout_url?: string | null;
+  async_payment_url?: string | null;
+  acceptance_token_permalink?: string | null;
+  personal_data_auth_permalink?: string | null;
+};
+
+export type WebCheckoutInit = WebMercadoPagoCheckoutInit | WebWompiCheckoutInit;
+
 export type WebMercadoPagoOrderPaymentStatus = {
   order_id: number;
   web_order_number?: number | null;
@@ -120,6 +138,17 @@ export type WebMercadoPagoOrderPaymentStatus = {
   payment_record_status: WebOrderSummary["payment_status"] | null;
   items: WebOrderItem[];
   updated_at: string;
+};
+
+export type WebCheckoutOrderPaymentStatus = WebMercadoPagoOrderPaymentStatus & {
+  payment_method?: "pse" | "nequi" | "wompi" | null;
+  checkout_url?: string | null;
+  async_payment_url?: string | null;
+};
+
+export type WompiPseFinancialInstitution = {
+  financial_institution_code: string;
+  financial_institution_name: string;
 };
 
 export type WebOrderDetail = WebOrderSummary & {
@@ -346,4 +375,59 @@ export async function fetchMercadoPagoOrderPaymentStatus(
     cache: "no-store",
   });
   return parseJsonResponse<WebMercadoPagoOrderPaymentStatus>(response);
+}
+
+export async function createUnifiedCheckout(input: {
+  order_id: number;
+  payment_method: WebCheckoutMethod;
+  checkout_context?: Record<string, unknown>;
+  payer?: {
+    email?: string;
+    first_name?: string;
+    last_name?: string;
+    identification?: {
+      type?: string;
+      number?: string;
+    };
+  };
+  payment_method_data?: Record<string, unknown>;
+  customer_email?: string;
+  customer_phone?: string;
+  customer_full_name?: string;
+  acceptance_token?: string;
+  accept_personal_auth?: string;
+}): Promise<WebCheckoutInit> {
+  const response = await fetch("/api/payments/checkout", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(input),
+  });
+  return parseJsonResponse<WebCheckoutInit>(response);
+}
+
+export async function fetchCheckoutOrderPaymentStatus(
+  orderId: number,
+  accessToken?: string,
+  paymentHint?: string
+): Promise<WebCheckoutOrderPaymentStatus> {
+  const params = new URLSearchParams();
+  if (accessToken) params.set("accessToken", accessToken);
+  if (paymentHint) params.set("payment", paymentHint);
+  const qs = params.toString() ? `?${params.toString()}` : "";
+  const response = await fetch(`/api/payments/orders/${orderId}/status${qs}`, {
+    method: "GET",
+    credentials: "include",
+    cache: "no-store",
+  });
+  return parseJsonResponse<WebCheckoutOrderPaymentStatus>(response);
+}
+
+export async function fetchWompiPseFinancialInstitutions(): Promise<WompiPseFinancialInstitution[]> {
+  const response = await fetch("/api/payments/wompi/pse/financial-institutions", {
+    method: "GET",
+    credentials: "include",
+    cache: "no-store",
+  });
+  return parseJsonResponse<WompiPseFinancialInstitution[]>(response);
 }

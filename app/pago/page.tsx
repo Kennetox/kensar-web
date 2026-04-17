@@ -8,7 +8,7 @@ import { useWebCart } from "@/app/components/WebCartProvider";
 import { useWebCustomer } from "@/app/components/WebCustomerProvider";
 import {
   createMercadoPagoGuestCheckout,
-  createMercadoPagoCheckout,
+  createUnifiedCheckout,
   type WebCartItem,
 } from "@/app/lib/webCart";
 
@@ -97,6 +97,8 @@ type CheckoutResultContext = {
   paymentMethodLabel: string;
   paymentMethodDetail: string;
 };
+
+type CheckoutPaymentProvider = "mercadopago" | "wompi";
 
 const PICKUP_ADDRESS_FULL = "Cra 24 #30-75, Palmira, Valle del Cauca, Colombia";
 const CHECKOUT_RESULT_CONTEXT_STORAGE_PREFIX = "kensar_web_checkout_result_context_";
@@ -351,7 +353,7 @@ function PagoPageContent() {
   const [checkoutLastName, setCheckoutLastName] = useState((customer?.last_name || "").trim());
   const [checkoutDocument, setCheckoutDocument] = useState(customer?.tax_id || "");
   const [deliveryMode, setDeliveryMode] = useState<"pickup" | "shipping">("pickup");
-  const [paymentMethod, setPaymentMethod] = useState<"mercadopago" | "wompi">("mercadopago");
+  const [paymentProvider, setPaymentProvider] = useState<CheckoutPaymentProvider>("mercadopago");
   const [billingMode, setBillingMode] = useState<"same_as_shipping" | "different">("same_as_shipping");
   const [fieldErrors, setFieldErrors] = useState<CheckoutFieldErrors>({});
   const previousCartSignatureRef = useRef<string | null>(null);
@@ -389,7 +391,7 @@ function PagoPageContent() {
     setCheckoutFirstName((customer?.first_name || "").trim());
     setCheckoutLastName((customer?.last_name || "").trim());
     setCheckoutDocument(customer?.tax_id || "");
-  }, [customer?.email, customer?.first_name, customer?.last_name, customer?.tax_id]);
+  }, [customer?.email, customer?.first_name, customer?.last_name, customer?.tax_id, customer?.phone]);
 
   const effectiveSnapshot = buildSnapshotFromCart(cart);
   const items = effectiveSnapshot.items;
@@ -465,6 +467,7 @@ function PagoPageContent() {
     const firstName = checkoutFirstName.trim() || customerNameParts.first_name;
     const lastName = checkoutLastName.trim() || customerNameParts.last_name;
     const identification = checkoutDocument.trim();
+    const selectedPaymentMethod: "card" | "wompi" = paymentProvider === "mercadopago" ? "card" : "wompi";
     const nextErrors: CheckoutFieldErrors = {};
 
     if (!email) nextErrors.checkout_email = "Ingresa tu correo electrónico.";
@@ -490,8 +493,14 @@ function PagoPageContent() {
       focusFirstError(nextErrors);
       return;
     }
-    if (paymentMethod === "wompi") {
-      setCheckoutError("Wompi estará disponible pronto. Por ahora usa Mercado Pago para finalizar la compra.");
+    if (selectedPaymentMethod === "wompi" && !authenticated) {
+      setCheckoutError("Para pagar con Wompi debes iniciar sesión en tu cuenta.");
+      return;
+    }
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      setCheckoutError("Completa los campos obligatorios marcados en rojo.");
+      focusFirstError(nextErrors);
       return;
     }
 
@@ -543,12 +552,17 @@ function PagoPageContent() {
       shippingAddress: resolvedShippingAddress,
       billingName: resolvedBillingName || [firstName, lastName].filter(Boolean).join(" ").trim() || email,
       billingAddress: resolvedBillingAddress || resolvedShippingAddress,
-      paymentMethodLabel: "Mercado Pago",
-      paymentMethodDetail: "PSE, Efecty y billetera Mercado Pago.",
+      paymentMethodLabel:
+        paymentProvider === "mercadopago" ? "Mercado Pago" : "Wompi",
+      paymentMethodDetail:
+        paymentProvider === "mercadopago"
+          ? "PSE, Efecty y billetera Mercado Pago."
+          : "PSE y Nequi en checkout de Wompi.",
     };
     const checkoutContextPayload: Record<string, unknown> = {
       flow: authenticated ? "authenticated" : "guest",
-      payment_method: paymentMethod,
+      payment_provider: paymentProvider,
+      payment_method: selectedPaymentMethod,
       delivery_mode: deliveryMode,
       billing_mode: deliveryMode === "shipping" ? billingMode : "pickup",
       contact: {
@@ -604,6 +618,9 @@ function PagoPageContent() {
     setCheckoutLoading(true);
     try {
       if (!authenticated) {
+        if (selectedPaymentMethod !== "card") {
+          throw new Error("Para pagar con Wompi debes iniciar sesión.");
+        }
         const guestName = [firstName, lastName].filter(Boolean).join(" ").trim();
         const init = await createMercadoPagoGuestCheckout({
           items: items.map((item) => ({
@@ -644,8 +661,9 @@ function PagoPageContent() {
         setOrderId(createdOrder.id);
       }
 
-      const init = await createMercadoPagoCheckout({
+      const init = await createUnifiedCheckout({
         order_id: nextOrderId,
+        payment_method: selectedPaymentMethod,
         checkout_context: checkoutContextPayload,
         payer: {
           email,
@@ -655,12 +673,28 @@ function PagoPageContent() {
             ? {
                 type: "CC",
                 number: identification,
-              }
-            : undefined,
+                }
+              : undefined,
         },
+        customer_email: email,
+        customer_phone: checkoutPhone || undefined,
+        customer_full_name: [firstName, lastName].filter(Boolean).join(" ").trim() || undefined,
       });
       persistCheckoutResultContext(nextOrderId, checkoutResultContext);
-      window.location.href = resolveMercadoPagoUrl(init);
+      if (init.provider === "mercadopago") {
+        window.location.href = resolveMercadoPagoUrl(init);
+        return;
+      }
+
+      const wompiUrl =
+        (typeof init.checkout_url === "string" ? init.checkout_url : "") ||
+        (typeof init.async_payment_url === "string" ? init.async_payment_url : "") ||
+        (typeof init.redirect_url === "string" ? init.redirect_url : "");
+      if (!wompiUrl) {
+        window.location.href = `/pago/resultado?orderId=${encodeURIComponent(String(nextOrderId))}&provider=wompi&payment=pending`;
+        return;
+      }
+      window.location.href = wompiUrl;
     } catch (nextError) {
       setCheckoutError(nextError instanceof Error ? nextError.message : "No se pudo iniciar el pago.");
     } finally {
@@ -924,15 +958,15 @@ function PagoPageContent() {
                 </p>
                 <div className="checkout-payment-methods" role="radiogroup" aria-label="Método de pago">
                   <label
-                    className={`checkout-payment-option${paymentMethod === "mercadopago" ? " is-active" : ""}`}
+                    className={`checkout-payment-option${paymentProvider === "mercadopago" ? " is-active" : ""}`}
                   >
                     <span className="checkout-payment-option-radio">
                       <input
                         type="radio"
                         name="checkout_payment_method"
                         value="mercadopago"
-                        checked={paymentMethod === "mercadopago"}
-                        onChange={() => setPaymentMethod("mercadopago")}
+                        checked={paymentProvider === "mercadopago"}
+                        onChange={() => setPaymentProvider("mercadopago")}
                       />
                     </span>
                     <span className="checkout-payment-option-copy">
@@ -946,25 +980,24 @@ function PagoPageContent() {
                     </span>
                   </label>
                   <div
-                    className={`checkout-payment-option-note${paymentMethod === "mercadopago" ? " is-open" : ""}`}
+                    className={`checkout-payment-option-note${paymentProvider === "mercadopago" ? " is-open" : ""}`}
                   >
                     <p>Se te redirigirá a Mercado Pago para que completes la compra.</p>
                   </div>
 
-                  <label className="checkout-payment-option is-disabled" aria-disabled="true">
+                  <label className={`checkout-payment-option${paymentProvider === "wompi" ? " is-active" : ""}`}>
                     <span className="checkout-payment-option-radio">
                       <input
                         type="radio"
                         name="checkout_payment_method"
                         value="wompi"
-                        checked={false}
-                        disabled
-                        onChange={() => undefined}
+                        checked={paymentProvider === "wompi"}
+                        onChange={() => setPaymentProvider("wompi")}
                       />
                     </span>
                     <span className="checkout-payment-option-copy">
                       <strong className="checkout-payment-title">Wompi</strong>
-                      <small>Próximamente</small>
+                      <small>Nequi y PSE.</small>
                     </span>
                     <span className="checkout-payment-option-badges" aria-hidden="true">
                       <small>wompi</small>
@@ -972,7 +1005,22 @@ function PagoPageContent() {
                       <small>pse</small>
                     </span>
                   </label>
+                  <div className={`checkout-payment-option-note${paymentProvider === "wompi" ? " is-open" : ""}`}>
+                    <p>Se te redirigirá a Wompi para que completes la compra.</p>
+                  </div>
                 </div>
+                {paymentProvider === "wompi" ? (
+                  <div className="checkout-form-grid">
+                    <p className="checkout-muted">
+                      Al continuar te redirigiremos al checkout de Wompi para elegir el método (PSE o Nequi) y completar el pago.
+                    </p>
+                    {!authenticated ? (
+                      <p className="checkout-field-error">
+                        Para usar Wompi debes <Link href={loginHref}>iniciar sesión</Link>.
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
 
                 <section className="checkout-billing-section" aria-label="Dirección de facturación">
                   <h3 className="checkout-billing-title">Dirección de facturación</h3>

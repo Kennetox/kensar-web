@@ -4,8 +4,8 @@ import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
-  fetchMercadoPagoOrderPaymentStatus,
-  type WebMercadoPagoOrderPaymentStatus,
+  fetchCheckoutOrderPaymentStatus,
+  type WebCheckoutOrderPaymentStatus,
 } from "@/app/lib/webCart";
 
 function formatMoney(value: number) {
@@ -80,7 +80,7 @@ function CheckoutResultContent() {
   const invalidOrder = !orderId || Number.isNaN(orderId);
   const [accessToken, setAccessToken] = useState(accessTokenParam);
   const [tokenReady, setTokenReady] = useState(Boolean(accessTokenParam) || invalidOrder);
-  const [status, setStatus] = useState<WebMercadoPagoOrderPaymentStatus | null>(null);
+  const [status, setStatus] = useState<WebCheckoutOrderPaymentStatus | null>(null);
   const [loading, setLoading] = useState(orderId > 0);
   const [error, setError] = useState<string | null>(null);
   const [checkoutContext, setCheckoutContext] = useState<CheckoutResultContext | null>(null);
@@ -135,7 +135,7 @@ function CheckoutResultContent() {
     const loadStatus = async () => {
       attempts += 1;
       try {
-        const next = await fetchMercadoPagoOrderPaymentStatus(
+        const next = await fetchCheckoutOrderPaymentStatus(
           orderId,
           accessToken || undefined,
           paymentHint || undefined
@@ -220,7 +220,7 @@ function CheckoutResultContent() {
     if (hintPending) {
       return "Tu pago está pendiente de confirmación por el proveedor.";
     }
-    return "Estamos confirmando el estado con Mercado Pago.";
+    return "Estamos confirmando el estado del pago con el proveedor.";
   })();
 
   const isApproved = status?.payment_status === "approved";
@@ -252,8 +252,8 @@ function CheckoutResultContent() {
     (deliveryMode === "pickup" ? PICKUP_ADDRESS_FULL : "Dirección de envío pendiente de confirmación");
   const billingName = checkoutContext?.billingName || resolvedCustomerName;
   const billingAddress = checkoutContext?.billingAddress || shippingAddress;
-  const paymentMethodLabel = checkoutContext?.paymentMethodLabel || "Mercado Pago";
-  const paymentMethodDetail = checkoutContext?.paymentMethodDetail || "PSE, Efecty y billetera Mercado Pago.";
+  const paymentMethodLabel = checkoutContext?.paymentMethodLabel || "Método de pago";
+  const paymentMethodDetail = checkoutContext?.paymentMethodDetail || "Procesado por proveedor seguro.";
   const paymentStatusLabel = getPaymentStatusLabel(status?.payment_status || paymentHint || "pending");
   const mapAddress = deliveryMode === "pickup" ? PICKUP_ADDRESS_FULL : shippingAddress;
   const mapEmbedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(mapAddress)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
