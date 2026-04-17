@@ -10,6 +10,7 @@ import HeaderCatalogSearch from "./components/HeaderCatalogSearch";
 import FloatingWhatsAppButton from "./components/FloatingWhatsAppButton";
 import KoraChat from "./components/KoraChat";
 import BackToTopButton from "./components/BackToTopButton";
+import CookieConsentBanner from "./components/CookieConsentBanner";
 import WebCartProvider from "./components/WebCartProvider";
 import WebCustomerProvider from "./components/WebCustomerProvider";
 import TopbarScrollBehavior from "./components/TopbarScrollBehavior";
@@ -191,6 +192,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <BackToTopButton />
         <KoraChat />
         <FloatingWhatsAppButton />
+        <CookieConsentBanner />
 
         <footer className="site-footer">
           <div className="site-footer-inner">
@@ -247,6 +249,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <Link href="/contacto">Informacion de contacto</Link>
             <Link href="/legal/privacidad">Politica de privacidad</Link>
             <Link href="/legal/terminos">Terminos y condiciones</Link>
+            <Link href="/legal/cookies">Politica de cookies</Link>
             <span>Politica de envios</span>
             <Link href="/legal/cambios-devoluciones-garantias#cambios-devoluciones">Cambios y devoluciones</Link>
             <Link href="/legal/cambios-devoluciones-garantias#garantias">Garantias</Link>
