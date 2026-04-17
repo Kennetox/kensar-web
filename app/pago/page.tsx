@@ -643,7 +643,7 @@ function PagoPageContent() {
           persistGuestOrderAccessToken(init.order_id, init.order_access_token);
         }
         persistCheckoutResultContext(init.order_id, checkoutResultContext);
-        if (selectedPaymentMethod === "card") {
+        if (init.provider === "mercadopago") {
           window.location.href = resolveMercadoPagoUrl(init);
           return;
         }
