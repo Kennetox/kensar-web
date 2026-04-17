@@ -5342,22 +5342,49 @@ body.mini-cart-open .main-wrapper {
 .checkout-payment-option-badges {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
 }
 
-.checkout-payment-option-badges small {
-  min-height: 20px;
-  padding: 0 7px;
+.checkout-payment-badge-text {
+  min-height: 31px;
+  min-width: 44px;
+  padding: 0 10px;
   border-radius: 6px;
   border: 1px solid rgba(148, 163, 184, 0.35);
   background: #ffffff;
   color: #334155;
-  font-size: 0.66rem;
+  font-size: 0.76rem;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+
+.checkout-payment-badge {
+  min-width: 40px;
+}
+
+.checkout-payment-badge-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 31px;
+  min-width: 42px;
+  padding: 0 8px;
+  border-radius: 7px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: #ffffff;
+  line-height: 0;
+}
+
+.checkout-payment-badge-image {
+  width: auto;
+  max-width: 58px;
+  height: 20px;
+  object-fit: contain;
+  display: block;
 }
 
 .checkout-payment-option-note {

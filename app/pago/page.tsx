@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState, type InputHTMLAttributes, type SelectHTMLAttributes } from "react";
@@ -100,9 +101,22 @@ type CheckoutResultContext = {
 };
 
 type CheckoutPaymentProvider = "mercadopago" | "wompi";
+type PaymentVisualBadge =
+  | { kind: "icon"; src: string; alt: string; width: number; height: number }
+  | { kind: "text"; label: string };
 
 const PICKUP_ADDRESS_FULL = "Cra 24 #30-75, Palmira, Valle del Cauca, Colombia";
 const CHECKOUT_RESULT_CONTEXT_STORAGE_PREFIX = "kensar_web_checkout_result_context_";
+const MERCADOPAGO_VISUAL_BADGES: PaymentVisualBadge[] = [
+  { kind: "icon", src: "/payment-icons/pse.svg", alt: "PSE", width: 56, height: 22 },
+  { kind: "icon", src: "/payment-icons/efecty.svg", alt: "Efecty", width: 52, height: 22 },
+  { kind: "icon", src: "/payment-icons/visa.svg", alt: "Visa", width: 46, height: 20 },
+  { kind: "text", label: "+2" },
+];
+const WOMPI_VISUAL_BADGES: PaymentVisualBadge[] = [
+  { kind: "icon", src: "/payment-icons/nequi.svg", alt: "Nequi", width: 56, height: 22 },
+  { kind: "icon", src: "/payment-icons/pse.svg", alt: "PSE", width: 56, height: 22 },
+];
 
 function buildSnapshotFromCart(cart: ReturnType<typeof useWebCart>["cart"]): CheckoutSnapshot {
   const items = cart?.items ?? [];
@@ -979,9 +993,23 @@ function PagoPageContent() {
                       <small>PSE, Efecty y billetera Mercado Pago.</small>
                     </span>
                     <span className="checkout-payment-option-badges" aria-hidden="true">
-                      <small>pse</small>
-                      <small>efecty</small>
-                      <small>visa</small>
+                      {MERCADOPAGO_VISUAL_BADGES.map((badge) =>
+                        badge.kind === "icon" ? (
+                          <span key={badge.alt} className="checkout-payment-badge-icon">
+                            <Image
+                              src={badge.src}
+                              alt={badge.alt}
+                              width={badge.width}
+                              height={badge.height}
+                              className="checkout-payment-badge-image"
+                            />
+                          </span>
+                        ) : (
+                          <small key={badge.label} className="checkout-payment-badge checkout-payment-badge-text">
+                            {badge.label}
+                          </small>
+                        )
+                      )}
                     </span>
                   </label>
                   <div
@@ -1005,9 +1033,23 @@ function PagoPageContent() {
                       <small>Nequi y PSE.</small>
                     </span>
                     <span className="checkout-payment-option-badges" aria-hidden="true">
-                      <small>wompi</small>
-                      <small>nequi</small>
-                      <small>pse</small>
+                      {WOMPI_VISUAL_BADGES.map((badge) =>
+                        badge.kind === "icon" ? (
+                          <span key={badge.alt} className="checkout-payment-badge-icon">
+                            <Image
+                              src={badge.src}
+                              alt={badge.alt}
+                              width={badge.width}
+                              height={badge.height}
+                              className="checkout-payment-badge-image"
+                            />
+                          </span>
+                        ) : (
+                          <small key={badge.label} className="checkout-payment-badge checkout-payment-badge-text">
+                            {badge.label}
+                          </small>
+                        )
+                      )}
                     </span>
                   </label>
                   <div className={`checkout-payment-option-note${paymentProvider === "wompi" ? " is-open" : ""}`}>
