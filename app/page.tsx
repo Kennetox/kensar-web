@@ -5,6 +5,7 @@ import AddToCartButton from "@/app/components/AddToCartButton";
 import CommerceSlider from "@/app/components/CommerceSlider";
 import HomeProductCarousel from "@/app/components/HomeProductCarousel";
 import Reveal from "@/app/components/Reveal";
+import { buildCatalogCategoryHref } from "@/app/lib/catalogRoutes";
 import {
   getCatalogCategories,
   getCatalogProducts,
@@ -190,9 +191,11 @@ async function loadHomeData(): Promise<HomeData> {
   }
 }
 
-function buildCategoryHref(path: string | null) {
-  if (!path) return "/catalogo";
-  return `/catalogo?category=${encodeURIComponent(path)}`;
+function buildCategoryHref(path: string | null, parentPath?: string | null) {
+  return buildCatalogCategoryHref({
+    categoryPath: path,
+    parentCategoryPath: parentPath,
+  });
 }
 
 function normalizeCategoryValue(value: string | null) {
@@ -277,7 +280,7 @@ export default async function HomePage() {
       id: "guitarras",
       image: "/sliders/home/slide-01-desktop.webp",
       alt: "Promociones y descuentos en categorias destacadas",
-      href: "/catalogo?category=instrumentos",
+      href: buildCategoryHref("instrumentos"),
       ctaLabel: "VER GUITARRAS",
     },
     {
@@ -324,7 +327,7 @@ export default async function HomePage() {
     .slice(0, HOME_FEATURED_CATEGORY_LIMIT)
     .map((category) => ({
       id: category.id,
-      href: buildCategoryHref(category.path),
+      href: buildCategoryHref(category.path, category.parent_path),
       name: category.name,
       imageUrl: category.image_url,
     }));
@@ -334,7 +337,7 @@ export default async function HomePage() {
     .slice(0, HOME_FEATURED_CATEGORY_LIMIT)
     .map((category) => ({
       id: category.id,
-      href: buildCategoryHref(category.path),
+      href: buildCategoryHref(category.path, category.parent_path),
       name: category.name,
       imageUrl: category.image_url,
     }));

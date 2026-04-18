@@ -22,15 +22,18 @@ function buildCatalogHref(input: {
   brand?: string;
   page?: string;
 }) {
+  const categoryPath = input.category?.trim();
+  const basePath = categoryPath
+    ? `/catalogo/categoria/${encodeURIComponent(categoryPath)}`
+    : "/catalogo";
   const params = new URLSearchParams();
 
   if (input.q) params.set("q", input.q);
-  if (input.category) params.set("category", input.category);
   if (input.brand) params.set("brand", input.brand);
   if (input.page) params.set("page", input.page);
 
   const query = params.toString();
-  return query ? `/catalogo?${query}` : "/catalogo";
+  return query ? `${basePath}?${query}` : basePath;
 }
 
 function buildFallbackCategories(): WebCatalogCategory[] {
@@ -255,9 +258,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
           <div className="catalog-filter-panel">
             <div className="catalog-filter-block">
               <p className="catalog-filter-label">Categorias</p>
-              <form action="/catalogo" className="catalog-sidebar-search">
-                {category ? <input type="hidden" name="category" value={category} /> : null}
-                {brand ? <input type="hidden" name="brand" value={brand} /> : null}
+              <form action={buildCatalogHref({ category: category || undefined, brand: brand || undefined })} className="catalog-sidebar-search">
                 <input
                   type="search"
                   name="q"

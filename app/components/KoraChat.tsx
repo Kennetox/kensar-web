@@ -94,11 +94,11 @@ const MAIN_ACTIONS: ChatAction[] = [
 ];
 
 const FALLBACK_PRODUCT_ACTIONS: ChatAction[] = [
-  { id: "cat-audio", label: "Audio / Sonido", type: "link", value: "/catalogo?category=audio-profesional" },
-  { id: "cat-security", label: "Seguridad", type: "link", value: "/catalogo?category=camaras" },
-  { id: "cat-instruments", label: "Instrumentos", type: "link", value: "/catalogo?category=instrumentos" },
-  { id: "cat-accessories", label: "Accesorios", type: "link", value: "/catalogo?category=accesorios" },
-  { id: "cat-home", label: "Hogar y entretenimiento", type: "link", value: "/catalogo?category=tecnologia" },
+  { id: "cat-audio", label: "Audio / Sonido", type: "link", value: "/catalogo/categoria/audio-profesional" },
+  { id: "cat-security", label: "Seguridad", type: "link", value: "/catalogo/categoria/camaras" },
+  { id: "cat-instruments", label: "Instrumentos", type: "link", value: "/catalogo/categoria/instrumentos" },
+  { id: "cat-accessories", label: "Accesorios", type: "link", value: "/catalogo/categoria/accesorios" },
+  { id: "cat-home", label: "Hogar y entretenimiento", type: "link", value: "/catalogo/categoria/tecnologia" },
   { id: "menu-from-products", label: "Volver al menú", type: "command", value: "menu" },
 ];
 
@@ -258,7 +258,7 @@ function buildProductActionsFromCategories(items: KoraCategoryItem[]) {
       id: `cat-${item.path}`,
       label: normalizeCategoryLabel(item.name),
       type: "link" as const,
-      value: `/catalogo?category=${encodeURIComponent(item.path)}`,
+      value: `/catalogo/categoria/${encodeURIComponent(item.path)}`,
     }));
 
   if (!mapped.length) {

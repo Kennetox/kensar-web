@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { buildCatalogCategoryHref } from "@/app/lib/catalogRoutes";
 
 type HeaderCategory = {
   id: string;
   path: string;
   name: string;
+  parent_path?: string | null;
 };
 
 type TopNavProps = {
@@ -24,6 +26,18 @@ export default function TopNav({ categories, brands }: TopNavProps) {
   const isCatalogActive = pathname === "/catalogo" || pathname.startsWith("/catalogo/");
   const isContactActive = pathname === "/empresa" || pathname.startsWith("/empresa/");
   const hasBrands = brands.length > 0;
+  const parentCategories = categories.filter((category) => !category.parent_path);
+  const childrenByParent = categories.reduce<Record<string, HeaderCategory[]>>((acc, item) => {
+    const parentPath = (item.parent_path || "").trim();
+    if (!parentPath) return acc;
+    if (!acc[parentPath]) acc[parentPath] = [];
+    acc[parentPath].push(item);
+    return acc;
+  }, {});
+
+  Object.values(childrenByParent).forEach((items) => {
+    items.sort((a, b) => a.name.localeCompare(b.name, "es"));
+  });
 
   return (
     <nav className="top-nav" aria-label="Navegacion principal">
@@ -41,16 +55,42 @@ export default function TopNav({ categories, brands }: TopNavProps) {
           </span>
         </Link>
         <div className="nav-dropdown-panel" role="menu" aria-label="Categorias">
-          {categories.map((category) => (
-            <Link
-              key={category.id}
-              href={`/catalogo?category=${encodeURIComponent(category.path)}`}
-              className="nav-dropdown-link"
-              role="menuitem"
-            >
-              {category.name}
-            </Link>
-          ))}
+          {parentCategories.map((category) => {
+            const subcategories = childrenByParent[category.path] || [];
+            const hasSubcategories = subcategories.length > 0;
+            return (
+              <div
+                key={category.id}
+                className={hasSubcategories ? "nav-dropdown-item has-submenu" : "nav-dropdown-item"}
+              >
+                <Link
+                  href={buildCatalogCategoryHref({ categoryPath: category.path })}
+                  className={hasSubcategories ? "nav-dropdown-link nav-dropdown-link-parent" : "nav-dropdown-link"}
+                  role="menuitem"
+                >
+                  <span>{category.name}</span>
+                  {hasSubcategories ? <span className="nav-submenu-caret">›</span> : null}
+                </Link>
+                {hasSubcategories ? (
+                  <div className="nav-submenu-panel" role="menu" aria-label={`Subcategorías de ${category.name}`}>
+                    {subcategories.map((subcategory) => (
+                      <Link
+                        key={subcategory.id}
+                        href={buildCatalogCategoryHref({
+                          categoryPath: subcategory.path,
+                          parentCategoryPath: category.path,
+                        })}
+                        className="nav-dropdown-link"
+                        role="menuitem"
+                      >
+                        {subcategory.name}
+                      </Link>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
       </div>
 

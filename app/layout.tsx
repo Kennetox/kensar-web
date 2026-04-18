@@ -70,6 +70,7 @@ type HeaderCategory = {
   id: string;
   path: string;
   name: string;
+  parent_path?: string | null;
 };
 
 type HeaderBrand = {
@@ -88,18 +89,23 @@ const fallbackHeaderCategories: HeaderCategory[] = [
 
 async function loadHeaderCategories(): Promise<HeaderCategory[]> {
   try {
-    const categories = await getCatalogCategories();
-    const activeCategories = categories.filter((category) => category.is_active !== false);
-    const source = activeCategories.length ? activeCategories : categories;
-
-    if (!source.length) {
-      return fallbackHeaderCategories;
-    }
-
-    return source.map((category) => ({
+    const rows = await getCatalogProducts({ page: 1 });
+    const categories = rows.filters.categories
+      .filter((item) => item.value)
+      .map((item) => ({
+        id: item.value,
+        path: item.value,
+        name: item.label,
+        parent_path: item.parent_value || null,
+      }));
+    if (categories.length) return categories;
+    const fallbackFromCatalog = await getCatalogCategories();
+    if (!fallbackFromCatalog.length) return fallbackHeaderCategories;
+    return fallbackFromCatalog.map((category) => ({
       id: category.id,
       path: category.path,
       name: category.name,
+      parent_path: category.parent_path || null,
     }));
   } catch {
     return fallbackHeaderCategories;

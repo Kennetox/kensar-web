@@ -283,6 +283,42 @@ body.checkout-payment-page .kora-chat-root {
   color: #1d4ed8;
 }
 
+.nav-dropdown-item {
+  position: relative;
+}
+
+.nav-dropdown-link-parent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.nav-submenu-caret {
+  color: #64748b;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.nav-submenu-panel {
+  position: absolute;
+  top: -10px;
+  left: calc(100% + 8px);
+  min-width: 220px;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: #ffffff;
+  box-shadow: 0 24px 36px -26px rgba(15, 23, 42, 0.62);
+  padding: 10px;
+  display: none;
+  z-index: 65;
+}
+
+.nav-dropdown-item.has-submenu:hover .nav-submenu-panel {
+  display: grid;
+  gap: 4px;
+}
+
 .topbar-actions {
   display: flex;
   align-items: center;
