@@ -10666,6 +10666,31 @@ body.mini-cart-open .main-wrapper {
   white-space: nowrap;
 }
 
+.catalog-context-banner {
+  padding: 2px 0 4px;
+}
+
+.catalog-context-banner-copy {
+  display: grid;
+  gap: 3px;
+}
+
+.catalog-context-title {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.4rem;
+  line-height: 1.15;
+  font-weight: 800;
+}
+
+.catalog-context-subtitle {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  font-weight: 500;
+}
+
 .catalog-context-chips {
   display: flex;
   flex-wrap: wrap;

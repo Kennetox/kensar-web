@@ -152,7 +152,14 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
   const fallbackCategories = buildFallbackCategories();
   const visibleCategories = categories.length ? categories : fallbackCategories;
   const visibleBrands = productList.filters.brands.slice(0, 10);
+  const categoryFilterMap = new Map(
+    productList.filters.categories.map((item) => [item.value, item])
+  );
   const selectedFilterCategory = productList.filters.categories.find((item) => item.value === category) || null;
+  const selectedParentFilterCategory =
+    selectedFilterCategory?.parent_value
+      ? categoryFilterMap.get(selectedFilterCategory.parent_value) || null
+      : null;
   const categoryContextRoot = selectedFilterCategory?.parent_value || category || "";
   const visibleSubcategories = categoryContextRoot
     ? productList.filters.categories
@@ -164,10 +171,13 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
     visibleCategories.find((item) => item.path === category)?.name ||
     productList.filters.categories.find((item) => item.value === category)?.label ||
     "";
-  const quickCategories = productList.filters.categories
-    .filter((item) => item.value && item.value !== category)
-    .slice(0, 5);
-  const hasActiveFilters = Boolean(q || category || brand);
+  const catalogHeaderTitle = category && selectedCategoryName ? selectedCategoryName : "Catalogo";
+  const catalogHeaderSubtitle =
+    category && selectedParentFilterCategory
+      ? `Subcategoria de ${selectedParentFilterCategory.label}`
+      : category
+      ? "Categoria del catalogo"
+      : "Todos los productos disponibles";
 
   return (
     <main className="site-shell internal-page section-space catalog-page-shell">
@@ -188,69 +198,12 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
             {productList.total} productos
           </p>
         </div>
-
-        {quickCategories.length > 0 ? (
-          <div className="catalog-context-chips" aria-label="Accesos rápidos por categoría">
-            {quickCategories.map((item) => (
-              <Link
-                key={item.value}
-                href={buildCatalogHref({
-                  q: q || undefined,
-                  category: item.value,
-                  brand: brand || undefined,
-                })}
-                className="catalog-context-chip"
-              >
-                <span>{item.label}</span>
-                <small>{item.count}</small>
-              </Link>
-            ))}
+        <div className="catalog-context-banner" aria-label="Encabezado de categoría">
+          <div className="catalog-context-banner-copy">
+            <h1 className="catalog-context-title">{catalogHeaderTitle}</h1>
+            <p className="catalog-context-subtitle">{catalogHeaderSubtitle}</p>
           </div>
-        ) : null}
-
-        {hasActiveFilters ? (
-          <div className="catalog-active-filters" aria-label="Filtros activos">
-            {q ? (
-              <Link
-                href={buildCatalogHref({
-                  category: category || undefined,
-                  brand: brand || undefined,
-                })}
-                className="catalog-active-filter"
-              >
-                <span>Busqueda: {q}</span>
-                <small>×</small>
-              </Link>
-            ) : null}
-            {category && selectedCategoryName ? (
-              <Link
-                href={buildCatalogHref({
-                  q: q || undefined,
-                  brand: brand || undefined,
-                })}
-                className="catalog-active-filter"
-              >
-                <span>Categoria: {selectedCategoryName}</span>
-                <small>×</small>
-              </Link>
-            ) : null}
-            {brand ? (
-              <Link
-                href={buildCatalogHref({
-                  q: q || undefined,
-                  category: category || undefined,
-                })}
-                className="catalog-active-filter"
-              >
-                <span>Marca: {brand}</span>
-                <small>×</small>
-              </Link>
-            ) : null}
-            <Link href="/catalogo" className="catalog-active-filters-clear">
-              Limpiar todo
-            </Link>
-          </div>
-        ) : null}
+        </div>
       </section>
 
       <section className="catalog-store-layout">
