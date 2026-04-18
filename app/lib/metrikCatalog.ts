@@ -184,6 +184,7 @@ export async function getCatalogProducts(input: {
   min_price?: number;
   max_price?: number;
   page?: number;
+  page_size?: number;
 }) {
   const params = new URLSearchParams();
 
@@ -205,6 +206,7 @@ export async function getCatalogProducts(input: {
     params.set("max_price", String(Math.max(0, input.max_price)));
   }
   if (input.page && input.page > 1) params.set("page", String(input.page));
+  if (input.page_size && input.page_size > 0) params.set("page_size", String(input.page_size));
 
   const baseUrl = getApiBaseUrl();
   const response = await fetchCatalog<WebCatalogProductList>("/web/catalog/products", params);

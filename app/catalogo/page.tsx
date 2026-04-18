@@ -111,6 +111,7 @@ async function loadCatalogData(input: {
   min_price?: number;
   max_price?: number;
   page: number;
+  page_size: number;
 }): Promise<{
   categories: WebCatalogCategory[];
   productList: WebCatalogProductList | null;
@@ -127,6 +128,7 @@ async function loadCatalogData(input: {
         min_price: input.min_price,
         max_price: input.max_price,
         page: input.page,
+        page_size: input.page_size,
       }),
     ]);
 
@@ -137,6 +139,7 @@ async function loadCatalogData(input: {
 }
 
 export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
+  const CATALOG_PAGE_SIZE = 24;
   const params = (await searchParams) ?? {};
   const q = params.q?.trim() || "";
   const category = params.category?.trim() || "";
@@ -162,6 +165,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
     min_price: minPrice > 0 ? minPrice : undefined,
     max_price: maxPrice > 0 ? maxPrice : undefined,
     page,
+    page_size: CATALOG_PAGE_SIZE,
   });
 
   if (hasError || !productList) {
