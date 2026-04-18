@@ -253,20 +253,21 @@ body.checkout-payment-page .kora-chat-root {
   position: absolute;
   top: 100%;
   left: 0;
-  min-width: 220px;
-  border-radius: 12px;
+  min-width: 180px;
+  width: max-content;
+  border-radius: 0;
   border: 1px solid rgba(15, 23, 42, 0.12);
   background: #ffffff;
   box-shadow: 0 24px 36px -26px rgba(15, 23, 42, 0.62);
   margin-top: 0;
-  padding: 10px;
+  padding: 8px;
   display: none;
   z-index: 60;
 }
 
 .nav-item-dropdown:hover .nav-dropdown-panel {
   display: grid;
-  gap: 4px;
+  gap: 2px;
 }
 
 .nav-dropdown-link {
@@ -274,8 +275,11 @@ body.checkout-payment-page .kora-chat-root {
   color: #334155;
   font-size: 0.83rem;
   line-height: 1.35;
-  border-radius: 8px;
-  padding: 8px 10px;
+  border-radius: 0;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
 }
 
 .nav-dropdown-link:hover {
@@ -285,6 +289,15 @@ body.checkout-payment-page .kora-chat-root {
 
 .nav-dropdown-item {
   position: relative;
+}
+
+.nav-dropdown-item.has-submenu::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -10px;
+  width: 10px;
+  height: 100%;
 }
 
 .nav-dropdown-link-parent {
@@ -302,21 +315,22 @@ body.checkout-payment-page .kora-chat-root {
 
 .nav-submenu-panel {
   position: absolute;
-  top: -10px;
-  left: calc(100% + 8px);
-  min-width: 220px;
-  border-radius: 12px;
+  top: 0;
+  left: calc(100% - 1px);
+  min-width: 180px;
+  width: max-content;
+  border-radius: 0;
   border: 1px solid rgba(15, 23, 42, 0.12);
   background: #ffffff;
   box-shadow: 0 24px 36px -26px rgba(15, 23, 42, 0.62);
-  padding: 10px;
+  padding: 8px;
   display: none;
   z-index: 65;
 }
 
 .nav-dropdown-item.has-submenu:hover .nav-submenu-panel {
   display: grid;
-  gap: 4px;
+  gap: 2px;
 }
 
 .topbar-actions {
