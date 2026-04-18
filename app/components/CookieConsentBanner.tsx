@@ -96,12 +96,23 @@ function persistCookieConsent(value: CookieConsent) {
 }
 
 export default function CookieConsentBanner() {
-  const initialConsent = typeof window === "undefined" ? null : readCookieConsent();
-  console.info(`${COOKIE_DEBUG_PREFIX} render`, { initialConsent });
-  const [consent, setConsent] = useState<CookieConsent | null>(initialConsent);
+  const initialSnapshot =
+    typeof window === "undefined"
+      ? { ready: false, consent: null as CookieConsent | null, analytics: false, marketing: false }
+      : (() => {
+          const existing = readCookieConsent();
+          return {
+            ready: true,
+            consent: existing,
+            analytics: existing?.analytics ?? false,
+            marketing: existing?.marketing ?? false,
+          };
+        })();
+  console.info(`${COOKIE_DEBUG_PREFIX} render`, { initialConsent: initialSnapshot.consent });
+  const [consent, setConsent] = useState<CookieConsent | null>(initialSnapshot.consent);
   const [expanded, setExpanded] = useState(false);
-  const [analytics, setAnalytics] = useState(initialConsent?.analytics ?? false);
-  const [marketing, setMarketing] = useState(initialConsent?.marketing ?? false);
+  const [analytics, setAnalytics] = useState(initialSnapshot.analytics);
+  const [marketing, setMarketing] = useState(initialSnapshot.marketing);
 
   function applyConsent(next: { analytics: boolean; marketing: boolean }) {
     console.info(`${COOKIE_DEBUG_PREFIX} applyConsent click`, next);
@@ -119,7 +130,7 @@ export default function CookieConsentBanner() {
     persistCookieConsent(value);
   }
 
-  if (consent) return null;
+  if (!initialSnapshot.ready || consent) return null;
 
   return (
     <aside className="cookie-consent" role="dialog" aria-live="polite" aria-label="Preferencias de cookies">
