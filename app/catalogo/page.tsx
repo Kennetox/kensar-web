@@ -216,7 +216,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
       return;
     }
     visibleBrandsMap.set(normalizedValue, {
-      value: normalizedValue,
+      value: brandLabel,
       label: brandLabel,
       count: 1,
     });
@@ -224,9 +224,11 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
   selectedBrands.forEach((selectedBrand) => {
     const normalizedValue = selectedBrand.trim().toLowerCase();
     if (!normalizedValue || visibleBrandsMap.has(normalizedValue)) return;
-    const fallbackBrand = productList.filters.brands.find((item) => item.value === normalizedValue);
+    const fallbackBrand = productList.filters.brands.find(
+      (item) => item.value.trim().toLowerCase() === normalizedValue
+    );
     visibleBrandsMap.set(normalizedValue, {
-      value: normalizedValue,
+      value: fallbackBrand?.value || fallbackBrand?.label || selectedBrand,
       label: fallbackBrand?.label || selectedBrand,
       count: 0,
     });
