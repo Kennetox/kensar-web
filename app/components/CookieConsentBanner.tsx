@@ -68,11 +68,15 @@ function saveCookieConsent(value: CookieConsent) {
   } catch {
     // Ignore cookie write failures.
   }
-  window.dispatchEvent(
-    new CustomEvent("kensar-cookie-consent-updated", {
-      detail: value,
-    })
-  );
+  try {
+    window.dispatchEvent(
+      new CustomEvent("kensar-cookie-consent-updated", {
+        detail: value,
+      })
+    );
+  } catch {
+    // Ignore event dispatch failures (older browsers / strict contexts).
+  }
 }
 
 export default function CookieConsentBanner() {
@@ -83,6 +87,9 @@ export default function CookieConsentBanner() {
   const [marketing, setMarketing] = useState(initialConsent?.marketing ?? false);
 
   function persistConsent(next: { analytics: boolean; marketing: boolean }) {
+    // Always close the banner in UI first, even if persistence fails.
+    setVisible(false);
+    setExpanded(false);
     saveCookieConsent({
       version: COOKIE_CONSENT_VERSION,
       essential: true,
@@ -90,8 +97,6 @@ export default function CookieConsentBanner() {
       marketing: next.marketing,
       updatedAt: new Date().toISOString(),
     });
-    setVisible(false);
-    setExpanded(false);
   }
 
   if (!visible) return null;
