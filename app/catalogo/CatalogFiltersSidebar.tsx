@@ -97,6 +97,7 @@ export default function CatalogFiltersSidebar({
     params.delete("page");
     const query = params.toString();
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    router.refresh();
   }
 
   function handleBrandToggle(brandValue: string, checked: boolean) {
@@ -247,6 +248,7 @@ export default function CatalogFiltersSidebar({
           params.delete("page");
           const query = params.toString();
           router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+          router.refresh();
         }}
       >
         Limpiar filtros
