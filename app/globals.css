@@ -11418,6 +11418,10 @@ body.mini-cart-open .main-wrapper {
 }
 
 .cookie-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  touch-action: manipulation;
+  pointer-events: auto;
   border-radius: 10px;
   border: 1px solid transparent;
   padding: 8px 12px;
