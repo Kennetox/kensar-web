@@ -149,6 +149,14 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
   const fallbackCategories = buildFallbackCategories();
   const visibleCategories = categories.length ? categories : fallbackCategories;
   const visibleBrands = productList.filters.brands.slice(0, 10);
+  const selectedFilterCategory = productList.filters.categories.find((item) => item.value === category) || null;
+  const categoryContextRoot = selectedFilterCategory?.parent_value || category || "";
+  const visibleSubcategories = categoryContextRoot
+    ? productList.filters.categories
+        .filter((item) => item.parent_value === categoryContextRoot)
+        .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "es"))
+    : [];
+  const totalPages = Math.max(1, Math.ceil((productList.total || 0) / Math.max(1, productList.page_size || 24)));
   const selectedCategoryName =
     visibleCategories.find((item) => item.path === category)?.name ||
     productList.filters.categories.find((item) => item.value === category)?.label ||
@@ -292,6 +300,28 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
               </div>
             </div>
 
+            {visibleSubcategories.length > 0 ? (
+              <div className="catalog-filter-block">
+                <p className="catalog-filter-label">Subcategorías</p>
+                <div className="catalog-filter-stack">
+                  {visibleSubcategories.map((item) => (
+                    <Link
+                      key={item.value}
+                      href={buildCatalogHref({
+                        q: q || undefined,
+                        category: item.value,
+                        brand: brand || undefined,
+                      })}
+                      className={item.value === category ? "catalog-filter-link is-active" : "catalog-filter-link"}
+                    >
+                      <span>{item.label}</span>
+                      <small>{item.count}</small>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             {visibleBrands.length > 0 ? (
               <div className="catalog-filter-block">
                 <p className="catalog-filter-label">Marcas</p>
@@ -325,11 +355,71 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
 
         <div className="catalog-store-content">
           {productList.items.length ? (
-            <section className="catalog-product-grid storefront-grid">
-              {productList.items.map((product) => (
-                <CatalogProductCard key={product.id} product={product} />
-              ))}
-            </section>
+            <>
+              <section className="catalog-product-grid storefront-grid">
+                {productList.items.map((product) => (
+                  <CatalogProductCard key={product.id} product={product} />
+                ))}
+              </section>
+              {totalPages > 1 ? (
+                <nav
+                  className="mt-6 flex flex-wrap items-center justify-center gap-2"
+                  aria-label="Paginación de catálogo"
+                >
+                  <Link
+                    href={buildCatalogHref({
+                      q: q || undefined,
+                      category: category || undefined,
+                      brand: brand || undefined,
+                      page: page > 1 ? String(page - 1) : undefined,
+                    })}
+                    className={`catalog-filter-link${page <= 1 ? " pointer-events-none opacity-50" : ""}`}
+                    aria-disabled={page <= 1}
+                  >
+                    <span>Anterior</span>
+                  </Link>
+                  {Array.from({ length: totalPages }, (_, index) => index + 1)
+                    .filter((itemPage) => {
+                      if (totalPages <= 7) return true;
+                      if (itemPage === 1 || itemPage === totalPages) return true;
+                      return Math.abs(itemPage - page) <= 1;
+                    })
+                    .map((itemPage, index, list) => {
+                      const previous = list[index - 1];
+                      const shouldAddGap = previous && itemPage - previous > 1;
+                      return (
+                        <div key={`page-wrap-${itemPage}`} className="flex items-center gap-2">
+                          {shouldAddGap ? <span className="px-1 text-sm text-slate-400">…</span> : null}
+                          <Link
+                            href={buildCatalogHref({
+                              q: q || undefined,
+                              category: category || undefined,
+                              brand: brand || undefined,
+                              page: itemPage > 1 ? String(itemPage) : undefined,
+                            })}
+                            className={itemPage === page ? "catalog-filter-link is-active" : "catalog-filter-link"}
+                            aria-current={itemPage === page ? "page" : undefined}
+                          >
+                            <span>{itemPage}</span>
+                          </Link>
+                        </div>
+                      );
+                    })}
+                  <Link
+                    href={buildCatalogHref({
+                      q: q || undefined,
+                      category: category || undefined,
+                      brand: brand || undefined,
+                      page: page < totalPages ? String(page + 1) : String(totalPages),
+                    })}
+                    className={`catalog-filter-link${page >= totalPages ? " pointer-events-none opacity-50" : ""}`}
+                    aria-disabled={page >= totalPages}
+                  >
+                    <span>Siguiente</span>
+                  </Link>
+                </nav>
+              ) : null}
+            </>
           ) : (
             <section className="catalog-empty-state storefront-empty-state">
               <div className="storefront-empty-copy">

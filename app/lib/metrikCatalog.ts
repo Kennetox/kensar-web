@@ -2,6 +2,9 @@ export type WebCatalogCategory = {
   id: string;
   path: string;
   name: string;
+  parent_path?: string | null;
+  level?: number;
+  has_children?: boolean;
   image_url: string | null;
   tile_color: string | null;
   is_active?: boolean;
@@ -14,6 +17,8 @@ export type WebCatalogFilterOption = {
   value: string;
   label: string;
   count: number;
+  level?: number;
+  parent_value?: string | null;
 };
 
 export type WebCatalogProductCard = {
