@@ -11375,18 +11375,20 @@ body.mini-cart-open .main-wrapper {
 
 .cookie-consent {
   position: fixed;
-  z-index: 70;
+  z-index: 9999;
   left: 18px;
   right: 18px;
   bottom: 16px;
   display: flex;
   justify-content: center;
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 .cookie-consent-content {
   width: min(100%, 760px);
   pointer-events: auto;
+  position: relative;
+  z-index: 1;
   border-radius: 16px;
   border: 1px solid #cbd5e1;
   background: rgba(15, 23, 42, 0.96);
