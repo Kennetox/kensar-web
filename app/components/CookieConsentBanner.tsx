@@ -12,13 +12,13 @@ type CookieConsent = {
 };
 
 const COOKIE_CONSENT_STORAGE_KEY = "kensar_cookie_consent_v1";
+const COOKIE_CONSENT_COOKIE_NAME = "kensar_cookie_consent_v1";
 const COOKIE_CONSENT_VERSION = "2026-04-17";
+const COOKIE_CONSENT_MAX_AGE_SECONDS = 60 * 60 * 24 * 180;
 
-function readCookieConsent(): CookieConsent | null {
-  if (typeof window === "undefined") return null;
+function parseCookieConsentPayload(raw: string | null): CookieConsent | null {
+  if (!raw) return null;
   try {
-    const raw = window.localStorage.getItem(COOKIE_CONSENT_STORAGE_KEY);
-    if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<CookieConsent>;
     if (!parsed || parsed.version !== COOKIE_CONSENT_VERSION) return null;
     return {
@@ -33,9 +33,41 @@ function readCookieConsent(): CookieConsent | null {
   }
 }
 
+function readCookieConsent(): CookieConsent | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const localRaw = window.localStorage.getItem(COOKIE_CONSENT_STORAGE_KEY);
+    const fromLocal = parseCookieConsentPayload(localRaw);
+    if (fromLocal) return fromLocal;
+  } catch {
+    // Ignore storage access failures (privacy mode / blocked storage).
+  }
+
+  try {
+    const cookieMatch = document.cookie
+      .split(";")
+      .map((part) => part.trim())
+      .find((part) => part.startsWith(`${COOKIE_CONSENT_COOKIE_NAME}=`));
+    const cookieRaw = cookieMatch ? decodeURIComponent(cookieMatch.split("=")[1] || "") : null;
+    return parseCookieConsentPayload(cookieRaw);
+  } catch {
+    return null;
+  }
+}
+
 function saveCookieConsent(value: CookieConsent) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(COOKIE_CONSENT_STORAGE_KEY, JSON.stringify(value));
+  const payload = JSON.stringify(value);
+  try {
+    window.localStorage.setItem(COOKIE_CONSENT_STORAGE_KEY, payload);
+  } catch {
+    // Ignore storage access failures and fallback to cookie only.
+  }
+  try {
+    document.cookie = `${COOKIE_CONSENT_COOKIE_NAME}=${encodeURIComponent(payload)}; Path=/; Max-Age=${COOKIE_CONSENT_MAX_AGE_SECONDS}; SameSite=Lax`;
+  } catch {
+    // Ignore cookie write failures.
+  }
   window.dispatchEvent(
     new CustomEvent("kensar-cookie-consent-updated", {
       detail: value,
