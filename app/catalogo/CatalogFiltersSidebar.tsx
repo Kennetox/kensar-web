@@ -86,7 +86,7 @@ export default function CatalogFiltersSidebar({
     if (nextMin > 0) params.set("min_price", String(nextMin));
     else params.delete("min_price");
 
-    if (nextMax > 0 && nextMax < safeMax) params.set("max_price", String(nextMax));
+    if (nextMax > 0) params.set("max_price", String(nextMax));
     else params.delete("max_price");
 
     params.delete("brand");
