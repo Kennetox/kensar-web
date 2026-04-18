@@ -46,14 +46,14 @@ export default function TopNav({ categories, brands }: TopNavProps) {
       </Link>
 
       <div className={`nav-item-dropdown${isCatalogActive ? " active" : ""}`}>
-        <Link href="/catalogo" className={`nav-link nav-link-with-caret${isCatalogActive ? " active" : ""}`}>
+        <span className={`nav-link nav-link-with-caret${isCatalogActive ? " active" : ""}`}>
           Catalogo
           <span className="nav-caret" aria-hidden="true">
             <svg viewBox="0 0 14 14" fill="none">
               <path d="M3 5.25 7 9l4-3.75" />
             </svg>
           </span>
-        </Link>
+        </span>
         <div className="nav-dropdown-panel" role="menu" aria-label="Categorias">
           {parentCategories.map((category) => {
             const subcategories = childrenByParent[category.path] || [];

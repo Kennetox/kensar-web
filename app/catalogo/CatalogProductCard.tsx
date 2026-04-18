@@ -29,17 +29,22 @@ function getDiscountBadgeText(product: WebCatalogProductCard): string | null {
 
 export default function CatalogProductCard({
   product,
+  catalogReturnTo,
 }: {
   product: WebCatalogProductCard;
+  catalogReturnTo?: string;
 }) {
   const discountBadge = getDiscountBadgeText(product);
   const commercialBadge = product.badge_text?.trim() || null;
+  const detailHref = catalogReturnTo
+    ? `/catalogo/${product.slug}?returnTo=${encodeURIComponent(catalogReturnTo)}`
+    : `/catalogo/${product.slug}`;
 
   return (
     <article className="catalog-product-card-live storefront-card">
       <div className="catalog-product-card-media storefront-card-media catalog-hover-gallery">
         <CatalogProductGallery
-          slug={product.slug}
+          detailHref={detailHref}
           gallery={product.gallery}
           imageUrl={product.image_url}
           imageThumbUrl={product.image_thumb_url}
@@ -59,7 +64,7 @@ export default function CatalogProductCard({
       </div>
 
       <Link
-        href={`/catalogo/${product.slug}`}
+        href={detailHref}
         className="catalog-product-card-body-link"
         aria-label={`Ver detalle de ${product.name}`}
       >

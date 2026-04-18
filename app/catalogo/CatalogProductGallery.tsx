@@ -4,12 +4,12 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 export default function CatalogProductGallery({
-  slug,
+  detailHref,
   gallery,
   imageUrl,
   imageThumbUrl,
 }: {
-  slug: string;
+  detailHref: string;
   gallery: string[];
   imageUrl: string | null;
   imageThumbUrl: string | null;
@@ -46,7 +46,7 @@ export default function CatalogProductGallery({
 
   return (
     <>
-      <Link href={`/catalogo/${slug}`} className="catalog-product-card-media-link">
+      <Link href={detailHref} className="catalog-product-card-media-link">
         <div
           key={`${activeImage ?? "fallback"}-${slideTick}`}
           className={`storefront-media-image is-slide-${slideDirection}`}

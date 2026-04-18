@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import CatalogProductCard from "@/app/catalogo/CatalogProductCard";
 import CatalogFiltersSidebar from "@/app/catalogo/CatalogFiltersSidebar";
 import {
   getCatalogCategories,
   getCatalogProducts,
   type WebCatalogCategory,
+  type WebCatalogFilterOption,
   type WebCatalogProductList,
 } from "@/app/lib/metrikCatalog";
 
@@ -141,6 +143,7 @@ async function loadCatalogData(input: {
 export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
   const CATALOG_PAGE_SIZE = 24;
   const params = (await searchParams) ?? {};
+  const rawSort = (params.sort || "").trim();
   const q = params.q?.trim() || "";
   const category = params.category?.trim() || "";
   const selectedBrands = Array.isArray(params.brand)
@@ -156,6 +159,21 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
   const minPrice = Math.max(Number(params.min_price) || 0, 0);
   const maxPrice = Math.max(Number(params.max_price) || 0, 0);
   const page = Math.max(Number(params.page) || 1, 1);
+  const currentCatalogPath = buildCatalogHref({
+    q: q || undefined,
+    category: category || undefined,
+    brand: selectedBrands,
+    sort,
+    min_price: minPrice > 0 ? String(minPrice) : undefined,
+    max_price: maxPrice > 0 ? String(maxPrice) : undefined,
+    page: page > 1 ? String(page) : undefined,
+  });
+  const isDirectCatalogRoot =
+    !category && !q && selectedBrands.length === 0 && minPrice === 0 && maxPrice === 0 && !rawSort;
+
+  if (isDirectCatalogRoot) {
+    redirect("/");
+  }
 
   const { categories, productList, hasError } = await loadCatalogData({
     q,
@@ -187,7 +205,38 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
 
   const fallbackCategories = buildFallbackCategories();
   const visibleCategories = categories.length ? categories : fallbackCategories;
-  const visibleBrands = productList.filters.brands.slice(0, 10);
+  const visibleBrandsMap = new Map<string, WebCatalogFilterOption>();
+  productList.items.forEach((item) => {
+    const brandLabel = (item.brand || "").trim();
+    if (!brandLabel) return;
+    const normalizedValue = brandLabel.toLowerCase();
+    const existing = visibleBrandsMap.get(normalizedValue);
+    if (existing) {
+      existing.count += 1;
+      return;
+    }
+    visibleBrandsMap.set(normalizedValue, {
+      value: normalizedValue,
+      label: brandLabel,
+      count: 1,
+    });
+  });
+  selectedBrands.forEach((selectedBrand) => {
+    const normalizedValue = selectedBrand.trim().toLowerCase();
+    if (!normalizedValue || visibleBrandsMap.has(normalizedValue)) return;
+    const fallbackBrand = productList.filters.brands.find((item) => item.value === normalizedValue);
+    visibleBrandsMap.set(normalizedValue, {
+      value: normalizedValue,
+      label: fallbackBrand?.label || selectedBrand,
+      count: 0,
+    });
+  });
+  const visibleBrands = Array.from(visibleBrandsMap.values())
+    .sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      return a.label.localeCompare(b.label, "es");
+    })
+    .slice(0, 10);
   const categoryFilterMap = new Map(
     productList.filters.categories.map((item) => [item.value, item])
   );
@@ -201,6 +250,17 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
     visibleCategories.find((item) => item.path === category)?.name ||
     productList.filters.categories.find((item) => item.value === category)?.label ||
     "";
+  const derivedMaxPriceFromItems = productList.items.reduce((currentMax, item) => {
+    const numericPrice =
+      typeof item.price === "number" && Number.isFinite(item.price) ? Math.round(item.price) : 0;
+    return Math.max(currentMax, numericPrice);
+  }, 0);
+  const backendMaxPrice = Math.max(Number(productList.filters.price_max || 0), 0);
+  const effectiveAvailableMaxPrice = Math.max(
+    backendMaxPrice,
+    derivedMaxPriceFromItems,
+    maxPrice > 0 ? maxPrice : 0
+  );
   const catalogHeaderTitle = category && selectedCategoryName ? selectedCategoryName : "Catalogo";
   const catalogHeaderSubtitle =
     category && selectedParentFilterCategory
@@ -208,15 +268,20 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
       : category
       ? "Categoria del catalogo"
       : "Todos los productos disponibles";
+  const hasPagination = productList.items.length > 0 && totalPages > 1;
 
   return (
-    <main className="site-shell internal-page section-space catalog-page-shell">
+    <main
+      className={`site-shell internal-page section-space catalog-page-shell ${
+        hasPagination ? "catalog-page-with-pagination" : "catalog-page-no-pagination"
+      }`}
+    >
       <section className="catalog-context-strip" aria-label="Contexto del catálogo">
         <div className="catalog-context-top">
           <nav className="catalog-context-breadcrumbs" aria-label="Breadcrumb">
             <Link href="/">Inicio</Link>
             <span>/</span>
-            <Link href="/catalogo">Catalogo</Link>
+            <span>Catalogo</span>
             {category && selectedCategoryName ? (
               <>
                 <span>/</span>
@@ -241,8 +306,8 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
           <CatalogFiltersSidebar
             sort={sort}
             minPrice={minPrice}
-            maxPrice={maxPrice > 0 ? maxPrice : Number(productList.filters.price_max || 0)}
-            availableMaxPrice={Number(productList.filters.price_max || 0)}
+            maxPrice={maxPrice > 0 ? maxPrice : effectiveAvailableMaxPrice}
+            availableMaxPrice={effectiveAvailableMaxPrice}
             selectedBrands={selectedBrands}
             brands={visibleBrands}
           />
@@ -253,75 +318,82 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
             <>
               <section className="catalog-product-grid storefront-grid">
                 {productList.items.map((product) => (
-                  <CatalogProductCard key={product.id} product={product} />
+                  <CatalogProductCard
+                    key={product.id}
+                    product={product}
+                    catalogReturnTo={currentCatalogPath}
+                  />
                 ))}
               </section>
-              {totalPages > 1 ? (
-                <nav
-                  className="mt-6 flex flex-wrap items-center justify-center gap-2"
-                  aria-label="Paginación de catálogo"
-                >
-                  <Link
-                    href={buildCatalogHref({
-                      q: q || undefined,
-                      category: category || undefined,
-                      brand: selectedBrands,
-                      sort,
-                      min_price: minPrice > 0 ? String(minPrice) : undefined,
-                      max_price: maxPrice > 0 ? String(maxPrice) : undefined,
-                      page: page > 1 ? String(page - 1) : undefined,
-                    })}
-                    className={`catalog-filter-link${page <= 1 ? " pointer-events-none opacity-50" : ""}`}
-                    aria-disabled={page <= 1}
-                  >
-                    <span>Anterior</span>
-                  </Link>
-                  {Array.from({ length: totalPages }, (_, index) => index + 1)
-                    .filter((itemPage) => {
-                      if (totalPages <= 7) return true;
-                      if (itemPage === 1 || itemPage === totalPages) return true;
-                      return Math.abs(itemPage - page) <= 1;
-                    })
-                    .map((itemPage, index, list) => {
-                      const previous = list[index - 1];
-                      const shouldAddGap = previous && itemPage - previous > 1;
-                      return (
-                        <div key={`page-wrap-${itemPage}`} className="flex items-center gap-2">
-                          {shouldAddGap ? <span className="px-1 text-sm text-slate-400">…</span> : null}
-                          <Link
-                            href={buildCatalogHref({
-                              q: q || undefined,
-                              category: category || undefined,
-                              brand: selectedBrands,
-                              sort,
-                              min_price: minPrice > 0 ? String(minPrice) : undefined,
-                              max_price: maxPrice > 0 ? String(maxPrice) : undefined,
-                              page: itemPage > 1 ? String(itemPage) : undefined,
-                            })}
-                            className={itemPage === page ? "catalog-filter-link is-active" : "catalog-filter-link"}
-                            aria-current={itemPage === page ? "page" : undefined}
-                          >
-                            <span>{itemPage}</span>
-                          </Link>
-                        </div>
-                      );
-                    })}
-                  <Link
-                    href={buildCatalogHref({
-                      q: q || undefined,
-                      category: category || undefined,
-                      brand: selectedBrands,
-                      sort,
-                      min_price: minPrice > 0 ? String(minPrice) : undefined,
-                      max_price: maxPrice > 0 ? String(maxPrice) : undefined,
-                      page: page < totalPages ? String(page + 1) : String(totalPages),
-                    })}
-                    className={`catalog-filter-link${page >= totalPages ? " pointer-events-none opacity-50" : ""}`}
-                    aria-disabled={page >= totalPages}
-                  >
-                    <span>Siguiente</span>
-                  </Link>
-                </nav>
+              {hasPagination ? (
+                <section className="catalog-pagination-shell" aria-label="Navegación de páginas">
+                  <nav className="catalog-pagination" aria-label="Paginación de catálogo">
+                    <Link
+                      href={buildCatalogHref({
+                        q: q || undefined,
+                        category: category || undefined,
+                        brand: selectedBrands,
+                        sort,
+                        min_price: minPrice > 0 ? String(minPrice) : undefined,
+                        max_price: maxPrice > 0 ? String(maxPrice) : undefined,
+                        page: page > 1 ? String(page - 1) : undefined,
+                      })}
+                      className={`catalog-pagination-nav${page <= 1 ? " is-disabled" : ""}`}
+                      aria-disabled={page <= 1}
+                    >
+                      <span aria-hidden="true">‹</span>
+                      <span>Anterior</span>
+                    </Link>
+                    <div className="catalog-pagination-pages">
+                      {Array.from({ length: totalPages }, (_, index) => index + 1)
+                        .filter((itemPage) => {
+                          if (totalPages <= 7) return true;
+                          if (itemPage === 1 || itemPage === totalPages) return true;
+                          return Math.abs(itemPage - page) <= 1;
+                        })
+                        .map((itemPage, index, list) => {
+                          const previous = list[index - 1];
+                          const shouldAddGap = previous && itemPage - previous > 1;
+                          return (
+                            <div key={`page-wrap-${itemPage}`} className="catalog-pagination-page-wrap">
+                              {shouldAddGap ? <span className="catalog-pagination-gap">…</span> : null}
+                              <Link
+                                href={buildCatalogHref({
+                                  q: q || undefined,
+                                  category: category || undefined,
+                                  brand: selectedBrands,
+                                  sort,
+                                  min_price: minPrice > 0 ? String(minPrice) : undefined,
+                                  max_price: maxPrice > 0 ? String(maxPrice) : undefined,
+                                  page: itemPage > 1 ? String(itemPage) : undefined,
+                                })}
+                                className={itemPage === page ? "catalog-pagination-page is-active" : "catalog-pagination-page"}
+                                aria-current={itemPage === page ? "page" : undefined}
+                              >
+                                <span>{itemPage}</span>
+                              </Link>
+                            </div>
+                          );
+                        })}
+                    </div>
+                    <Link
+                      href={buildCatalogHref({
+                        q: q || undefined,
+                        category: category || undefined,
+                        brand: selectedBrands,
+                        sort,
+                        min_price: minPrice > 0 ? String(minPrice) : undefined,
+                        max_price: maxPrice > 0 ? String(maxPrice) : undefined,
+                        page: page < totalPages ? String(page + 1) : String(totalPages),
+                      })}
+                      className={`catalog-pagination-nav${page >= totalPages ? " is-disabled" : ""}`}
+                      aria-disabled={page >= totalPages}
+                    >
+                      <span>Siguiente</span>
+                      <span aria-hidden="true">›</span>
+                    </Link>
+                  </nav>
+                </section>
               ) : null}
             </>
           ) : (

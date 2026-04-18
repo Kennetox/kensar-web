@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import CatalogProductCard from "@/app/catalogo/CatalogProductCard";
+import ProductBackToCatalogLink from "@/app/catalogo/ProductBackToCatalogLink";
 import ProductDetailGallery from "@/app/catalogo/ProductDetailGallery";
 import ProductPurchaseCta from "@/app/catalogo/ProductPurchaseCta";
 import ProductKoraAssistLink from "@/app/catalogo/ProductKoraAssistLink";
 import ProductViewTracker from "@/app/catalogo/ProductViewTracker";
+import { buildCatalogCategoryHref } from "@/app/lib/catalogRoutes";
 import {
   formatCatalogPrice,
   getCatalogProduct,
@@ -90,11 +92,14 @@ export default async function CatalogProductDetailPage({
   const relatedProducts = await getRelatedProducts(product.id, product.category_path);
   const discountBadge = getDetailDiscountBadgeText(product);
   const commercialBadge = product.badge_text?.trim() || null;
+  const fallbackCatalogHref = product.category_path
+    ? buildCatalogCategoryHref({ categoryPath: product.category_path })
+    : "/";
 
   return (
     <main className="site-shell internal-page section-space product-page-shell">
       <section className="catalog-breadcrumbs">
-        <Link href="/catalogo">← Volver al catálogo</Link>
+        <ProductBackToCatalogLink fallbackHref={fallbackCatalogHref} />
         <span>Catálogo</span>
         {product.category_path ? <span>{product.category_name || "Categoría"}</span> : null}
         <span>{product.name}</span>
