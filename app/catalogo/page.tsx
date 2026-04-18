@@ -1,5 +1,6 @@
 import Link from "next/link";
 import CatalogProductCard from "@/app/catalogo/CatalogProductCard";
+import CatalogFiltersSidebar from "@/app/catalogo/CatalogFiltersSidebar";
 import {
   getCatalogCategories,
   getCatalogProducts,
@@ -11,7 +12,10 @@ type CatalogPageProps = {
   searchParams?: Promise<{
     q?: string;
     category?: string;
-    brand?: string;
+    brand?: string | string[];
+    sort?: string;
+    min_price?: string;
+    max_price?: string;
     page?: string;
   }>;
 };
@@ -19,7 +23,10 @@ type CatalogPageProps = {
 function buildCatalogHref(input: {
   q?: string;
   category?: string;
-  brand?: string;
+  brand?: string[];
+  sort?: string;
+  min_price?: string;
+  max_price?: string;
   page?: string;
 }) {
   const categoryPath = input.category?.trim();
@@ -29,7 +36,12 @@ function buildCatalogHref(input: {
   const params = new URLSearchParams();
 
   if (input.q) params.set("q", input.q);
-  if (input.brand) params.set("brand", input.brand);
+  (input.brand || []).forEach((value) => {
+    if (value) params.append("brand", value);
+  });
+  if (input.sort && input.sort !== "recommended") params.set("sort", input.sort);
+  if (input.min_price && Number(input.min_price) > 0) params.set("min_price", input.min_price);
+  if (input.max_price && Number(input.max_price) > 0) params.set("max_price", input.max_price);
   if (input.page) params.set("page", input.page);
 
   const query = params.toString();
@@ -94,7 +106,10 @@ function buildFallbackCategories(): WebCatalogCategory[] {
 async function loadCatalogData(input: {
   q: string;
   category: string;
-  brand: string;
+  brands: string[];
+  sort: "recommended" | "name_asc" | "name_desc" | "price_asc" | "price_desc";
+  min_price?: number;
+  max_price?: number;
   page: number;
 }): Promise<{
   categories: WebCatalogCategory[];
@@ -107,7 +122,10 @@ async function loadCatalogData(input: {
       getCatalogProducts({
         q: input.q || undefined,
         category: input.category || undefined,
-        brand: input.brand || undefined,
+        brand: input.brands.length ? input.brands : undefined,
+        sort: input.sort,
+        min_price: input.min_price,
+        max_price: input.max_price,
         page: input.page,
       }),
     ]);
@@ -122,13 +140,27 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
   const params = (await searchParams) ?? {};
   const q = params.q?.trim() || "";
   const category = params.category?.trim() || "";
-  const brand = params.brand?.trim() || "";
+  const selectedBrands = Array.isArray(params.brand)
+    ? params.brand.map((item) => item.trim()).filter(Boolean)
+    : params.brand?.trim()
+    ? [params.brand.trim()]
+    : [];
+  const sort = (["recommended", "name_asc", "name_desc", "price_asc", "price_desc"].includes(
+    (params.sort || "").trim()
+  )
+    ? (params.sort || "recommended").trim()
+    : "recommended") as "recommended" | "name_asc" | "name_desc" | "price_asc" | "price_desc";
+  const minPrice = Math.max(Number(params.min_price) || 0, 0);
+  const maxPrice = Math.max(Number(params.max_price) || 0, 0);
   const page = Math.max(Number(params.page) || 1, 1);
 
   const { categories, productList, hasError } = await loadCatalogData({
     q,
     category,
-    brand,
+    brands: selectedBrands,
+    sort,
+    min_price: minPrice > 0 ? minPrice : undefined,
+    max_price: maxPrice > 0 ? maxPrice : undefined,
     page,
   });
 
@@ -160,12 +192,6 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
     selectedFilterCategory?.parent_value
       ? categoryFilterMap.get(selectedFilterCategory.parent_value) || null
       : null;
-  const categoryContextRoot = selectedFilterCategory?.parent_value || category || "";
-  const visibleSubcategories = categoryContextRoot
-    ? productList.filters.categories
-        .filter((item) => item.parent_value === categoryContextRoot)
-        .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "es"))
-    : [];
   const totalPages = Math.max(1, Math.ceil((productList.total || 0) / Math.max(1, productList.page_size || 24)));
   const selectedCategoryName =
     visibleCategories.find((item) => item.path === category)?.name ||
@@ -208,103 +234,14 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
 
       <section className="catalog-store-layout">
         <aside className="catalog-sidebar">
-          <div className="catalog-filter-panel">
-            <div className="catalog-filter-block">
-              <p className="catalog-filter-label">Categorias</p>
-              <form action={buildCatalogHref({ category: category || undefined, brand: brand || undefined })} className="catalog-sidebar-search">
-                <input
-                  type="search"
-                  name="q"
-                  defaultValue={q}
-                  placeholder="Buscar producto"
-                  aria-label="Buscar producto en el catalogo"
-                  className="catalog-sidebar-search-input"
-                />
-              </form>
-              <div className="catalog-filter-stack">
-                <Link
-                  href={buildCatalogHref({ q: q || undefined, brand: brand || undefined })}
-                  className={!category ? "catalog-filter-link is-active" : "catalog-filter-link"}
-                >
-                  <span>Todas las categorias</span>
-                  <small>{productList.total || categories.reduce((sum, item) => sum + item.product_count, 0)}</small>
-                </Link>
-                {visibleCategories.map((item) => (
-                  <Link
-                    key={item.path || item.name}
-                    href={
-                      item.path
-                        ? buildCatalogHref({
-                            q: q || undefined,
-                            category: item.path,
-                            brand: brand || undefined,
-                          })
-                        : "/catalogo"
-                    }
-                    className={
-                      item.path && item.path === category
-                        ? "catalog-filter-link is-active"
-                        : "catalog-filter-link"
-                    }
-                  >
-                    <span>{item.name}</span>
-                    <small>{item.product_count}</small>
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            {visibleSubcategories.length > 0 ? (
-              <div className="catalog-filter-block">
-                <p className="catalog-filter-label">Subcategorías</p>
-                <div className="catalog-filter-stack">
-                  {visibleSubcategories.map((item) => (
-                    <Link
-                      key={item.value}
-                      href={buildCatalogHref({
-                        q: q || undefined,
-                        category: item.value,
-                        brand: brand || undefined,
-                      })}
-                      className={item.value === category ? "catalog-filter-link is-active" : "catalog-filter-link"}
-                    >
-                      <span>{item.label}</span>
-                      <small>{item.count}</small>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {visibleBrands.length > 0 ? (
-              <div className="catalog-filter-block">
-                <p className="catalog-filter-label">Marcas</p>
-                <div className="catalog-filter-stack">
-                  <Link
-                    href={buildCatalogHref({ q: q || undefined, category: category || undefined })}
-                    className={!brand ? "catalog-filter-link is-active" : "catalog-filter-link"}
-                  >
-                    <span>Todas las marcas</span>
-                  </Link>
-                  {visibleBrands.map((item) => (
-                    <Link
-                      key={item.value}
-                      href={buildCatalogHref({
-                        q: q || undefined,
-                        category: category || undefined,
-                        brand: item.value,
-                      })}
-                      className={item.value === brand ? "catalog-filter-link is-active" : "catalog-filter-link"}
-                    >
-                      <span>{item.label}</span>
-                      <small>{item.count}</small>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-          </div>
+          <CatalogFiltersSidebar
+            sort={sort}
+            minPrice={minPrice}
+            maxPrice={maxPrice > 0 ? maxPrice : Number(productList.filters.price_max || 0)}
+            availableMaxPrice={Number(productList.filters.price_max || 0)}
+            selectedBrands={selectedBrands}
+            brands={visibleBrands}
+          />
         </aside>
 
         <div className="catalog-store-content">
@@ -324,7 +261,10 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
                     href={buildCatalogHref({
                       q: q || undefined,
                       category: category || undefined,
-                      brand: brand || undefined,
+                      brand: selectedBrands,
+                      sort,
+                      min_price: minPrice > 0 ? String(minPrice) : undefined,
+                      max_price: maxPrice > 0 ? String(maxPrice) : undefined,
                       page: page > 1 ? String(page - 1) : undefined,
                     })}
                     className={`catalog-filter-link${page <= 1 ? " pointer-events-none opacity-50" : ""}`}
@@ -348,7 +288,10 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
                             href={buildCatalogHref({
                               q: q || undefined,
                               category: category || undefined,
-                              brand: brand || undefined,
+                              brand: selectedBrands,
+                              sort,
+                              min_price: minPrice > 0 ? String(minPrice) : undefined,
+                              max_price: maxPrice > 0 ? String(maxPrice) : undefined,
                               page: itemPage > 1 ? String(itemPage) : undefined,
                             })}
                             className={itemPage === page ? "catalog-filter-link is-active" : "catalog-filter-link"}
@@ -363,7 +306,10 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
                     href={buildCatalogHref({
                       q: q || undefined,
                       category: category || undefined,
-                      brand: brand || undefined,
+                      brand: selectedBrands,
+                      sort,
+                      min_price: minPrice > 0 ? String(minPrice) : undefined,
+                      max_price: maxPrice > 0 ? String(maxPrice) : undefined,
                       page: page < totalPages ? String(page + 1) : String(totalPages),
                     })}
                     className={`catalog-filter-link${page >= totalPages ? " pointer-events-none opacity-50" : ""}`}

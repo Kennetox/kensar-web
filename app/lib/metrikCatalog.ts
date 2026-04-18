@@ -52,6 +52,8 @@ export type WebCatalogProductList = {
   filters: {
     categories: WebCatalogFilterOption[];
     brands: WebCatalogFilterOption[];
+    price_min?: number | null;
+    price_max?: number | null;
   };
 };
 
@@ -177,14 +179,31 @@ export async function getCatalogCategories() {
 export async function getCatalogProducts(input: {
   q?: string;
   category?: string;
-  brand?: string;
+  brand?: string | string[];
+  sort?: "recommended" | "name_asc" | "name_desc" | "price_asc" | "price_desc";
+  min_price?: number;
+  max_price?: number;
   page?: number;
 }) {
   const params = new URLSearchParams();
 
   if (input.q) params.set("q", input.q);
   if (input.category) params.set("category", input.category);
-  if (input.brand) params.set("brand", input.brand);
+  if (Array.isArray(input.brand)) {
+    input.brand.forEach((value) => {
+      const normalized = value?.trim();
+      if (normalized) params.append("brand", normalized);
+    });
+  } else if (input.brand) {
+    params.append("brand", input.brand);
+  }
+  if (input.sort) params.set("sort", input.sort);
+  if (typeof input.min_price === "number" && Number.isFinite(input.min_price)) {
+    params.set("min_price", String(Math.max(0, input.min_price)));
+  }
+  if (typeof input.max_price === "number" && Number.isFinite(input.max_price)) {
+    params.set("max_price", String(Math.max(0, input.max_price)));
+  }
   if (input.page && input.page > 1) params.set("page", String(input.page));
 
   const baseUrl = getApiBaseUrl();
