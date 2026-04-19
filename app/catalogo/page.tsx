@@ -22,6 +22,8 @@ type CatalogPageProps = {
   }>;
 };
 
+type PaginationToken = number | "ellipsis";
+
 function buildCatalogHref(input: {
   q?: string;
   category?: string;
@@ -48,6 +50,32 @@ function buildCatalogHref(input: {
 
   const query = params.toString();
   return query ? `${basePath}?${query}` : basePath;
+}
+
+function buildPaginationTokens(currentPage: number, totalPages: number): PaginationToken[] {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const clampedCurrent = Math.min(Math.max(currentPage, 1), totalPages);
+  const start = Math.max(2, clampedCurrent - 1);
+  const end = Math.min(totalPages - 1, clampedCurrent + 1);
+  const tokens: PaginationToken[] = [1];
+
+  if (start > 2) {
+    tokens.push("ellipsis");
+  }
+
+  for (let page = start; page <= end; page += 1) {
+    tokens.push(page);
+  }
+
+  if (end < totalPages - 1) {
+    tokens.push("ellipsis");
+  }
+
+  tokens.push(totalPages);
+  return tokens;
 }
 
 function buildFallbackCategories(): WebCatalogCategory[] {
@@ -271,6 +299,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
       ? "Categoria del catalogo"
       : "Todos los productos disponibles";
   const hasPagination = productList.items.length > 0 && totalPages > 1;
+  const paginationTokens = buildPaginationTokens(page, totalPages);
 
   return (
     <main
@@ -347,36 +376,35 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
                       <span>Anterior</span>
                     </Link>
                     <div className="catalog-pagination-pages">
-                      {Array.from({ length: totalPages }, (_, index) => index + 1)
-                        .filter((itemPage) => {
-                          if (totalPages <= 7) return true;
-                          if (itemPage === 1 || itemPage === totalPages) return true;
-                          return Math.abs(itemPage - page) <= 1;
-                        })
-                        .map((itemPage, index, list) => {
-                          const previous = list[index - 1];
-                          const shouldAddGap = previous && itemPage - previous > 1;
+                      {paginationTokens.map((token, index) => {
+                        if (token === "ellipsis") {
                           return (
-                            <div key={`page-wrap-${itemPage}`} className="catalog-pagination-page-wrap">
-                              {shouldAddGap ? <span className="catalog-pagination-gap">…</span> : null}
-                              <Link
-                                href={buildCatalogHref({
-                                  q: q || undefined,
-                                  category: category || undefined,
-                                  brand: selectedBrands,
-                                  sort,
-                                  min_price: minPrice > 0 ? String(minPrice) : undefined,
-                                  max_price: maxPrice > 0 ? String(maxPrice) : undefined,
-                                  page: itemPage > 1 ? String(itemPage) : undefined,
-                                })}
-                                className={itemPage === page ? "catalog-pagination-page is-active" : "catalog-pagination-page"}
-                                aria-current={itemPage === page ? "page" : undefined}
-                              >
-                                <span>{itemPage}</span>
-                              </Link>
+                            <div key={`page-wrap-gap-${index}`} className="catalog-pagination-page-wrap">
+                              <span className="catalog-pagination-gap">…</span>
                             </div>
                           );
-                        })}
+                        }
+                        const itemPage = token;
+                        return (
+                          <div key={`page-wrap-${itemPage}`} className="catalog-pagination-page-wrap">
+                            <Link
+                              href={buildCatalogHref({
+                                q: q || undefined,
+                                category: category || undefined,
+                                brand: selectedBrands,
+                                sort,
+                                min_price: minPrice > 0 ? String(minPrice) : undefined,
+                                max_price: maxPrice > 0 ? String(maxPrice) : undefined,
+                                page: itemPage > 1 ? String(itemPage) : undefined,
+                              })}
+                              className={itemPage === page ? "catalog-pagination-page is-active" : "catalog-pagination-page"}
+                              aria-current={itemPage === page ? "page" : undefined}
+                            >
+                              <span>{itemPage}</span>
+                            </Link>
+                          </div>
+                        );
+                      })}
                     </div>
                     <Link
                       href={buildCatalogHref({
