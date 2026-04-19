@@ -53,7 +53,7 @@ function buildCatalogHref(input: {
 }
 
 function buildPaginationTokens(currentPage: number, totalPages: number): PaginationToken[] {
-  if (totalPages <= 7) {
+  if (totalPages <= 5) {
     return Array.from({ length: totalPages }, (_, index) => index + 1);
   }
 
