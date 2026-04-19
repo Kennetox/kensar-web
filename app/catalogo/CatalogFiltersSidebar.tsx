@@ -7,6 +7,7 @@ import type { WebCatalogFilterOption } from "@/app/lib/metrikCatalog";
 type SortOption = "recommended" | "name_asc" | "name_desc" | "price_asc" | "price_desc";
 
 type CatalogFiltersSidebarProps = {
+  query: string;
   sort: SortOption;
   minPrice: number;
   maxPrice: number;
@@ -31,6 +32,7 @@ function formatPriceLabel(value: number) {
 }
 
 export default function CatalogFiltersSidebar({
+  query,
   sort,
   minPrice,
   maxPrice,
@@ -46,6 +48,7 @@ export default function CatalogFiltersSidebar({
     () => Math.max(0, Number.isFinite(availableMaxPrice) ? Math.round(availableMaxPrice) : 0),
     [availableMaxPrice]
   );
+  const [localQuery, setLocalQuery] = useState(query);
   const [localSort, setLocalSort] = useState<SortOption>(sort);
   const [localMinPrice, setLocalMinPrice] = useState<number>(clamp(Math.round(minPrice || 0), 0, safeMax || 0));
   const [localMaxPrice, setLocalMaxPrice] = useState<number>(
@@ -53,6 +56,10 @@ export default function CatalogFiltersSidebar({
   );
   const [localBrands, setLocalBrands] = useState<string[]>(selectedBrands);
   const [showAllBrands, setShowAllBrands] = useState(false);
+
+  useEffect(() => {
+    setLocalQuery(query);
+  }, [query]);
 
   useEffect(() => {
     setLocalSort(sort);
@@ -85,16 +92,21 @@ export default function CatalogFiltersSidebar({
   }, [brands, localBrands, showAllBrands]);
 
   function applyFilters(next: {
+    query?: string;
     sort?: SortOption;
     minPrice?: number;
     maxPrice?: number;
     brands?: string[];
   }) {
     const params = new URLSearchParams(searchParams.toString());
+    const nextQuery = next.query ?? localQuery;
     const nextSort = next.sort ?? localSort;
     const nextMin = next.minPrice ?? localMinPrice;
     const nextMax = next.maxPrice ?? localMaxPrice;
     const nextBrands = next.brands ?? localBrands;
+
+    if (nextQuery.trim()) params.set("local_q", nextQuery.trim());
+    else params.delete("local_q");
 
     if (!nextSort || nextSort === "recommended") params.delete("sort");
     else params.set("sort", nextSort);
@@ -125,6 +137,24 @@ export default function CatalogFiltersSidebar({
 
   return (
     <div className="catalog-filter-panel">
+      <section className="catalog-filter-block">
+        <p className="catalog-filter-label">Buscar</p>
+        <div className="catalog-sidebar-search">
+          <input
+            type="search"
+            value={localQuery}
+            onChange={(event) => {
+              const nextQuery = event.target.value;
+              setLocalQuery(nextQuery);
+              applyFilters({ query: nextQuery });
+            }}
+            className="catalog-sidebar-search-input"
+            placeholder="Buscar en esta sección..."
+            aria-label="Buscar por nombre o referencia"
+          />
+        </div>
+      </section>
+
       <section className="catalog-filter-block">
         <p className="catalog-filter-label">Precio</p>
         <div className="catalog-price-range-inputs">
@@ -260,11 +290,13 @@ export default function CatalogFiltersSidebar({
         type="button"
         className="catalog-filter-clear-btn"
         onClick={() => {
+          setLocalQuery("");
           setLocalSort("recommended");
           setLocalMinPrice(0);
           setLocalMaxPrice(safeMax);
           setLocalBrands([]);
           const params = new URLSearchParams(searchParams.toString());
+          params.delete("local_q");
           params.delete("sort");
           params.delete("min_price");
           params.delete("max_price");

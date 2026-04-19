@@ -13,6 +13,7 @@ import {
 type CatalogPageProps = {
   searchParams?: Promise<{
     q?: string;
+    local_q?: string;
     category?: string;
     brand?: string | string[];
     sort?: string;
@@ -26,6 +27,7 @@ type PaginationToken = number | "ellipsis";
 
 function buildCatalogHref(input: {
   q?: string;
+  local_q?: string;
   category?: string;
   brand?: string[];
   sort?: string;
@@ -40,6 +42,7 @@ function buildCatalogHref(input: {
   const params = new URLSearchParams();
 
   if (input.q) params.set("q", input.q);
+  if (input.local_q) params.set("local_q", input.local_q);
   (input.brand || []).forEach((value) => {
     if (value) params.append("brand", value);
   });
@@ -172,7 +175,9 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
   const CATALOG_PAGE_SIZE = 24;
   const params = (await searchParams) ?? {};
   const rawSort = (params.sort || "").trim();
-  const q = params.q?.trim() || "";
+  const globalQ = params.q?.trim() || "";
+  const localQ = params.local_q?.trim() || "";
+  const effectiveQ = localQ || globalQ;
   const category = params.category?.trim() || "";
   const selectedBrands = Array.isArray(params.brand)
     ? params.brand.map((item) => item.trim()).filter(Boolean)
@@ -188,7 +193,8 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
   const maxPrice = Math.max(Number(params.max_price) || 0, 0);
   const page = Math.max(Number(params.page) || 1, 1);
   const currentCatalogPath = buildCatalogHref({
-    q: q || undefined,
+    q: globalQ || undefined,
+    local_q: localQ || undefined,
     category: category || undefined,
     brand: selectedBrands,
     sort,
@@ -197,14 +203,19 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
     page: page > 1 ? String(page) : undefined,
   });
   const isDirectCatalogRoot =
-    !category && !q && selectedBrands.length === 0 && minPrice === 0 && maxPrice === 0 && !rawSort;
+    !category &&
+    !effectiveQ &&
+    selectedBrands.length === 0 &&
+    minPrice === 0 &&
+    maxPrice === 0 &&
+    !rawSort;
 
   if (isDirectCatalogRoot) {
     redirect("/");
   }
 
   const { categories, productList, hasError } = await loadCatalogData({
-    q,
+    q: effectiveQ,
     category,
     brands: selectedBrands,
     sort,
@@ -335,6 +346,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
       <section className="catalog-store-layout">
         <aside className="catalog-sidebar">
           <CatalogFiltersSidebar
+            query={localQ}
             sort={sort}
             minPrice={minPrice}
             maxPrice={maxPrice > 0 ? maxPrice : effectiveAvailableMaxPrice}
@@ -361,7 +373,8 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
                   <nav className="catalog-pagination" aria-label="Paginación de catálogo">
                     <Link
                       href={buildCatalogHref({
-                        q: q || undefined,
+                        q: globalQ || undefined,
+                        local_q: localQ || undefined,
                         category: category || undefined,
                         brand: selectedBrands,
                         sort,
@@ -389,7 +402,8 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
                           <div key={`page-wrap-${itemPage}`} className="catalog-pagination-page-wrap">
                             <Link
                               href={buildCatalogHref({
-                                q: q || undefined,
+                                q: globalQ || undefined,
+                                local_q: localQ || undefined,
                                 category: category || undefined,
                                 brand: selectedBrands,
                                 sort,
@@ -408,7 +422,8 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
                     </div>
                     <Link
                       href={buildCatalogHref({
-                        q: q || undefined,
+                        q: globalQ || undefined,
+                        local_q: localQ || undefined,
                         category: category || undefined,
                         brand: selectedBrands,
                         sort,

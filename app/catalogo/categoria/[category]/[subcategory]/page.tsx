@@ -4,6 +4,7 @@ type SubcategoryCatalogPageProps = {
   params: Promise<{ category: string; subcategory: string }>;
   searchParams?: Promise<{
     q?: string;
+    local_q?: string;
     brand?: string | string[];
     sort?: string;
     min_price?: string;
