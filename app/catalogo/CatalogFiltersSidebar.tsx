@@ -16,6 +16,7 @@ type CatalogFiltersSidebarProps = {
 };
 
 const PRICE_STEP = 1000;
+const INITIAL_BRAND_LIMIT = 10;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
@@ -51,6 +52,7 @@ export default function CatalogFiltersSidebar({
     clamp(Math.round(maxPrice || safeMax || 0), 0, safeMax || 0)
   );
   const [localBrands, setLocalBrands] = useState<string[]>(selectedBrands);
+  const [showAllBrands, setShowAllBrands] = useState(false);
 
   useEffect(() => {
     setLocalSort(sort);
@@ -67,6 +69,20 @@ export default function CatalogFiltersSidebar({
   useEffect(() => {
     setLocalBrands(selectedBrands);
   }, [selectedBrands]);
+
+  useEffect(() => {
+    setShowAllBrands(false);
+  }, [brands]);
+
+  const visibleBrands = useMemo(() => {
+    if (showAllBrands || brands.length <= INITIAL_BRAND_LIMIT) return brands;
+    const firstBatch = brands.slice(0, INITIAL_BRAND_LIMIT);
+    const existingValues = new Set(firstBatch.map((item) => item.value));
+    const selectedExtras = brands.filter(
+      (item) => localBrands.includes(item.value) && !existingValues.has(item.value)
+    );
+    return [...firstBatch, ...selectedExtras];
+  }, [brands, localBrands, showAllBrands]);
 
   function applyFilters(next: {
     sort?: SortOption;
@@ -210,8 +226,8 @@ export default function CatalogFiltersSidebar({
       <section className="catalog-filter-block">
         <p className="catalog-filter-label">Marcas</p>
         <div className="catalog-brand-checklist">
-          {brands.length ? (
-            brands.map((item) => {
+          {visibleBrands.length ? (
+            visibleBrands.map((item) => {
               const checked = localBrands.includes(item.value);
               return (
                 <label key={item.value} className="catalog-brand-item">
@@ -229,6 +245,15 @@ export default function CatalogFiltersSidebar({
             <p className="catalog-brand-empty">Sin marcas para este filtro.</p>
           )}
         </div>
+        {!showAllBrands && brands.length > INITIAL_BRAND_LIMIT ? (
+          <button
+            type="button"
+            className="catalog-brand-expand-btn"
+            onClick={() => setShowAllBrands(true)}
+          >
+            Mostrar más
+          </button>
+        ) : null}
       </section>
 
       <button

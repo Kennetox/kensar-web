@@ -10903,6 +10903,22 @@ body.mini-cart-open .main-wrapper {
   font-size: 0.76rem;
 }
 
+.catalog-brand-expand-btn {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.catalog-brand-expand-btn:hover {
+  color: #475569;
+}
+
 .catalog-filter-block {
   display: flex;
   flex-direction: column;
