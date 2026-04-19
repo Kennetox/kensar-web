@@ -206,19 +206,20 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
   const fallbackCategories = buildFallbackCategories();
   const visibleCategories = categories.length ? categories : fallbackCategories;
   const visibleBrandsMap = new Map<string, WebCatalogFilterOption>();
-  productList.items.forEach((item) => {
-    const brandLabel = (item.brand || "").trim();
-    if (!brandLabel) return;
-    const normalizedValue = brandLabel.toLowerCase();
+  productList.filters.brands.forEach((item) => {
+    const value = item.value.trim();
+    const label = item.label.trim() || value;
+    if (!value || !label) return;
+    const normalizedValue = value.toLowerCase();
     const existing = visibleBrandsMap.get(normalizedValue);
     if (existing) {
-      existing.count += 1;
+      existing.count = Math.max(existing.count, Number(item.count || 0));
       return;
     }
     visibleBrandsMap.set(normalizedValue, {
-      value: brandLabel,
-      label: brandLabel,
-      count: 1,
+      value,
+      label,
+      count: Number(item.count || 0),
     });
   });
   selectedBrands.forEach((selectedBrand) => {
@@ -237,8 +238,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
     .sort((a, b) => {
       if (b.count !== a.count) return b.count - a.count;
       return a.label.localeCompare(b.label, "es");
-    })
-    .slice(0, 10);
+    });
   const categoryFilterMap = new Map(
     productList.filters.categories.map((item) => [item.value, item])
   );
