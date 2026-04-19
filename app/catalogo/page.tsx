@@ -427,39 +427,11 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
               ) : null}
             </>
           ) : (
-            <section className="catalog-empty-state storefront-empty-state">
-              <div className="storefront-empty-copy">
+            <section className="catalog-empty-state storefront-empty-state storefront-empty-state-minimal">
+              <div className="storefront-empty-copy storefront-empty-copy-minimal">
                 <span className="catalog-filter-label">Tienda en actualizacion</span>
-                <h2>Estamos preparando esta vitrina con productos destacados de Kensar.</h2>
-                <p>
-                  Muy pronto veras aqui referencias listas para comprar o cotizar. Si necesitas algo hoy, escribenos y
-                  te ayudamos a conseguirlo.
-                </p>
-              </div>
-              <div className="storefront-empty-categories">
-                {visibleCategories.slice(0, 6).map((item) => (
-                  <Link
-                    key={item.path || item.name}
-                    href={item.path ? buildCatalogHref({ category: item.path }) : "/catalogo"}
-                    className="storefront-category-tile"
-                  >
-                    <strong>{item.name}</strong>
-                    <span>{item.product_count ? `${item.product_count} refs.` : "Proximamente"}</span>
-                  </Link>
-                ))}
-              </div>
-              <div className="catalog-empty-actions">
-                <Link
-                  href="https://wa.me/573185657508?text=Hola%2C%20quiero%20consultar%20un%20producto%20que%20todavia%20no%20veo%20en%20la%20tienda."
-                  target="_blank"
-                  rel="noreferrer"
-                  className="catalog-primary-action"
-                >
-                  Consultar producto
-                </Link>
-                <Link href="/empresa" className="catalog-secondary-action">
-                  Conocer la tienda
-                </Link>
+                <h2>No hay productos en esta sección por ahora.</h2>
+                <p>Estamos actualizando el catálogo. Si necesitas ayuda, escríbenos por WhatsApp.</p>
               </div>
             </section>
           )}
