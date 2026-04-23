@@ -297,6 +297,7 @@ export default function PersonalizaExperience() {
   const [isTextInputFocused, setIsTextInputFocused] = useState(false);
   const [isDownloadingPreview, setIsDownloadingPreview] = useState(false);
   const [isModelUpsideDown, setIsModelUpsideDown] = useState(false);
+  const [floatingDockBottom, setFloatingDockBottom] = useState(16);
   const [historyPast, setHistoryPast] = useState<EditorSnapshot[]>([]);
   const [historyFuture, setHistoryFuture] = useState<EditorSnapshot[]>([]);
   const campanaTypeSectionRef = useRef<HTMLDivElement | null>(null);
@@ -365,6 +366,29 @@ export default function PersonalizaExperience() {
     });
     return () => window.cancelAnimationFrame(frameId);
   }, [showCampanaTypes]);
+
+  useEffect(() => {
+    if (!isProductSelected) return;
+
+    const updateDockBottom = () => {
+      const footer = document.querySelector(".site-footer");
+      if (!footer) {
+        setFloatingDockBottom(16);
+        return;
+      }
+      const footerRect = footer.getBoundingClientRect();
+      const overlap = window.innerHeight - footerRect.top;
+      setFloatingDockBottom(overlap > 0 ? overlap + 16 : 16);
+    };
+
+    updateDockBottom();
+    window.addEventListener("scroll", updateDockBottom, { passive: true });
+    window.addEventListener("resize", updateDockBottom);
+    return () => {
+      window.removeEventListener("scroll", updateDockBottom);
+      window.removeEventListener("resize", updateDockBottom);
+    };
+  }, [isProductSelected]);
 
   const availableSizes = useMemo(() => {
     if (isCampanaVariant || product === "guiro") {
@@ -1455,7 +1479,7 @@ export default function PersonalizaExperience() {
   }
 
   return (
-    <main className={styles.pageShell}>
+    <main className={`${styles.pageShell} ${styles.pageShellEditor}`}>
       <section className="catalog-context-strip" aria-label="Contexto del editor">
         <div className="catalog-context-banner" aria-label="Encabezado del editor">
           <div className="catalog-context-banner-copy">
@@ -2074,7 +2098,11 @@ export default function PersonalizaExperience() {
         </div>
       </section>
 
-      <section className={styles.checkoutActionsDock} aria-label="Acciones de compra">
+      <section
+        className={styles.checkoutActionsDock}
+        aria-label="Acciones de compra"
+        style={{ bottom: `${floatingDockBottom}px` }}
+      >
         <div className={styles.checkoutActionsInner}>
           <button
             type="button"
