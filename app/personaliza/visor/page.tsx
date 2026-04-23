@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import ModelPreview3D, { type PaintConfig, type TextLayer3D } from "../ModelPreview3D";
 
 type ProductType = "campana" | "guiro" | "maraca";
@@ -61,8 +62,8 @@ function decodePayload(input: string): PersonalizationPreviewPayload | null {
 }
 
 function VisorContent() {
-  const query = useMemo(() => new URLSearchParams(window.location.search), []);
-  const dataParam = query.get("data") || "";
+  const searchParams = useSearchParams();
+  const dataParam = searchParams.get("data") || "";
   const payload = useMemo(() => decodePayload(dataParam), [dataParam]);
 
   const product = (payload?.product?.id || "campana") as ProductType;

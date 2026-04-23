@@ -127,10 +127,9 @@ function parsePersonalizaCheckoutContext(): Record<string, unknown> | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
-    const generatedAtValue =
-      typeof (parsed as Record<string, unknown>).generated_at === "string"
-        ? (parsed as Record<string, unknown>).generated_at
-        : "";
+    const parsedRecord = parsed as Record<string, unknown>;
+    const generatedAtRaw = parsedRecord.generated_at;
+    const generatedAtValue = typeof generatedAtRaw === "string" ? generatedAtRaw : "";
     const generatedAt = generatedAtValue ? new Date(generatedAtValue).getTime() : 0;
     if (generatedAt > 0 && Number.isFinite(generatedAt)) {
       if (Date.now() - generatedAt > PERSONALIZA_CHECKOUT_CONTEXT_MAX_AGE_MS) {
@@ -138,7 +137,7 @@ function parsePersonalizaCheckoutContext(): Record<string, unknown> | null {
         return null;
       }
     }
-    return parsed as Record<string, unknown>;
+    return parsedRecord;
   } catch {
     return null;
   }
