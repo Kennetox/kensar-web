@@ -98,31 +98,14 @@ function VisorContent() {
   }));
 
   return (
-    <main style={{ minHeight: "100vh", background: "#f1f5f9", padding: "12px" }}>
-      <section
-        style={{
-          maxWidth: "1080px",
-          margin: "0 auto",
-          border: "1px solid #cbd5e1",
-          borderRadius: "16px",
-          background: "#ffffff",
-          padding: "12px",
-        }}
-      >
-        <p style={{ margin: 0, color: "#334155", fontSize: "13px", fontWeight: 600 }}>
-          Vista previa 3D de personalización
-        </p>
-        {payload?.summary ? (
-          <p style={{ margin: "4px 0 10px", color: "#64748b", fontSize: "12px" }}>{payload.summary}</p>
-        ) : null}
-        <ModelPreview3D
-          product={product}
-          campanaType={campanaType}
-          campanaBellType={campanaBellType}
-          paintConfig={paintConfig}
-          textLayers={textLayers}
-        />
-      </section>
+    <main style={{ minHeight: "100vh", background: "#f1f5f9", margin: 0, padding: 0 }}>
+      <ModelPreview3D
+        product={product}
+        campanaType={campanaType}
+        campanaBellType={campanaBellType}
+        paintConfig={paintConfig}
+        textLayers={textLayers}
+      />
     </main>
   );
 }

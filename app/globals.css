@@ -186,6 +186,24 @@ body.checkout-payment-page .kora-chat-root {
   display: none;
 }
 
+body.personaliza-visor-embed-page {
+  --topbar-current-height: 0px;
+}
+
+body.personaliza-visor-embed-page .topbar,
+body.personaliza-visor-embed-page .site-footer,
+body.personaliza-visor-embed-page .floating-whatsapp-btn,
+body.personaliza-visor-embed-page .floating-whatsapp-typing,
+body.personaliza-visor-embed-page .kora-chat-root,
+body.personaliza-visor-embed-page .cookie-consent {
+  display: none !important;
+}
+
+body.personaliza-visor-embed-page .main-wrapper {
+  padding-top: 0 !important;
+  min-height: 100vh;
+}
+
 .brand-logo-top {
   display: flex;
   align-items: center;
