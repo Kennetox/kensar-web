@@ -5449,6 +5449,11 @@ body.mini-cart-open .main-wrapper {
   background: #ffffff;
 }
 
+.checkout-payment-methods.is-invalid {
+  border-color: #fca5a5;
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.12);
+}
+
 .checkout-payment-option {
   display: grid;
   grid-template-columns: auto 1fr auto;

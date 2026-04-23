@@ -399,7 +399,7 @@ function PagoPageContent() {
   const [checkoutLastName, setCheckoutLastName] = useState((customer?.last_name || "").trim());
   const [checkoutDocument, setCheckoutDocument] = useState(customer?.tax_id || "");
   const [deliveryMode, setDeliveryMode] = useState<"pickup" | "shipping">("pickup");
-  const [paymentProvider, setPaymentProvider] = useState<CheckoutPaymentProvider>("mercadopago");
+  const [paymentProvider, setPaymentProvider] = useState<CheckoutPaymentProvider | null>(null);
   const [billingMode, setBillingMode] = useState<"same_as_shipping" | "different">("same_as_shipping");
   const [fieldErrors, setFieldErrors] = useState<CheckoutFieldErrors>({});
   const [personalizationContext, setPersonalizationContext] = useState<Record<string, unknown> | null>(null);
@@ -532,7 +532,6 @@ function PagoPageContent() {
     const firstName = checkoutFirstName.trim() || customerNameParts.first_name;
     const lastName = checkoutLastName.trim() || customerNameParts.last_name;
     const identification = checkoutDocument.trim();
-    const selectedPaymentMethod: "card" | "wompi" = paymentProvider === "mercadopago" ? "card" : "wompi";
     const nextErrors: CheckoutFieldErrors = {};
 
     if (!email) nextErrors.checkout_email = "Ingresa tu correo electrónico.";
@@ -551,6 +550,9 @@ function PagoPageContent() {
       if (!getFieldValue("billing_address")) nextErrors.billing_address = "Ingresa la dirección.";
       if (!getFieldValue("billing_city")) nextErrors.billing_city = "Ingresa la ciudad.";
     }
+    if (!paymentProvider) {
+      nextErrors.checkout_payment_method = "Debes elegir un método de pago.";
+    }
 
     if (Object.keys(nextErrors).length > 0) {
       setFieldErrors(nextErrors);
@@ -558,6 +560,7 @@ function PagoPageContent() {
       focusFirstError(nextErrors);
       return;
     }
+    const selectedPaymentMethod: "card" | "wompi" = paymentProvider === "mercadopago" ? "card" : "wompi";
     const checkoutPhone = getFieldValue("checkout_phone");
     const checkoutCountryCode = getFieldValue("checkout_country") || "CO";
     const checkoutAddress = getFieldValue("checkout_address");
@@ -1028,7 +1031,13 @@ function PagoPageContent() {
                 <p className="checkout-muted">
                   Todas las transacciones son seguras y están encriptadas.
                 </p>
-                <div className="checkout-payment-methods" role="radiogroup" aria-label="Método de pago">
+                <div
+                  className={`checkout-payment-methods${fieldErrors.checkout_payment_method ? " is-invalid" : ""}`}
+                  role="radiogroup"
+                  aria-label="Método de pago"
+                  aria-invalid={fieldErrors.checkout_payment_method ? "true" : undefined}
+                  aria-describedby={fieldErrors.checkout_payment_method ? "checkout-payment-method-error" : undefined}
+                >
                   <label
                     className={`checkout-payment-option${paymentProvider === "mercadopago" ? " is-active" : ""}`}
                   >
@@ -1038,7 +1047,10 @@ function PagoPageContent() {
                         name="checkout_payment_method"
                         value="mercadopago"
                         checked={paymentProvider === "mercadopago"}
-                        onChange={() => setPaymentProvider("mercadopago")}
+                        onChange={() => {
+                          setPaymentProvider("mercadopago");
+                          clearFieldError("checkout_payment_method");
+                        }}
                       />
                     </span>
                     <span className="checkout-payment-option-copy">
@@ -1078,7 +1090,10 @@ function PagoPageContent() {
                         name="checkout_payment_method"
                         value="wompi"
                         checked={paymentProvider === "wompi"}
-                        onChange={() => setPaymentProvider("wompi")}
+                        onChange={() => {
+                          setPaymentProvider("wompi");
+                          clearFieldError("checkout_payment_method");
+                        }}
                       />
                     </span>
                     <span className="checkout-payment-option-copy">
@@ -1109,6 +1124,11 @@ function PagoPageContent() {
                     <p>Se te redirigirá a Wompi para que completes la compra.</p>
                   </div>
                 </div>
+                {fieldErrors.checkout_payment_method ? (
+                  <p id="checkout-payment-method-error" className="checkout-field-error">
+                    {fieldErrors.checkout_payment_method}
+                  </p>
+                ) : null}
                 {paymentProvider === "wompi" ? (
                   <div className="checkout-form-grid">
                     <p className="checkout-muted">
