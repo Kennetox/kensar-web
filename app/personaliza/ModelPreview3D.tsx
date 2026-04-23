@@ -1066,16 +1066,20 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
       const frontalCamera = getDefaultCameraStateByProduct(product);
       const frontalTarget = { ...DEFAULT_CAMERA_TARGET };
       const snapshotView = options?.view || "front";
-      const cameraForView = { ...frontalCamera };
-      if (snapshotView !== "front") {
-        if (product === "guiro") {
-          cameraForView.theta =
-            snapshotView === "left"
-              ? GUIRO_FACE_THETA_BY_FACE.left
-              : GUIRO_FACE_THETA_BY_FACE.right;
-        } else {
-          cameraForView.theta = CAMPANA_VIEW_THETA_BY_VIEW[snapshotView];
-        }
+      const cameraForView: CameraState = { ...frontalCamera };
+      const targetForView: CameraTargetState = { ...frontalTarget };
+      if (product === "guiro") {
+        const faceForView: "front_up" | "left" | "right" =
+          snapshotView === "left" ? "left" : snapshotView === "right" ? "right" : "front_up";
+        const preset = GUIRO_FACE_FOCUS_PRESET[faceForView];
+        cameraForView.theta = GUIRO_FACE_THETA_BY_FACE[faceForView];
+        cameraForView.phi = preset.phi;
+        cameraForView.radius = clampValue(frontalCamera.radius, preset.minRadius, preset.maxRadius);
+        targetForView.y = preset.targetY;
+        if (snapshotView === "left") targetForView.x = -0.03;
+        if (snapshotView === "right") targetForView.x = 0.03;
+      } else {
+        cameraForView.theta = CAMPANA_VIEW_THETA_BY_VIEW[snapshotView];
       }
       const mimeType = options?.format === "jpg" ? "image/jpeg" : "image/png";
       const quality = options?.quality ?? 0.8;
@@ -1092,11 +1096,23 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
 
       try {
         cameraStateRef.current = cameraForView;
-        cameraTargetRef.current = frontalTarget;
+        cameraTargetRef.current = targetForView;
         applyCameraState(cameraForView);
-        applyCameraTarget(frontalTarget);
+        applyCameraTarget(targetForView);
+        const viewerWithUpdateComplete = viewer as typeof viewer & { updateComplete?: Promise<unknown> };
+        if (viewerWithUpdateComplete.updateComplete) {
+          try {
+            await viewerWithUpdateComplete.updateComplete;
+          } catch {
+            // fallback to RAF wait below
+          }
+        }
         await new Promise<void>((resolve) =>
-          requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() =>
+              requestAnimationFrame(() => resolve())
+            )
+          )
         );
 
         let dataUrl = "";
