@@ -107,6 +107,8 @@ type PaymentVisualBadge =
 
 const PICKUP_ADDRESS_FULL = "Cra 24 #30-75, Palmira, Valle del Cauca, Colombia";
 const CHECKOUT_RESULT_CONTEXT_STORAGE_PREFIX = "kensar_web_checkout_result_context_";
+const PERSONALIZA_CHECKOUT_CONTEXT_STORAGE_KEY = "kensar_web_personaliza_checkout_context_v1";
+const PERSONALIZA_CHECKOUT_CONTEXT_MAX_AGE_MS = 1000 * 60 * 60 * 8;
 const MERCADOPAGO_VISUAL_BADGES: PaymentVisualBadge[] = [
   { kind: "icon", src: "/payment-icons/pse.svg", alt: "PSE", width: 56, height: 22 },
   { kind: "icon", src: "/payment-icons/efecty.svg", alt: "Efecty", width: 52, height: 22 },
@@ -117,6 +119,36 @@ const WOMPI_VISUAL_BADGES: PaymentVisualBadge[] = [
   { kind: "icon", src: "/payment-icons/nequi.svg", alt: "Nequi", width: 56, height: 22 },
   { kind: "icon", src: "/payment-icons/pse.svg", alt: "PSE", width: 56, height: 22 },
 ];
+
+function parsePersonalizaCheckoutContext(): Record<string, unknown> | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(PERSONALIZA_CHECKOUT_CONTEXT_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+    const generatedAtValue =
+      typeof (parsed as Record<string, unknown>).generated_at === "string"
+        ? (parsed as Record<string, unknown>).generated_at
+        : "";
+    const generatedAt = generatedAtValue ? new Date(generatedAtValue).getTime() : 0;
+    if (generatedAt > 0 && Number.isFinite(generatedAt)) {
+      if (Date.now() - generatedAt > PERSONALIZA_CHECKOUT_CONTEXT_MAX_AGE_MS) {
+        window.localStorage.removeItem(PERSONALIZA_CHECKOUT_CONTEXT_STORAGE_KEY);
+        return null;
+      }
+    }
+    return parsed as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+function hasCartSku(items: WebCartItem[], sku: string): boolean {
+  const normalized = sku.trim().toLowerCase();
+  if (!normalized) return false;
+  return items.some((item) => (item.product_sku || "").trim().toLowerCase() === normalized);
+}
 
 function buildSnapshotFromCart(cart: ReturnType<typeof useWebCart>["cart"]): CheckoutSnapshot {
   const items = cart?.items ?? [];
@@ -371,6 +403,7 @@ function PagoPageContent() {
   const [paymentProvider, setPaymentProvider] = useState<CheckoutPaymentProvider>("mercadopago");
   const [billingMode, setBillingMode] = useState<"same_as_shipping" | "different">("same_as_shipping");
   const [fieldErrors, setFieldErrors] = useState<CheckoutFieldErrors>({});
+  const [personalizationContext, setPersonalizationContext] = useState<Record<string, unknown> | null>(null);
   const previousCartSignatureRef = useRef<string | null>(null);
 
   const cartSignature = useMemo(
@@ -428,6 +461,24 @@ function PagoPageContent() {
   const loginHref = `/cuenta?returnTo=${encodeURIComponent(
     `/pago${safeReturnTo ? `?returnTo=${encodeURIComponent(safeReturnTo)}` : ""}`
   )}`;
+
+  useEffect(() => {
+    const candidate = parsePersonalizaCheckoutContext();
+    if (!candidate) {
+      setPersonalizationContext(null);
+      return;
+    }
+    const binding = (candidate.checkout_binding || null) as Record<string, unknown> | null;
+    const productSku = typeof binding?.product_sku === "string" ? binding.product_sku : "";
+    const personalizationSku = typeof binding?.personalization_sku === "string" ? binding.personalization_sku : "";
+    const hasExpectedBase = productSku ? hasCartSku(items, productSku) : false;
+    const hasExpectedService = personalizationSku ? hasCartSku(items, personalizationSku) : false;
+    if (hasExpectedBase && hasExpectedService) {
+      setPersonalizationContext(candidate);
+      return;
+    }
+    setPersonalizationContext(null);
+  }, [items]);
 
   function resolveMercadoPagoUrl(input: {
     sandbox_init_point?: string | null;
@@ -618,6 +669,9 @@ function PagoPageContent() {
       },
       checkout_result_context: checkoutResultContext,
     };
+    if (personalizationContext) {
+      checkoutContextPayload.personalization = personalizationContext;
+    }
 
     setCheckoutLoading(true);
     try {

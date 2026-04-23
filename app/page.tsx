@@ -4,6 +4,7 @@ import CatalogProductCard from "@/app/catalogo/CatalogProductCard";
 import AddToCartButton from "@/app/components/AddToCartButton";
 import CommerceSlider from "@/app/components/CommerceSlider";
 import HomeProductCarousel from "@/app/components/HomeProductCarousel";
+import HomePersonalizaHighlight from "@/app/components/HomePersonalizaHighlight";
 import Reveal from "@/app/components/Reveal";
 import { buildCatalogCategoryHref } from "@/app/lib/catalogRoutes";
 import {
@@ -273,7 +274,6 @@ async function loadHomeLivingProducts(seedProducts: WebCatalogProductCard[]) {
 export default async function HomePage() {
   const { categories, products } = await loadHomeData();
 
-  const discoverProducts = products.slice(0, 5);
   const livingProducts = await loadHomeLivingProducts(products);
   const sliderSlides = [
     {
@@ -370,38 +370,9 @@ export default async function HomePage() {
     <div id="inicio" className="commerce-home home-anchor-section">
       <CommerceSlider slides={sliderSlides} categories={featuredCategories} intervalMs={8000} />
 
-      <section className="commerce-discover" aria-label="Descubre lo nuevo">
+      <section className="commerce-discover" aria-label="Personaliza tus instrumentos">
         <div className="commerce-categories-divider" aria-hidden="true" />
-        <div className="commerce-discover-head">
-          <div>
-            <p className="commerce-section-kicker">Descubre lo nuevo</p>
-            <h2>Nuevos productos para comprar hoy</h2>
-          </div>
-          <Link href="/catalogo">Ir al catalogo</Link>
-        </div>
-
-        <div className="catalog-product-grid commerce-discover-grid">
-          {discoverProducts.map((product) => {
-            return (
-              <div key={product.id} className="commerce-discover-item">
-                <CatalogProductCard product={product} />
-                <div className="commerce-discover-cta">
-                  <AddToCartButton
-                    productId={product.id}
-                    productName={product.name}
-                    productSlug={product.slug}
-                    productSku={product.sku}
-                    imageUrl={product.image_thumb_url || product.image_url}
-                    brand={product.brand}
-                    stockStatus={product.stock_status}
-                    unitPrice={product.price ?? 0}
-                    comparePrice={product.compare_price}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <HomePersonalizaHighlight />
       </section>
       <div className="commerce-categories-divider" aria-hidden="true" />
 

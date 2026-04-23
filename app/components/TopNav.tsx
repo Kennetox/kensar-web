@@ -24,6 +24,7 @@ export default function TopNav({ categories, brands }: TopNavProps) {
   const pathname = usePathname();
   const isHomeActive = pathname === "/";
   const isCatalogActive = pathname === "/catalogo" || pathname.startsWith("/catalogo/");
+  const isCustomizeActive = pathname === "/personaliza" || pathname.startsWith("/personaliza/");
   const isContactActive = pathname === "/empresa" || pathname.startsWith("/empresa/");
   const hasBrands = brands.length > 0;
   const parentCategories = categories.filter((category) => !category.parent_path);
@@ -94,8 +95,12 @@ export default function TopNav({ categories, brands }: TopNavProps) {
         </div>
       </div>
 
-      <Link href="/catalogo?sort=nuevos" className="nav-link">
-        Nuevos Productos
+      <Link
+        href="/personaliza"
+        className={`nav-link nav-link-with-badge${isCustomizeActive ? " active" : ""}`}
+      >
+        <span className="nav-link-label">Personaliza tu instrumento</span>
+        <span className="nav-new-badge">NUEVO</span>
       </Link>
 
       <div className="nav-item-dropdown">
