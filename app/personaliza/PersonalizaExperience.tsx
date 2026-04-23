@@ -295,7 +295,6 @@ export default function PersonalizaExperience() {
   const [isTextInputFocused, setIsTextInputFocused] = useState(false);
   const [isDownloadingPreview, setIsDownloadingPreview] = useState(false);
   const [isModelUpsideDown, setIsModelUpsideDown] = useState(false);
-  const [floatingDockBottom, setFloatingDockBottom] = useState(16);
   const [isFloatingDockVisible, setIsFloatingDockVisible] = useState(false);
   const [historyPast, setHistoryPast] = useState<EditorSnapshot[]>([]);
   const [historyFuture, setHistoryFuture] = useState<EditorSnapshot[]>([]);
@@ -379,54 +378,13 @@ export default function PersonalizaExperience() {
       },
       {
         root: null,
-        threshold: 0.18,
-        rootMargin: "0px 0px -14% 0px",
+        threshold: 0,
+        rootMargin: "0px 0px 8% 0px",
       }
     );
 
     observer.observe(trigger);
     return () => observer.disconnect();
-  }, [isProductSelected]);
-
-  useEffect(() => {
-    if (!isProductSelected) return;
-
-    let rafId: number | null = null;
-
-    const updateDockBottom = () => {
-      const footer = document.querySelector(".site-footer");
-      if (!footer) {
-        setFloatingDockBottom(16);
-        return;
-      }
-      const footerRect = footer.getBoundingClientRect();
-      const overlap = window.innerHeight - footerRect.top;
-      const rawBottom = overlap > 0 ? overlap + 16 : 16;
-      const snappedBottom = Math.max(16, Math.ceil(rawBottom / 12) * 12);
-      setFloatingDockBottom((current) => {
-        if (Math.abs(current - snappedBottom) < 12) return current;
-        return snappedBottom;
-      });
-    };
-
-    const scheduleDockUpdate = () => {
-      if (rafId !== null) return;
-      rafId = window.requestAnimationFrame(() => {
-        rafId = null;
-        updateDockBottom();
-      });
-    };
-
-    updateDockBottom();
-    window.addEventListener("scroll", scheduleDockUpdate, { passive: true });
-    window.addEventListener("resize", scheduleDockUpdate);
-    return () => {
-      window.removeEventListener("scroll", scheduleDockUpdate);
-      window.removeEventListener("resize", scheduleDockUpdate);
-      if (rafId !== null) {
-        window.cancelAnimationFrame(rafId);
-      }
-    };
   }, [isProductSelected]);
 
   const availableSizes = useMemo(() => {
@@ -1945,7 +1903,11 @@ export default function PersonalizaExperience() {
                   onClick={handleToggleUpsideDown}
                 >
                   <Image
-                    src="/personaliza/icons/camapana-vec.svg"
+                    src={
+                      product === "guiro"
+                        ? "/personaliza/icons/guiro-vec.svg"
+                        : "/personaliza/icons/camapana-vec.svg"
+                    }
                     alt=""
                     aria-hidden
                     width={26}
@@ -2134,7 +2096,6 @@ export default function PersonalizaExperience() {
           isFloatingDockVisible ? ` ${styles.checkoutActionsDockVisible}` : ""
         }`}
         aria-label="Acciones de compra"
-        style={{ bottom: `${floatingDockBottom}px` }}
       >
         <div className={styles.checkoutActionsInner}>
           <button

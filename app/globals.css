@@ -204,6 +204,17 @@ body.personaliza-visor-embed-page .main-wrapper {
   min-height: 100vh;
 }
 
+body.personaliza-editor-page {
+  --topbar-utility-height: 0px;
+  --topbar-height: var(--topbar-main-height);
+  --topbar-height-collapsed: var(--topbar-main-height);
+  --topbar-current-height: var(--topbar-main-height);
+}
+
+body.personaliza-editor-page .topbar-utility {
+  display: none;
+}
+
 .brand-logo-top {
   display: flex;
   align-items: center;
