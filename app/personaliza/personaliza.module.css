@@ -628,6 +628,58 @@
   color: #991b1b;
 }
 
+.checkoutActionsDock {
+  margin: 18px auto 6px;
+  width: min(100%, 1120px);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: linear-gradient(160deg, #f8fafc 0%, #eef2ff 100%);
+  padding: 20px 18px;
+}
+
+.checkoutActionsInner {
+  margin: 0 auto;
+  width: min(100%, 740px);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.checkoutActionPrimary,
+.checkoutActionSecondary {
+  min-height: 56px;
+  border-radius: 0;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-size: 1.08rem;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 0 16px;
+}
+
+.checkoutActionPrimary {
+  background: linear-gradient(120deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+}
+
+.checkoutActionSecondary {
+  border-color: rgba(15, 23, 42, 0.2);
+  color: #1f2937;
+  background: #ffffff;
+}
+
+.checkoutActionPrimary:disabled,
+.checkoutActionSecondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.checkoutActionsInner .feedback {
+  grid-column: 1 / -1;
+}
+
 .previewPanel {
   display: grid;
   gap: 12px;
@@ -962,5 +1014,15 @@
 
   .editorToolbar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .checkoutActionsInner {
+    grid-template-columns: 1fr;
+  }
+
+  .checkoutActionPrimary,
+  .checkoutActionSecondary {
+    min-height: 52px;
+    font-size: 1rem;
   }
 }

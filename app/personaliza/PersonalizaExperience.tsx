@@ -18,7 +18,6 @@ import {
   type PersonalizableSize,
 } from "./_config/presets";
 
-type RequestStatus = "idle" | "sending" | "success" | "error";
 type PurchaseStatus = "idle" | "sending" | "success" | "error";
 type TextFontOption = {
   id: string;
@@ -234,6 +233,19 @@ function persistPersonalizaCheckoutContext(payload: Record<string, unknown>) {
   }
 }
 
+function readPersonalizaCheckoutContext(): Record<string, unknown> | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(PERSONALIZA_CHECKOUT_CONTEXT_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+    return parsed as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
 export default function PersonalizaExperience() {
   const router = useRouter();
   const pathname = usePathname();
@@ -277,11 +289,8 @@ export default function PersonalizaExperience() {
   const [textColorOptionId, setTextColorOptionId] = useState<string>("custom");
   const [isDraggingText, setIsDraggingText] = useState(false);
   const [isDesktop, setIsDesktop] = useState(true);
-  const [senderName, setSenderName] = useState("");
-  const [senderEmail, setSenderEmail] = useState("");
-  const [senderPhone, setSenderPhone] = useState("");
-  const [requestStatus, setRequestStatus] = useState<RequestStatus>("idle");
-  const [requestFeedback, setRequestFeedback] = useState<string | null>(null);
+  const [addToCartStatus, setAddToCartStatus] = useState<PurchaseStatus>("idle");
+  const [addToCartFeedback, setAddToCartFeedback] = useState<string | null>(null);
   const [purchaseStatus, setPurchaseStatus] = useState<PurchaseStatus>("idle");
   const [purchaseFeedback, setPurchaseFeedback] = useState<string | null>(null);
   const [showCampanaTypes, setShowCampanaTypes] = useState(false);
@@ -953,7 +962,6 @@ export default function PersonalizaExperience() {
   const canUndo = historyPast.length > 0 || Boolean(pendingHistoryStartRef.current);
   const canRedo = historyFuture.length > 0;
 
-  const canSubmitRequest = senderName.trim().length >= 2;
   const textTransformFor3D = useMemo(
     () =>
       textLayers.map((layer) => {
@@ -1129,150 +1137,139 @@ export default function PersonalizaExperience() {
     event.currentTarget.releasePointerCapture(event.pointerId);
   }
 
-  async function handleSubmitRequest(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!canSubmitRequest || requestStatus === "sending") return;
+  async function addCurrentPersonalizationToCart() {
+    if (!selectedCheckoutBinding) {
+      throw new Error("Este instrumento aún no tiene conexión de checkout configurada.");
+    }
 
-    setRequestStatus("sending");
-    setRequestFeedback(null);
+    const response = await fetch("/api/personaliza/checkout-items", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        base_slug: selectedCheckoutBinding.productSlug,
+        personalization_sku: selectedCheckoutBinding.personalizationSku,
+      }),
+    });
 
-    const extraContact = [
-      senderPhone.trim() ? `Teléfono: ${senderPhone.trim()}` : null,
-      senderEmail.trim() ? `Correo: ${senderEmail.trim()}` : null,
-    ]
-      .filter(Boolean)
-      .join(" | ");
+    const payload = (await response.json().catch(() => ({}))) as {
+      detail?: string;
+      base?: CheckoutItemLookup;
+      personalization?: CheckoutItemLookup;
+    };
 
-    const message = extraContact
-      ? `${liveSummary}\n• Contacto: ${extraContact}`
-      : liveSummary;
+    if (!response.ok || !payload.base || !payload.personalization) {
+      throw new Error(payload.detail || "No pudimos preparar los productos para el checkout.");
+    }
 
+    await addItem(payload.base.id, 1, {
+      product_name: payload.base.name,
+      product_slug: payload.base.slug,
+      product_sku: payload.base.sku,
+      image_url: payload.base.image_url,
+      brand: payload.base.brand,
+      stock_status: payload.base.stock_status,
+      unit_price: payload.base.price,
+      compare_price: payload.base.compare_price,
+    });
+
+    await addItem(payload.personalization.id, 1, {
+      product_name: payload.personalization.name,
+      product_slug: payload.personalization.slug,
+      product_sku: payload.personalization.sku,
+      image_url: payload.personalization.image_url,
+      brand: payload.personalization.brand,
+      stock_status: payload.personalization.stock_status,
+      unit_price: payload.personalization.price,
+      compare_price: payload.personalization.compare_price,
+    });
+
+    let personalizationPreviewImages: Record<string, string> | null = null;
     try {
-      const response = await fetch("/api/personaliza/request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query_type: "consulta_comercial",
-          message,
-          sender_name: senderName.trim(),
-          sender_email: senderEmail.trim() || null,
-          source: "web_personaliza_instrumento",
-        }),
+      const snapshotFront = await preview3DRef.current?.captureSnapshotDataUrl({
+        format: "jpg",
+        view: "front",
+        watermark: false,
+        maxWidth: 720,
+        quality: 0.78,
       });
+      const snapshotLeft = await preview3DRef.current?.captureSnapshotDataUrl({
+        format: "jpg",
+        view: "left",
+        watermark: false,
+        maxWidth: 720,
+        quality: 0.78,
+      });
+      const snapshotRight = await preview3DRef.current?.captureSnapshotDataUrl({
+        format: "jpg",
+        view: "right",
+        watermark: false,
+        maxWidth: 720,
+        quality: 0.78,
+      });
+      const imageMap = {
+        front: snapshotFront || "",
+        left: snapshotLeft || "",
+        right: snapshotRight || "",
+      };
+      const hasAnyImage = Object.values(imageMap).some((value) => value.trim().length > 0);
+      personalizationPreviewImages = hasAnyImage ? imageMap : null;
+    } catch {
+      personalizationPreviewImages = null;
+    }
 
-      const payload = (await response.json().catch(() => ({}))) as { detail?: string };
-      if (!response.ok) {
-        throw new Error(payload.detail || "No pudimos registrar tu solicitud.");
-      }
+    const checkoutContextWithPreviews: Record<string, unknown> = personalizationPreviewImages
+      ? {
+          ...personalizationCheckoutContext,
+          preview_images: personalizationPreviewImages,
+        }
+      : personalizationCheckoutContext;
 
-      setRequestStatus("success");
-      setRequestFeedback("Solicitud enviada. Te contactaremos para confirmar detalles y disponibilidad.");
-      setSenderName("");
-      setSenderEmail("");
-      setSenderPhone("");
+    const previousContext = readPersonalizaCheckoutContext();
+    const previousEntries =
+      Array.isArray(previousContext?.entries) &&
+      previousContext?.entries.every((entry) => entry && typeof entry === "object")
+        ? (previousContext.entries as Record<string, unknown>[])
+        : [];
+    const nextEntry: Record<string, unknown> = {
+      id: `cfg-${Date.now()}`,
+      created_at: new Date().toISOString(),
+      ...(checkoutContextWithPreviews as Record<string, unknown>),
+    };
+    const nextEntries = [...previousEntries, nextEntry].slice(-20);
+
+    persistPersonalizaCheckoutContext({
+      ...checkoutContextWithPreviews,
+      entries: nextEntries,
+      entries_count: nextEntries.length,
+      latest_entry_id: nextEntry.id,
+    });
+  }
+
+  async function handleAddToCart() {
+    if (addToCartStatus === "sending" || purchaseStatus === "sending") return;
+    try {
+      setAddToCartStatus("sending");
+      setAddToCartFeedback(null);
+      setPurchaseFeedback(null);
+      await addCurrentPersonalizationToCart();
+      setAddToCartStatus("success");
+      setAddToCartFeedback("Personalización agregada al carrito. Puedes crear otra configuración.");
+      router.push("/personaliza");
     } catch (error) {
-      setRequestStatus("error");
-      setRequestFeedback(
-        error instanceof Error ? error.message : "No pudimos registrar tu solicitud. Intenta de nuevo."
+      setAddToCartStatus("error");
+      setAddToCartFeedback(
+        error instanceof Error ? error.message : "No pudimos añadir esta personalización al carrito."
       );
     }
   }
 
   async function handleBuyNow() {
-    if (!selectedCheckoutBinding) {
-      setPurchaseStatus("error");
-      setPurchaseFeedback("Este instrumento aún no tiene conexión de checkout configurada.");
-      return;
-    }
-
+    if (purchaseStatus === "sending" || addToCartStatus === "sending") return;
     try {
       setPurchaseStatus("sending");
       setPurchaseFeedback(null);
-
-      const response = await fetch("/api/personaliza/checkout-items", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          base_slug: selectedCheckoutBinding.productSlug,
-          personalization_sku: selectedCheckoutBinding.personalizationSku,
-        }),
-      });
-
-      const payload = (await response.json().catch(() => ({}))) as {
-        detail?: string;
-        base?: CheckoutItemLookup;
-        personalization?: CheckoutItemLookup;
-      };
-
-      if (!response.ok || !payload.base || !payload.personalization) {
-        throw new Error(payload.detail || "No pudimos preparar los productos para el checkout.");
-      }
-
-      await addItem(payload.base.id, 1, {
-        product_name: payload.base.name,
-        product_slug: payload.base.slug,
-        product_sku: payload.base.sku,
-        image_url: payload.base.image_url,
-        brand: payload.base.brand,
-        stock_status: payload.base.stock_status,
-        unit_price: payload.base.price,
-        compare_price: payload.base.compare_price,
-      });
-
-      await addItem(payload.personalization.id, 1, {
-        product_name: payload.personalization.name,
-        product_slug: payload.personalization.slug,
-        product_sku: payload.personalization.sku,
-        image_url: payload.personalization.image_url,
-        brand: payload.personalization.brand,
-        stock_status: payload.personalization.stock_status,
-        unit_price: payload.personalization.price,
-        compare_price: payload.personalization.compare_price,
-      });
-
-      let personalizationPreviewImages: Record<string, string> | null = null;
-      try {
-        const snapshotFront = await preview3DRef.current?.captureSnapshotDataUrl({
-          format: "jpg",
-          view: "front",
-          watermark: false,
-          maxWidth: 720,
-          quality: 0.78,
-        });
-        const snapshotLeft = await preview3DRef.current?.captureSnapshotDataUrl({
-          format: "jpg",
-          view: "left",
-          watermark: false,
-          maxWidth: 720,
-          quality: 0.78,
-        });
-        const snapshotRight = await preview3DRef.current?.captureSnapshotDataUrl({
-          format: "jpg",
-          view: "right",
-          watermark: false,
-          maxWidth: 720,
-          quality: 0.78,
-        });
-        const imageMap = {
-          front: snapshotFront || "",
-          left: snapshotLeft || "",
-          right: snapshotRight || "",
-        };
-        const hasAnyImage = Object.values(imageMap).some((value) => value.trim().length > 0);
-        personalizationPreviewImages = hasAnyImage ? imageMap : null;
-      } catch {
-        personalizationPreviewImages = null;
-      }
-
-      const checkoutContextWithPreviews: Record<string, unknown> = personalizationPreviewImages
-        ? {
-            ...personalizationCheckoutContext,
-            preview_images: personalizationPreviewImages,
-          }
-        : personalizationCheckoutContext;
-
-      persistPersonalizaCheckoutContext(checkoutContextWithPreviews);
-
+      setAddToCartFeedback(null);
+      await addCurrentPersonalizationToCart();
       setPurchaseStatus("success");
       setPurchaseFeedback("Producto y personalización agregados al carrito. Redirigiendo al pago...");
       router.push(checkoutHref);
@@ -1863,71 +1860,6 @@ export default function PersonalizaExperience() {
             <p className={styles.adjustHint}>Controles con límites para evitar que el texto salga de la zona útil.</p>
           </div>
 
-          <form onSubmit={handleSubmitRequest} className={styles.requestCard}>
-            <p className={styles.requestTitle}>Solicitar personalización</p>
-            <p className={styles.requestCopy}>Envíanos esta configuración y te contactamos para continuar.</p>
-
-            <input
-              value={senderName}
-              onChange={(event) => setSenderName(event.target.value)}
-              className={styles.textField}
-              placeholder="Tu nombre"
-              required
-            />
-            <input
-              value={senderPhone}
-              onChange={(event) => setSenderPhone(event.target.value)}
-              className={styles.textField}
-              placeholder="Tu teléfono (opcional)"
-            />
-            <input
-              value={senderEmail}
-              onChange={(event) => setSenderEmail(event.target.value)}
-              className={styles.textField}
-              placeholder="Tu correo (opcional)"
-              type="email"
-            />
-
-            <div className={styles.requestActions}>
-              <button
-                type="button"
-                className={styles.ctaPrimary}
-                onClick={() => void handleBuyNow()}
-                disabled={purchaseStatus === "sending" || !selectedCheckoutBinding}
-              >
-                {purchaseStatus === "sending" ? "Preparando checkout..." : "Comprar ahora"}
-              </button>
-              <button
-                type="submit"
-                className={styles.ctaPrimary}
-                disabled={!canSubmitRequest || requestStatus === "sending"}
-              >
-                {requestStatus === "sending" ? "Enviando..." : "Solicitar personalización"}
-              </button>
-              <a href={whatsappHref} target="_blank" rel="noreferrer" className={styles.ctaGhost}>
-                Contactar por WhatsApp
-              </a>
-            </div>
-
-            {requestFeedback ? (
-              <p
-                className={`${styles.feedback} ${
-                  requestStatus === "success" ? styles.feedbackSuccess : styles.feedbackError
-                }`}
-              >
-                {requestFeedback}
-              </p>
-            ) : null}
-            {purchaseFeedback ? (
-              <p
-                className={`${styles.feedback} ${
-                  purchaseStatus === "success" ? styles.feedbackSuccess : styles.feedbackError
-                }`}
-              >
-                {purchaseFeedback}
-              </p>
-            ) : null}
-          </form>
         </div>
 
         <div className={styles.previewPanel}>
@@ -2139,6 +2071,45 @@ export default function PersonalizaExperience() {
               proceso manual de personalización.
             </p>
           </div>
+        </div>
+      </section>
+
+      <section className={styles.checkoutActionsDock} aria-label="Acciones de compra">
+        <div className={styles.checkoutActionsInner}>
+          <button
+            type="button"
+            className={styles.checkoutActionSecondary}
+            onClick={() => void handleAddToCart()}
+            disabled={addToCartStatus === "sending" || purchaseStatus === "sending" || !selectedCheckoutBinding}
+          >
+            {addToCartStatus === "sending" ? "Añadiendo..." : "Añadir al carrito"}
+          </button>
+          <button
+            type="button"
+            className={styles.checkoutActionPrimary}
+            onClick={() => void handleBuyNow()}
+            disabled={purchaseStatus === "sending" || addToCartStatus === "sending" || !selectedCheckoutBinding}
+          >
+            {purchaseStatus === "sending" ? "Preparando checkout..." : "Comprar ahora"}
+          </button>
+          {addToCartFeedback ? (
+            <p
+              className={`${styles.feedback} ${
+                addToCartStatus === "success" ? styles.feedbackSuccess : styles.feedbackError
+              }`}
+            >
+              {addToCartFeedback}
+            </p>
+          ) : null}
+          {purchaseFeedback ? (
+            <p
+              className={`${styles.feedback} ${
+                purchaseStatus === "success" ? styles.feedbackSuccess : styles.feedbackError
+              }`}
+            >
+              {purchaseFeedback}
+            </p>
+          ) : null}
         </div>
       </section>
     </main>
