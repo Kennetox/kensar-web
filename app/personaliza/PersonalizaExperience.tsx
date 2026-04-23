@@ -296,9 +296,11 @@ export default function PersonalizaExperience() {
   const [isDownloadingPreview, setIsDownloadingPreview] = useState(false);
   const [isModelUpsideDown, setIsModelUpsideDown] = useState(false);
   const [floatingDockBottom, setFloatingDockBottom] = useState(16);
+  const [isFloatingDockVisible, setIsFloatingDockVisible] = useState(false);
   const [historyPast, setHistoryPast] = useState<EditorSnapshot[]>([]);
   const [historyFuture, setHistoryFuture] = useState<EditorSnapshot[]>([]);
   const campanaTypeSectionRef = useRef<HTMLDivElement | null>(null);
+  const dockVisibilityTriggerRef = useRef<HTMLDivElement | null>(null);
   const preview3DRef = useRef<ModelPreview3DHandle | null>(null);
   const isApplyingHistoryRef = useRef(false);
   const lastSnapshotRef = useRef<EditorSnapshot | null>(null);
@@ -364,6 +366,27 @@ export default function PersonalizaExperience() {
     });
     return () => window.cancelAnimationFrame(frameId);
   }, [showCampanaTypes]);
+
+  useEffect(() => {
+    if (!isProductSelected) return;
+    const trigger = dockVisibilityTriggerRef.current;
+    if (!trigger) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        setIsFloatingDockVisible(Boolean(entry?.isIntersecting));
+      },
+      {
+        root: null,
+        threshold: 0.18,
+        rootMargin: "0px 0px -14% 0px",
+      }
+    );
+
+    observer.observe(trigger);
+    return () => observer.disconnect();
+  }, [isProductSelected]);
 
   useEffect(() => {
     if (!isProductSelected) return;
@@ -2104,8 +2127,12 @@ export default function PersonalizaExperience() {
         </div>
       </section>
 
+      <div ref={dockVisibilityTriggerRef} className={styles.dockVisibilityTrigger} aria-hidden />
+
       <section
-        className={styles.checkoutActionsDock}
+        className={`${styles.checkoutActionsDock}${
+          isFloatingDockVisible ? ` ${styles.checkoutActionsDockVisible}` : ""
+        }`}
         aria-label="Acciones de compra"
         style={{ bottom: `${floatingDockBottom}px` }}
       >
