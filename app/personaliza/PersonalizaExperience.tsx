@@ -220,6 +220,27 @@ function getNextGuiroFace(currentLayers: TextLayerState[]): GuiroTextFace {
   return available?.id || "front_up";
 }
 
+function normalizeHexColor(value: string): string {
+  const safe = value.replace("#", "").trim().toLowerCase();
+  if (safe.length === 3) return `#${safe[0]}${safe[0]}${safe[1]}${safe[1]}${safe[2]}${safe[2]}`;
+  if (/^[0-9a-f]{6}$/.test(safe)) return `#${safe}`;
+  return "";
+}
+
+function resolveTextColorLabel(value: string): string {
+  const normalized = normalizeHexColor(value);
+  if (!normalized) return "Personalizado";
+  const matched = TEXT_COLOR_OPTIONS.find(
+    (option) => option.id !== "custom" && normalizeHexColor(option.hex) === normalized
+  );
+  return matched?.label || "Personalizado";
+}
+
+function cleanTraceLine(value: string): string {
+  const line = value.trim().replace(/^[-•\s]+/, "");
+  return line;
+}
+
 function getDefaultRotationByFace(face: GuiroTextFace): number {
   return face === "left" || face === "right" ? -90 : 0;
 }
@@ -534,6 +555,55 @@ export default function PersonalizaExperience() {
     [activeLayerFace, isGuiroVariant, textLayers]
   );
   const shouldFocusTextIn3D = isGuiroVariant ? false : isTextInputFocused;
+  const designTraceText = useMemo(() => {
+    const lines: string[] = [];
+    lines.push(`Producto: ${selectedProduct.name}`);
+    lines.push(`Tamaño: ${selectedSize.label}`);
+    if (product === "campana") {
+      lines.push(`Tipo campana: ${selectedCampanaType === "cromada" ? "Cromada" : "Clásica"}`);
+      lines.push(`Boquilla: ${campanaBellType === "abierta" ? "Abierta" : "Cerrada"}`);
+    }
+    lines.push(`Estilo: ${selectedStyleLabel}`);
+    if (paintConfig.mode === "solid") {
+      lines.push(`Color principal: ${selectedStyleLabel}`);
+    } else {
+      const gradientPreset = GRADIENT_STYLE_PRESETS.find((preset) => preset.id === gradientPresetId);
+      lines.push(`Degradado: ${gradientPreset?.label || "Personalizado"}`);
+    }
+
+    const layerLines = textLayers
+      .map((layer, index) => {
+        const textValue = layer.text.trim();
+        if (!textValue) return null;
+        const faceLabel =
+          product === "guiro"
+            ? GUIRO_TEXT_FACE_OPTIONS.find((option) => option.id === layer.face)?.label || "Frente"
+            : "Frente";
+        const colorLabel = resolveTextColorLabel(layer.color);
+        return `Capa ${index + 1} · Cara: ${faceLabel} · Color: ${colorLabel} · Texto: "${textValue}"`;
+      })
+      .filter(Boolean) as string[];
+
+    if (!layerLines.length) {
+      lines.push("Texto por capas: Sin texto");
+    } else {
+      lines.push("Texto por capas:");
+      layerLines.forEach((line) => lines.push(`- ${line}`));
+    }
+
+    return lines.join("\n");
+  }, [
+    campanaBellType,
+    gradientPresetId,
+    paintConfig.mode,
+    product,
+    selectedCampanaType,
+    selectedProduct.name,
+    selectedSize.label,
+    selectedStyleLabel,
+    textLayers,
+  ]);
+
   const personalizationCheckoutContext = useMemo<Record<string, unknown>>(
     () => ({
       type: "instrumento",
@@ -569,10 +639,16 @@ export default function PersonalizaExperience() {
         scale_ratio: layer.scaleRatio,
         transform: layer.transform,
       })),
+      design_trace_text: designTraceText,
+      design_trace_lines: designTraceText
+        .split("\n")
+        .map(cleanTraceLine)
+        .filter(Boolean),
       summary: liveSummary,
     }),
     [
       campanaBellType,
+      designTraceText,
       isCampanaVariant,
       liveSummary,
       paintConfig,

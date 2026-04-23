@@ -174,8 +174,16 @@ const GUIRO_FACE_THETA_BY_FACE: Record<"front_up" | "front_down" | "left" | "rig
 };
 const CAMPANA_VIEW_THETA_BY_VIEW: Record<"front" | "left" | "right", number> = {
   front: 0,
-  left: -86,
-  right: 86,
+  left: -116,
+  right: 116,
+};
+const CAMPANA_SNAPSHOT_VIEW_PRESET: Record<
+  "front" | "left" | "right",
+  { phi: number; radius: number; targetX: number; targetY: number }
+> = {
+  front: { phi: 80, radius: 118, targetX: 0, targetY: 0 },
+  left: { phi: 82, radius: 108, targetX: -0.08, targetY: 0.01 },
+  right: { phi: 82, radius: 108, targetX: 0.08, targetY: 0.01 },
 };
 const GUIRO_FACE_FOCUS_PRESET: Record<
   "front_up" | "front_down" | "left" | "right",
@@ -1079,7 +1087,12 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
         if (snapshotView === "left") targetForView.x = -0.03;
         if (snapshotView === "right") targetForView.x = 0.03;
       } else {
+        const preset = CAMPANA_SNAPSHOT_VIEW_PRESET[snapshotView];
         cameraForView.theta = CAMPANA_VIEW_THETA_BY_VIEW[snapshotView];
+        cameraForView.phi = preset.phi;
+        cameraForView.radius = preset.radius;
+        targetForView.x = preset.targetX;
+        targetForView.y = preset.targetY;
       }
       const mimeType = options?.format === "jpg" ? "image/jpeg" : "image/png";
       const quality = options?.quality ?? 0.8;
