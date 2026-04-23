@@ -290,9 +290,7 @@ export default function PersonalizaExperience() {
   const [isDraggingText, setIsDraggingText] = useState(false);
   const [isDesktop, setIsDesktop] = useState(true);
   const [addToCartStatus, setAddToCartStatus] = useState<PurchaseStatus>("idle");
-  const [addToCartFeedback, setAddToCartFeedback] = useState<string | null>(null);
   const [purchaseStatus, setPurchaseStatus] = useState<PurchaseStatus>("idle");
-  const [purchaseFeedback, setPurchaseFeedback] = useState<string | null>(null);
   const [showCampanaTypes, setShowCampanaTypes] = useState(false);
   const [isTextInputFocused, setIsTextInputFocused] = useState(false);
   const [isDownloadingPreview, setIsDownloadingPreview] = useState(false);
@@ -370,6 +368,8 @@ export default function PersonalizaExperience() {
   useEffect(() => {
     if (!isProductSelected) return;
 
+    let rafId: number | null = null;
+
     const updateDockBottom = () => {
       const footer = document.querySelector(".site-footer");
       if (!footer) {
@@ -378,15 +378,31 @@ export default function PersonalizaExperience() {
       }
       const footerRect = footer.getBoundingClientRect();
       const overlap = window.innerHeight - footerRect.top;
-      setFloatingDockBottom(overlap > 0 ? overlap + 16 : 16);
+      const rawBottom = overlap > 0 ? overlap + 16 : 16;
+      const snappedBottom = Math.max(16, Math.ceil(rawBottom / 12) * 12);
+      setFloatingDockBottom((current) => {
+        if (Math.abs(current - snappedBottom) < 12) return current;
+        return snappedBottom;
+      });
+    };
+
+    const scheduleDockUpdate = () => {
+      if (rafId !== null) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null;
+        updateDockBottom();
+      });
     };
 
     updateDockBottom();
-    window.addEventListener("scroll", updateDockBottom, { passive: true });
-    window.addEventListener("resize", updateDockBottom);
+    window.addEventListener("scroll", scheduleDockUpdate, { passive: true });
+    window.addEventListener("resize", scheduleDockUpdate);
     return () => {
-      window.removeEventListener("scroll", updateDockBottom);
-      window.removeEventListener("resize", updateDockBottom);
+      window.removeEventListener("scroll", scheduleDockUpdate);
+      window.removeEventListener("resize", scheduleDockUpdate);
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
     };
   }, [isProductSelected]);
 
@@ -1273,17 +1289,12 @@ export default function PersonalizaExperience() {
     if (addToCartStatus === "sending" || purchaseStatus === "sending") return;
     try {
       setAddToCartStatus("sending");
-      setAddToCartFeedback(null);
-      setPurchaseFeedback(null);
       await addCurrentPersonalizationToCart();
       setAddToCartStatus("success");
-      setAddToCartFeedback("Personalización agregada al carrito. Puedes crear otra configuración.");
       router.push("/personaliza");
     } catch (error) {
       setAddToCartStatus("error");
-      setAddToCartFeedback(
-        error instanceof Error ? error.message : "No pudimos añadir esta personalización al carrito."
-      );
+      console.warn(error instanceof Error ? error.message : "No pudimos añadir esta personalización al carrito.");
     }
   }
 
@@ -1291,17 +1302,12 @@ export default function PersonalizaExperience() {
     if (purchaseStatus === "sending" || addToCartStatus === "sending") return;
     try {
       setPurchaseStatus("sending");
-      setPurchaseFeedback(null);
-      setAddToCartFeedback(null);
       await addCurrentPersonalizationToCart();
       setPurchaseStatus("success");
-      setPurchaseFeedback("Producto y personalización agregados al carrito. Redirigiendo al pago...");
       router.push(checkoutHref);
     } catch (error) {
       setPurchaseStatus("error");
-      setPurchaseFeedback(
-        error instanceof Error ? error.message : "No pudimos continuar al checkout."
-      );
+      console.warn(error instanceof Error ? error.message : "No pudimos continuar al checkout.");
     }
   }
 
@@ -2120,24 +2126,6 @@ export default function PersonalizaExperience() {
           >
             {purchaseStatus === "sending" ? "Preparando checkout..." : "Comprar ahora"}
           </button>
-          {addToCartFeedback ? (
-            <p
-              className={`${styles.feedback} ${
-                addToCartStatus === "success" ? styles.feedbackSuccess : styles.feedbackError
-              }`}
-            >
-              {addToCartFeedback}
-            </p>
-          ) : null}
-          {purchaseFeedback ? (
-            <p
-              className={`${styles.feedback} ${
-                purchaseStatus === "success" ? styles.feedbackSuccess : styles.feedbackError
-              }`}
-            >
-              {purchaseFeedback}
-            </p>
-          ) : null}
         </div>
       </section>
     </main>
