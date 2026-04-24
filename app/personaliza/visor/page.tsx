@@ -46,10 +46,15 @@ function decodePayload(input: string): PersonalizationPreviewPayload | null {
     raw.replace(/-/g, "+").replace(/_/g, "/"),
     decodedUri.replace(/-/g, "+").replace(/_/g, "/"),
   ];
+  const decodeUtf8Base64 = (base64: string): string => {
+    const binary = atob(base64);
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    return new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+  };
   for (const candidate of candidates) {
     try {
       const withPadding = `${candidate}${"===".slice((candidate.length + 3) % 4)}`;
-      const json = atob(withPadding);
+      const json = decodeUtf8Base64(withPadding);
       const parsed = JSON.parse(json);
       if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
         return parsed as PersonalizationPreviewPayload;

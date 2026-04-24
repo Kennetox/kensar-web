@@ -169,8 +169,8 @@ const GUIRO_BASE_THETA_OFFSET = 0;
 const GUIRO_FACE_THETA_BY_FACE: Record<"front_up" | "front_down" | "left" | "right", number> = {
   front_up: GUIRO_BASE_THETA_OFFSET + 0,
   front_down: GUIRO_BASE_THETA_OFFSET + 0,
-  left: GUIRO_BASE_THETA_OFFSET - 86,
-  right: GUIRO_BASE_THETA_OFFSET + 86,
+  left: GUIRO_BASE_THETA_OFFSET - 112,
+  right: GUIRO_BASE_THETA_OFFSET + 112,
 };
 const CAMPANA_VIEW_THETA_BY_VIEW: Record<"front" | "left" | "right", number> = {
   front: 0,
@@ -191,8 +191,8 @@ const GUIRO_FACE_FOCUS_PRESET: Record<
 > = {
   front_up: { phi: 70, targetY: 0.17, minRadius: 72, maxRadius: 86 },
   front_down: { phi: 94, targetY: -0.17, minRadius: 72, maxRadius: 86 },
-  left: { phi: 82, targetY: 0, minRadius: 94, maxRadius: 112 },
-  right: { phi: 82, targetY: 0, minRadius: 94, maxRadius: 112 },
+  left: { phi: 84, targetY: 0, minRadius: 88, maxRadius: 108 },
+  right: { phi: 84, targetY: 0, minRadius: 88, maxRadius: 108 },
 };
 const GUIRO_TEXT_ROTATION_OFFSET_BY_FACE: Record<"front_up" | "front_down" | "left" | "right", number> = {
   front_up: 0,
@@ -1086,8 +1086,8 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
         cameraForView.phi = preset.phi;
         cameraForView.radius = clampValue(frontalCamera.radius, preset.minRadius, preset.maxRadius);
         targetForView.y = preset.targetY;
-        if (snapshotView === "left") targetForView.x = -0.03;
-        if (snapshotView === "right") targetForView.x = 0.03;
+        if (snapshotView === "left") targetForView.x = -0.1;
+        if (snapshotView === "right") targetForView.x = 0.1;
       } else {
         const preset = CAMPANA_SNAPSHOT_VIEW_PRESET[snapshotView];
         cameraForView.theta = CAMPANA_VIEW_THETA_BY_VIEW[snapshotView];
@@ -1115,7 +1115,7 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
           let idleTimer: number | null = null;
           const onChange = () => {
             if (idleTimer !== null) window.clearTimeout(idleTimer);
-            idleTimer = window.setTimeout(finish, 90);
+            idleTimer = window.setTimeout(finish, 150);
           };
           const finish = () => {
             if (completed) return;
@@ -1126,7 +1126,7 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
             resolve();
           };
           viewer.addEventListener("camera-change", onChange as EventListener);
-          fallbackTimer = window.setTimeout(finish, 560);
+          fallbackTimer = window.setTimeout(finish, 900);
           requestAnimationFrame(() =>
             requestAnimationFrame(() => {
               try {
