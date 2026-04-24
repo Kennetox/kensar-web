@@ -86,21 +86,25 @@ function VisorContent() {
         mode: "solid",
         color: payload?.paint && "color" in payload.paint ? payload.paint.color || "#1f2937" : "#1f2937",
       };
-  const textLayers: TextLayer3D[] = (payload?.text_layers || []).map((layer, index) => ({
-    id: layer.id || `layer-${index + 1}`,
-    text: layer.text || "",
-    textColor: layer.color || "#ffffff",
-    textFontFamily: layer.font_family || "Arial, sans-serif",
-    textFontWeight: Number(layer.font_weight) || 700,
-    face: layer.face || "front_up",
-    textTransform: {
-      scaleX: Number(layer.transform?.scaleX) || 100,
-      scaleY: Number(layer.transform?.scaleY) || 100,
-      offsetX: Number(layer.transform?.offsetX) || 0,
-      offsetY: Number(layer.transform?.offsetY) || 0,
-      rotation: Number(layer.transform?.rotation) || 0,
-    },
-  }));
+  const textLayers: TextLayer3D[] = (payload?.text_layers || []).map((layer, index) => {
+    const face = layer.face || "front_up";
+    const defaultRotation = face === "left" || face === "right" ? -90 : 0;
+    return {
+      id: layer.id || `layer-${index + 1}`,
+      text: layer.text || "",
+      textColor: layer.color || "#ffffff",
+      textFontFamily: layer.font_family || "Arial, sans-serif",
+      textFontWeight: Number(layer.font_weight) || 700,
+      face,
+      textTransform: {
+        scaleX: Number(layer.transform?.scaleX) || 100,
+        scaleY: Number(layer.transform?.scaleY) || 100,
+        offsetX: Number(layer.transform?.offsetX) || 0,
+        offsetY: Number(layer.transform?.offsetY) || 0,
+        rotation: Number(layer.transform?.rotation) || defaultRotation,
+      },
+    };
+  });
 
   return (
     <main style={{ minHeight: "100vh", background: "#f1f5f9", margin: 0, padding: 0 }}>

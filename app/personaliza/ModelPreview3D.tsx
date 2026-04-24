@@ -83,6 +83,12 @@ function clampValue(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
+function withCanvasGlyphFallback(fontFamily: string): string {
+  const normalized = (fontFamily || "").trim();
+  const base = normalized || "Arial, sans-serif";
+  return `${base}, "Segoe UI Symbol", "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
+}
+
 function resolveMaterialByCandidates<T extends { name?: string }>(
   materials: T[],
   candidates: string[]
@@ -602,7 +608,7 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
         const words = content.split(/\s+/).filter(Boolean);
         const lines: string[] = [];
         let current = "";
-        context.font = `${layer.textFontWeight} ${scaledFontSize}px ${layer.textFontFamily}`;
+        context.font = `${layer.textFontWeight} ${scaledFontSize}px ${withCanvasGlyphFallback(layer.textFontFamily)}`;
         context.lineWidth = Math.max(2, Math.round(scaledFontSize * 0.06));
         context.lineJoin = "round";
         for (const word of words) {
