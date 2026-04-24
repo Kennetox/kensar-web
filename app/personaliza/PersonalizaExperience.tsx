@@ -1282,27 +1282,34 @@ export default function PersonalizaExperience() {
 
     let personalizationPreviewImages: Record<string, string> | null = null;
     try {
-      const snapshotFront = await preview3DRef.current?.captureSnapshotDataUrl({
-        format: "jpg",
-        view: "front",
-        watermark: false,
-        maxWidth: 720,
-        quality: 0.78,
-      });
-      const snapshotLeft = await preview3DRef.current?.captureSnapshotDataUrl({
-        format: "jpg",
-        view: "left",
-        watermark: false,
-        maxWidth: 720,
-        quality: 0.78,
-      });
-      const snapshotRight = await preview3DRef.current?.captureSnapshotDataUrl({
-        format: "jpg",
-        view: "right",
-        watermark: false,
-        maxWidth: 720,
-        quality: 0.78,
-      });
+      const capturePreviewView = async (
+        view: "front" | "left" | "right",
+        avoidDataUrls: string[] = []
+      ): Promise<string> => {
+        let fallback = "";
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          const snapshot = await preview3DRef.current?.captureSnapshotDataUrl({
+            format: "jpg",
+            view,
+            watermark: false,
+            maxWidth: 720,
+            quality: 0.78,
+          });
+          const normalized = (snapshot || "").trim();
+          if (!normalized) continue;
+          fallback = normalized;
+          if (!avoidDataUrls.includes(normalized)) return normalized;
+          await new Promise<void>((resolve) => window.setTimeout(() => resolve(), 120));
+        }
+        return fallback;
+      };
+
+      const snapshotFront = await capturePreviewView("front");
+      const snapshotLeft = await capturePreviewView("left", snapshotFront ? [snapshotFront] : []);
+      const snapshotRight = await capturePreviewView(
+        "right",
+        [snapshotFront, snapshotLeft].map((value) => value.trim()).filter(Boolean)
+      );
       const imageMap = {
         front: snapshotFront || "",
         left: snapshotLeft || "",

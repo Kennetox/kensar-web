@@ -1065,6 +1065,8 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
         | (HTMLElement & {
             toDataURL?: (type?: string, quality?: number) => string;
             shadowRoot?: ShadowRoot;
+            updateComplete?: Promise<unknown>;
+            jumpCameraToGoal?: () => void;
           })
         | null;
       if (!viewer) return null;
@@ -1106,20 +1108,50 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
           image.onerror = () => reject(new Error(`No se pudo cargar imagen: ${src}`));
           image.src = src;
         });
+      const waitForCameraSettle = () =>
+        new Promise<void>((resolve) => {
+          let completed = false;
+          let fallbackTimer: number | null = null;
+          let idleTimer: number | null = null;
+          const onChange = () => {
+            if (idleTimer !== null) window.clearTimeout(idleTimer);
+            idleTimer = window.setTimeout(finish, 90);
+          };
+          const finish = () => {
+            if (completed) return;
+            completed = true;
+            viewer.removeEventListener("camera-change", onChange as EventListener);
+            if (fallbackTimer !== null) window.clearTimeout(fallbackTimer);
+            if (idleTimer !== null) window.clearTimeout(idleTimer);
+            resolve();
+          };
+          viewer.addEventListener("camera-change", onChange as EventListener);
+          fallbackTimer = window.setTimeout(finish, 560);
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() => {
+              try {
+                viewer.jumpCameraToGoal?.();
+              } catch {
+                // Si falla, usamos únicamente la espera por eventos/RAF.
+              }
+              onChange();
+            })
+          );
+        });
 
       try {
         cameraStateRef.current = cameraForView;
         cameraTargetRef.current = targetForView;
         applyCameraState(cameraForView);
         applyCameraTarget(targetForView);
-        const viewerWithUpdateComplete = viewer as typeof viewer & { updateComplete?: Promise<unknown> };
-        if (viewerWithUpdateComplete.updateComplete) {
+        if (viewer.updateComplete) {
           try {
-            await viewerWithUpdateComplete.updateComplete;
+            await viewer.updateComplete;
           } catch {
             // fallback to RAF wait below
           }
         }
+        await waitForCameraSettle();
         await new Promise<void>((resolve) =>
           requestAnimationFrame(() =>
             requestAnimationFrame(() =>

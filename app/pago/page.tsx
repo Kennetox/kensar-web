@@ -143,6 +143,78 @@ function parsePersonalizaCheckoutContext(): Record<string, unknown> | null {
   }
 }
 
+function normalizeSku(value: unknown): string {
+  if (typeof value !== "string") return "";
+  return value.trim().toLowerCase();
+}
+
+function normalizePositiveInteger(value: unknown): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 0;
+  return Math.max(0, Math.round(parsed));
+}
+
+function toRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+}
+
+function buildCartSkuQuantityMap(items: WebCartItem[]): Map<string, number> {
+  const qtyBySku = new Map<string, number>();
+  for (const item of items) {
+    const sku = normalizeSku(item.product_sku);
+    if (!sku) continue;
+    const quantity = normalizePositiveInteger(item.quantity);
+    if (quantity <= 0) continue;
+    qtyBySku.set(sku, (qtyBySku.get(sku) || 0) + quantity);
+  }
+  return qtyBySku;
+}
+
+function sanitizePersonalizationContextForCart(
+  context: Record<string, unknown>,
+  items: WebCartItem[]
+): Record<string, unknown> | null {
+  const qtyBySku = buildCartSkuQuantityMap(items);
+  if (!qtyBySku.size) return null;
+
+  const sourceEntriesRaw = Array.isArray(context.entries) ? context.entries : [context];
+  const normalizedEntries = sourceEntriesRaw.map((entry) => toRecord(entry)).filter(Boolean) as Record<string, unknown>[];
+  if (!normalizedEntries.length) return null;
+
+  const acceptedEntries: Record<string, unknown>[] = [];
+  for (let index = normalizedEntries.length - 1; index >= 0; index -= 1) {
+    const entry = normalizedEntries[index];
+    const binding = toRecord(entry.checkout_binding);
+    const productSku = normalizeSku(binding?.product_sku);
+    const personalizationSku = normalizeSku(binding?.personalization_sku);
+    if (!personalizationSku) continue;
+
+    const availableServiceQty = qtyBySku.get(personalizationSku) || 0;
+    if (availableServiceQty <= 0) continue;
+    if (productSku && (qtyBySku.get(productSku) || 0) <= 0) continue;
+
+    acceptedEntries.push(entry);
+    qtyBySku.set(personalizationSku, availableServiceQty - 1);
+    if (productSku) {
+      qtyBySku.set(productSku, Math.max(0, (qtyBySku.get(productSku) || 0) - 1));
+    }
+  }
+
+  if (!acceptedEntries.length) return null;
+
+  acceptedEntries.reverse();
+  const latest = acceptedEntries[acceptedEntries.length - 1];
+  return {
+    ...context,
+    ...latest,
+    entries: acceptedEntries,
+    entries_count: acceptedEntries.length,
+    latest_entry_id: latest?.id || null,
+    generated_at: typeof latest?.generated_at === "string" ? latest.generated_at : context.generated_at,
+  };
+}
+
 function hasCartSku(items: WebCartItem[], sku: string): boolean {
   const normalized = sku.trim().toLowerCase();
   if (!normalized) return false;
@@ -467,16 +539,30 @@ function PagoPageContent() {
       setPersonalizationContext(null);
       return;
     }
-    const binding = (candidate.checkout_binding || null) as Record<string, unknown> | null;
+    const sanitized = sanitizePersonalizationContextForCart(candidate, items);
+    if (!sanitized) {
+      setPersonalizationContext(null);
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(PERSONALIZA_CHECKOUT_CONTEXT_STORAGE_KEY);
+      }
+      return;
+    }
+    const binding = (sanitized.checkout_binding || null) as Record<string, unknown> | null;
     const productSku = typeof binding?.product_sku === "string" ? binding.product_sku : "";
     const personalizationSku = typeof binding?.personalization_sku === "string" ? binding.personalization_sku : "";
     const hasExpectedBase = productSku ? hasCartSku(items, productSku) : false;
     const hasExpectedService = personalizationSku ? hasCartSku(items, personalizationSku) : false;
     if (hasExpectedBase && hasExpectedService) {
-      setPersonalizationContext(candidate);
+      setPersonalizationContext(sanitized);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(PERSONALIZA_CHECKOUT_CONTEXT_STORAGE_KEY, JSON.stringify(sanitized));
+      }
       return;
     }
     setPersonalizationContext(null);
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(PERSONALIZA_CHECKOUT_CONTEXT_STORAGE_KEY);
+    }
   }, [items]);
 
   function resolveMercadoPagoUrl(input: {

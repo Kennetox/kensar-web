@@ -34,6 +34,7 @@ type CheckoutResultContext = {
 const PICKUP_ADDRESS_FULL = "Cra 24 #30-75, Palmira, Valle del Cauca, Colombia";
 const CHECKOUT_RESULT_CONTEXT_STORAGE_PREFIX = "kensar_web_checkout_result_context_";
 const GUEST_CART_STORAGE_KEY = "kensar_web_guest_cart_v1";
+const PERSONALIZA_CHECKOUT_CONTEXT_STORAGE_KEY = "kensar_web_personaliza_checkout_context_v1";
 const SUPPORT_EMAIL = "kensarelec@gmail.com";
 
 function firstNameFromFullName(fullName?: string | null): string {
@@ -184,6 +185,7 @@ function CheckoutResultContent() {
       window.localStorage.removeItem(GUEST_CART_STORAGE_KEY);
       window.localStorage.removeItem(`kensar_web_guest_order_token_${orderId}`);
       window.localStorage.removeItem(`${CHECKOUT_RESULT_CONTEXT_STORAGE_PREFIX}${orderId}`);
+      window.localStorage.removeItem(PERSONALIZA_CHECKOUT_CONTEXT_STORAGE_KEY);
     } catch {
       // Ignore storage failures.
     }
