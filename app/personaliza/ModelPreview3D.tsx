@@ -86,7 +86,12 @@ function clampValue(value: number, min: number, max: number) {
 function withCanvasGlyphFallback(fontFamily: string): string {
   const normalized = (fontFamily || "").trim();
   const base = normalized || "Arial, sans-serif";
-  return `${base}, "Segoe UI Symbol", "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
+  return `${base}, "Segoe UI Symbol", "Arial Unicode MS", "Noto Sans Symbols 2", sans-serif`;
+}
+
+function normalizeCanvasTextGlyphs(value: string): string {
+  // Fuerza presentación de texto para evitar emojis a color y mantener consistencia visual.
+  return String(value || "").replace(/\uFE0F/g, "");
 }
 
 function resolveMaterialByCandidates<T extends { name?: string }>(
@@ -572,7 +577,7 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
         context.stroke();
       }
       for (const layer of layers) {
-        const content = layer.text.trim();
+        const content = normalizeCanvasTextGlyphs(layer.text.trim());
         if (!content) continue;
         context.textAlign = "center";
         context.textBaseline = "middle";
