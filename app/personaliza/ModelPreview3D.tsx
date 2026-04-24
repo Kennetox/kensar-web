@@ -86,7 +86,16 @@ function clampValue(value: number, min: number, max: number) {
 function withCanvasGlyphFallback(fontFamily: string): string {
   const normalized = (fontFamily || "").trim();
   const base = normalized || "Arial, sans-serif";
-  return `${base}, "Segoe UI Symbol", "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
+  return `${base}, "Segoe UI Symbol", "Arial Unicode MS", "Noto Sans Symbols 2", sans-serif`;
+}
+
+function normalizeCanvasTextGlyphs(value: string): string {
+  // Mantiene símbolos con estilo texto (monocromo) para respetar el color elegido por el usuario.
+  return String(value || "")
+    .replace(/\uFE0F/g, "") // emoji presentation selector
+    .replace(/\u2764/g, "♥") // heart
+    .replace(/\u2B50/g, "★") // white medium star emoji
+    .replace(/\u2795/g, "✚"); // heavy plus emoji
 }
 
 function resolveMaterialByCandidates<T extends { name?: string }>(
@@ -572,7 +581,7 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
         context.stroke();
       }
       for (const layer of layers) {
-        const content = layer.text.trim();
+        const content = normalizeCanvasTextGlyphs(layer.text.trim());
         if (!content) continue;
         context.textAlign = "center";
         context.textBaseline = "middle";
