@@ -90,6 +90,8 @@ function getApiBaseUrl() {
   return baseUrl.replace(/\/$/, "");
 }
 
+const CATALOG_REVALIDATE_SECONDS = 60;
+
 function resolveCatalogAssetUrl(baseUrl: string, value: string | null): string | null {
   if (!value) return null;
 
@@ -143,7 +145,7 @@ async function fetchCatalog<T>(path: string, params?: URLSearchParams): Promise<
   const baseUrl = getApiBaseUrl();
   const query = params && params.toString() ? `?${params.toString()}` : "";
   const response = await fetch(`${baseUrl}${path}${query}`, {
-    cache: "no-store",
+    next: { revalidate: CATALOG_REVALIDATE_SECONDS },
   });
 
   if (!response.ok) {
@@ -156,7 +158,7 @@ async function fetchCatalog<T>(path: string, params?: URLSearchParams): Promise<
 async function fetchCatalogOptional<T>(path: string): Promise<T | null> {
   const baseUrl = getApiBaseUrl();
   const response = await fetch(`${baseUrl}${path}`, {
-    cache: "no-store",
+    next: { revalidate: CATALOG_REVALIDATE_SECONDS },
   });
 
   if (response.status === 404) {
