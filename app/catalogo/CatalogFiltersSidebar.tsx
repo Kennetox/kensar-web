@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { PointerEvent } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { WebCatalogFilterOption } from "@/app/lib/metrikCatalog";
 
@@ -75,8 +76,13 @@ export default function CatalogFiltersSidebar({
   const [localMaxPrice, setLocalMaxPrice] = useState<number>(
     clamp(Math.round(maxPrice || safeMax), safeMin, safeMax)
   );
+  const [minInputValue, setMinInputValue] = useState<string>(String(clamp(Math.round(minPrice || safeMin), safeMin, safeMax)));
+  const [maxInputValue, setMaxInputValue] = useState<string>(String(clamp(Math.round(maxPrice || safeMax), safeMin, safeMax)));
+  const [isEditingMinInput, setIsEditingMinInput] = useState(false);
+  const [isEditingMaxInput, setIsEditingMaxInput] = useState(false);
   const [localBrands, setLocalBrands] = useState<string[]>(selectedBrands);
   const [showAllBrands, setShowAllBrands] = useState(false);
+  const [priceDirty, setPriceDirty] = useState(false);
 
   useEffect(() => {
     setLocalQuery(query);
@@ -87,12 +93,18 @@ export default function CatalogFiltersSidebar({
   }, [sort]);
 
   useEffect(() => {
-    setLocalMinPrice(clamp(Math.round(minPrice || safeMin), safeMin, safeMax));
-  }, [minPrice, safeMin, safeMax]);
+    const normalized = clamp(Math.round(minPrice || safeMin), safeMin, safeMax);
+    setLocalMinPrice(normalized);
+    if (!isEditingMinInput) setMinInputValue(String(normalized));
+    setPriceDirty(false);
+  }, [minPrice, safeMin, safeMax, isEditingMinInput]);
 
   useEffect(() => {
-    setLocalMaxPrice(clamp(Math.round(maxPrice || safeMax), safeMin, safeMax));
-  }, [maxPrice, safeMin, safeMax]);
+    const normalized = clamp(Math.round(maxPrice || safeMax), safeMin, safeMax);
+    setLocalMaxPrice(normalized);
+    if (!isEditingMaxInput) setMaxInputValue(String(normalized));
+    setPriceDirty(false);
+  }, [maxPrice, safeMin, safeMax, isEditingMaxInput]);
 
   useEffect(() => {
     setLocalBrands(selectedBrands);
@@ -101,6 +113,14 @@ export default function CatalogFiltersSidebar({
   useEffect(() => {
     setShowAllBrands(false);
   }, [brands]);
+
+  useEffect(() => {
+    if (!isEditingMinInput) setMinInputValue(String(localMinPrice));
+  }, [localMinPrice, isEditingMinInput]);
+
+  useEffect(() => {
+    if (!isEditingMaxInput) setMaxInputValue(String(localMaxPrice));
+  }, [localMaxPrice, isEditingMaxInput]);
 
   const priceRange = Math.max(1, safeMax - safeMin);
   const minPercent = ((localMinPrice - safeMin) / priceRange) * 100;
@@ -124,41 +144,96 @@ export default function CatalogFiltersSidebar({
     return [...firstBatch, ...selectedExtras];
   }, [brands, localBrands, showAllBrands]);
 
-  function applyFilters(next: {
-    query?: string;
-    sort?: SortOption;
-    minPrice?: number;
-    maxPrice?: number;
-    brands?: string[];
-  }) {
-    const params = new URLSearchParams(searchParams.toString());
-    const nextQuery = next.query ?? localQuery;
-    const nextSort = next.sort ?? localSort;
-    const nextMin = next.minPrice ?? localMinPrice;
-    const nextMax = next.maxPrice ?? localMaxPrice;
-    const nextBrands = next.brands ?? localBrands;
-
-    if (nextQuery.trim()) params.set("local_q", nextQuery.trim());
-    else params.delete("local_q");
-
-    if (!nextSort || nextSort === "recommended") params.delete("sort");
-    else params.set("sort", nextSort);
-
-    if (nextMin > safeMin) params.set("min_price", String(nextMin));
-    else params.delete("min_price");
-
-    if (nextMax < safeMax) params.set("max_price", String(nextMax));
-    else params.delete("max_price");
-
-    params.delete("brand");
-    nextBrands.forEach((brand) => {
-      if (brand) params.append("brand", brand);
-    });
-
-    params.delete("page");
-    const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  function commitMinInputValue(raw: string) {
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed)) {
+      setMinInputValue(String(localMinPrice));
+      return;
+    }
+    const normalized = clamp(Math.round(parsed), safeMin, localMaxPrice);
+    setLocalMinPrice(normalized);
+    setMinInputValue(String(normalized));
+    setPriceDirty(true);
   }
+
+  function commitMaxInputValue(raw: string) {
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed)) {
+      setMaxInputValue(String(localMaxPrice));
+      return;
+    }
+    const normalized = clamp(Math.round(parsed), localMinPrice, safeMax);
+    setLocalMaxPrice(normalized);
+    setMaxInputValue(String(normalized));
+    setPriceDirty(true);
+  }
+
+  function handlePriceTrackPointerDown(event: PointerEvent<HTMLDivElement>) {
+    if (event.target instanceof HTMLInputElement) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const ratio = clamp((event.clientX - rect.left) / rect.width, 0, 1);
+    const rawValue = safeMin + ratio * (safeMax - safeMin);
+    const steppedValue =
+      Math.round((rawValue - safeMin) / PRICE_STEP) * PRICE_STEP + safeMin;
+    const normalized = clamp(Math.round(steppedValue), localMinPrice, safeMax);
+    setLocalMaxPrice(normalized);
+    if (!isEditingMaxInput) setMaxInputValue(String(normalized));
+    setPriceDirty(true);
+  }
+
+  const applyFilters = useCallback(
+    (next: {
+      query?: string;
+      sort?: SortOption;
+      minPrice?: number;
+      maxPrice?: number;
+      brands?: string[];
+    }) => {
+      const params = new URLSearchParams(searchParams.toString());
+      const nextQueryValue = next.query ?? localQuery;
+      const nextSort = next.sort ?? localSort;
+      const nextMin = next.minPrice ?? localMinPrice;
+      const nextMax = next.maxPrice ?? localMaxPrice;
+      const nextBrands = next.brands ?? localBrands;
+
+      if (nextQueryValue.trim()) params.set("local_q", nextQueryValue.trim());
+      else params.delete("local_q");
+
+      if (!nextSort || nextSort === "recommended") params.delete("sort");
+      else params.set("sort", nextSort);
+
+      if (nextMin > safeMin) params.set("min_price", String(nextMin));
+      else params.delete("min_price");
+
+      if (nextMax < safeMax) params.set("max_price", String(nextMax));
+      else params.delete("max_price");
+
+      params.delete("brand");
+      nextBrands.forEach((brand) => {
+        if (brand) params.append("brand", brand);
+      });
+
+      params.delete("page");
+      const nextQueryString = params.toString();
+      const currentQuery = searchParams.toString();
+      if (nextQueryString === currentQuery) return;
+      router.replace(nextQueryString ? `${pathname}?${nextQueryString}` : pathname, { scroll: false });
+    },
+    [searchParams, localQuery, localSort, localMinPrice, localMaxPrice, localBrands, safeMin, safeMax, router, pathname]
+  );
+
+  useEffect(() => {
+    if (!priceDirty) return;
+    const timer = window.setTimeout(() => {
+      applyFilters({
+        minPrice: localMinPrice,
+        maxPrice: localMaxPrice,
+      });
+      setPriceDirty(false);
+    }, 280);
+    return () => window.clearTimeout(timer);
+  }, [priceDirty, localMinPrice, localMaxPrice, applyFilters]);
 
   function handleBrandToggle(brandValue: string, checked: boolean) {
     const nextBrands = checked
@@ -196,11 +271,26 @@ export default function CatalogFiltersSidebar({
             min={safeMin}
             max={safeMax}
             step={PRICE_STEP}
-            value={localMinPrice}
+            value={minInputValue}
+            onFocus={() => setIsEditingMinInput(true)}
+            onBlur={() => {
+              setIsEditingMinInput(false);
+              commitMinInputValue(minInputValue);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.currentTarget.blur();
+              }
+            }}
             onChange={(event) => {
-              const rawValue = Number(event.target.value || safeMin);
-              const normalized = clamp(rawValue, safeMin, localMaxPrice);
-              setLocalMinPrice(normalized);
+              const rawValue = event.target.value;
+              setMinInputValue(rawValue);
+              const parsed = Number(rawValue);
+              if (!Number.isFinite(parsed)) return;
+              const rounded = Math.round(parsed);
+              if (rounded < safeMin || rounded > localMaxPrice) return;
+              setLocalMinPrice(rounded);
+              setPriceDirty(true);
             }}
             className="catalog-sidebar-search-input"
             aria-label="Precio mínimo"
@@ -211,17 +301,35 @@ export default function CatalogFiltersSidebar({
             min={safeMin}
             max={safeMax}
             step={PRICE_STEP}
-            value={localMaxPrice}
+            value={maxInputValue}
+            onFocus={() => setIsEditingMaxInput(true)}
+            onBlur={() => {
+              setIsEditingMaxInput(false);
+              commitMaxInputValue(maxInputValue);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.currentTarget.blur();
+              }
+            }}
             onChange={(event) => {
-              const rawValue = Number(event.target.value || safeMax);
-              const normalized = clamp(rawValue, localMinPrice, safeMax);
-              setLocalMaxPrice(normalized);
+              const rawValue = event.target.value;
+              setMaxInputValue(rawValue);
+              const parsed = Number(rawValue);
+              if (!Number.isFinite(parsed)) return;
+              const rounded = Math.round(parsed);
+              if (rounded < localMinPrice || rounded > safeMax) return;
+              setLocalMaxPrice(rounded);
+              setPriceDirty(true);
             }}
             className="catalog-sidebar-search-input"
             aria-label="Precio máximo"
           />
         </div>
-        <div className="catalog-price-slider-shell">
+        <div
+          className="catalog-price-slider-shell"
+          onPointerDown={handlePriceTrackPointerDown}
+        >
           <div className="catalog-price-slider-track" aria-hidden="true" />
           <div
             className="catalog-price-slider-active"
@@ -238,6 +346,8 @@ export default function CatalogFiltersSidebar({
               onChange={(event) => {
                 const normalized = clamp(Number(event.target.value || safeMin), safeMin, localMaxPrice);
                 setLocalMinPrice(normalized);
+                if (!isEditingMinInput) setMinInputValue(String(normalized));
+                setPriceDirty(true);
               }}
               className="catalog-price-slider"
               aria-label="Control deslizante precio mínimo"
@@ -251,6 +361,8 @@ export default function CatalogFiltersSidebar({
               onChange={(event) => {
                 const normalized = clamp(Number(event.target.value || safeMax), localMinPrice, safeMax);
                 setLocalMaxPrice(normalized);
+                if (!isEditingMaxInput) setMaxInputValue(String(normalized));
+                setPriceDirty(true);
               }}
               className="catalog-price-slider"
               aria-label="Control deslizante precio máximo"
@@ -269,18 +381,6 @@ export default function CatalogFiltersSidebar({
           <small>{formatPriceLabel(safeMin)}</small>
           <small>{formatPriceLabel(safeMax)}</small>
         </div>
-        <button
-          type="button"
-          className="catalog-filter-apply-btn"
-          onClick={() =>
-            applyFilters({
-              minPrice: localMinPrice,
-              maxPrice: localMaxPrice,
-            })
-          }
-        >
-          Aplicar precio
-        </button>
       </section>
 
       <section className="catalog-filter-block">
@@ -343,6 +443,8 @@ export default function CatalogFiltersSidebar({
           setLocalSort("recommended");
           setLocalMinPrice(safeMin);
           setLocalMaxPrice(safeMax);
+          setMinInputValue(String(safeMin));
+          setMaxInputValue(String(safeMax));
           setLocalBrands([]);
           const params = new URLSearchParams(searchParams.toString());
           params.delete("local_q");

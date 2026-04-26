@@ -87,6 +87,18 @@
   transform: scale(1.05);
 }
 
+.selectorCardSelected {
+  border-color: rgba(29, 78, 216, 0.5);
+  box-shadow:
+    0 20px 36px -24px rgba(15, 23, 42, 0.6),
+    0 0 0 2px rgba(29, 78, 216, 0.2);
+  transform: translateY(-3px) scale(1.004);
+}
+
+.selectorCardSelected .selectorMediaImage {
+  transform: scale(1.04);
+}
+
 .selectorCardDisabled {
   cursor: not-allowed;
   opacity: 0.78;

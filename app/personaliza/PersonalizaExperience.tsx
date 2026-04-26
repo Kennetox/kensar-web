@@ -319,6 +319,8 @@ export default function PersonalizaExperience() {
   const [isFloatingDockVisible, setIsFloatingDockVisible] = useState(false);
   const [historyPast, setHistoryPast] = useState<EditorSnapshot[]>([]);
   const [historyFuture, setHistoryFuture] = useState<EditorSnapshot[]>([]);
+  const selectorGridRef = useRef<HTMLElement | null>(null);
+  const campanaCardRef = useRef<HTMLButtonElement | null>(null);
   const campanaTypeSectionRef = useRef<HTMLDivElement | null>(null);
   const dockVisibilityTriggerRef = useRef<HTMLDivElement | null>(null);
   const preview3DRef = useRef<ModelPreview3DHandle | null>(null);
@@ -386,6 +388,29 @@ export default function PersonalizaExperience() {
     });
     return () => window.cancelAnimationFrame(frameId);
   }, [showCampanaTypes]);
+
+  useEffect(() => {
+    if (!showCampanaTypes || isProductSelected) return;
+
+    const handlePointerDownOutside = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Element | null;
+      if (!target) return;
+      if (campanaCardRef.current?.contains(target)) return;
+
+      const clickedCampanaOption = Boolean(target.closest(`.${styles.campanaTypeCard}`));
+      const clickedBackButton = Boolean(target.closest(`.${styles.campanaTypesClose}`));
+      if (clickedCampanaOption || clickedBackButton) return;
+
+      closeCampanaTypesAndGoTop();
+    };
+
+    document.addEventListener("mousedown", handlePointerDownOutside);
+    document.addEventListener("touchstart", handlePointerDownOutside);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDownOutside);
+      document.removeEventListener("touchstart", handlePointerDownOutside);
+    };
+  }, [isProductSelected, showCampanaTypes]);
 
   useEffect(() => {
     if (!isProductSelected) return;
@@ -1386,12 +1411,16 @@ export default function PersonalizaExperience() {
     setShowCampanaTypes(true);
   }
 
-  function handleCloseCampanaTypes() {
+  function closeCampanaTypesAndGoTop() {
     setShowCampanaTypes(false);
     window.scrollTo({
       top: 0,
       behavior: "smooth",
     });
+  }
+
+  function handleCloseCampanaTypes() {
+    closeCampanaTypesAndGoTop();
   }
 
   if (!isDesktop) {
@@ -1431,17 +1460,23 @@ export default function PersonalizaExperience() {
           </div>
         </section>
 
-        <section className={styles.selectorGrid} aria-label="Selecciona un tipo de instrumento">
+        <section
+          ref={selectorGridRef}
+          className={styles.selectorGrid}
+          aria-label="Selecciona un tipo de instrumento"
+        >
           {PERSONALIZABLE_PRODUCTS.map((item) => {
             const isComingSoon = item.id === "maraca";
             return item.id === "campana" ? (
               <button
                 key={item.id}
+                ref={campanaCardRef}
                 type="button"
-                className={`${styles.selectorCard} ${styles.selectorCardButton}`}
+                className={`${styles.selectorCard} ${styles.selectorCardButton}${showCampanaTypes ? ` ${styles.selectorCardSelected}` : ""}`}
                 onClick={handleCampanaCardClick}
                 aria-expanded={showCampanaTypes}
                 aria-controls="campana-types-panel"
+                aria-pressed={showCampanaTypes}
               >
                 <div className={styles.selectorMedia}>
                   <Image

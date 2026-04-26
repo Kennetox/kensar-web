@@ -52,7 +52,7 @@ export default function HomePersonalizaHighlight() {
           ) : (
             <div key={item.id} className={styles.item}>
               <Link
-                href={`/personaliza?producto=${item.id}`}
+                href="/personaliza"
                 className={styles.circleButton}
                 aria-label={`Personalizar ${item.name}`}
               >
