@@ -5,6 +5,7 @@
   --topbar-height-collapsed: var(--topbar-main-height);
   --topbar-current-height: var(--topbar-height);
   --storefront-product-card-media-height: 304px;
+  --catalog-storefront-card-media-height: 286px;
   --storefront-featured-card-media-height: 170px;
   --bg-tech: #f5f5f7;
   --surface: #ffffff;
@@ -3619,29 +3620,29 @@ body.mini-cart-open .main-wrapper {
   line-height: 1.2;
 }
 
-.product-payment-chip-row {
+.product-payment-logo-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-}
-
-.product-payment-chip {
-  display: inline-flex;
   align-items: center;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.34);
-  background: #f8fafc;
-  color: #334155;
-  font-size: 0.68rem;
-  font-weight: 600;
-  line-height: 1;
-  padding: 5px 9px;
+  gap: 8px 10px;
+  padding: 2px 0 0;
 }
 
-.product-payment-chip.is-emphasis {
-  color: #1d4ed8;
-  background: #eff6ff;
-  border-color: rgba(125, 152, 194, 0.45);
+.product-payment-logo-image {
+  width: auto;
+  max-width: 132px;
+  height: 34px;
+  object-fit: contain;
+  display: block;
+}
+
+.product-payment-logo-image.is-pse,
+.product-payment-logo-image.is-bancolombia {
+  height: 32px;
+}
+
+.product-payment-logo-image.is-sistecredito {
+  height: 30px;
 }
 
 .product-payment-links {
@@ -6614,6 +6615,15 @@ body.mini-cart-open .main-wrapper {
   .product-rich-description h2 {
     font-size: 1.02rem;
   }
+
+  .product-payment-logo-grid {
+    gap: 7px 8px;
+  }
+
+  .product-payment-logo-image {
+    height: 32px;
+    max-width: 124px;
+  }
 }
 
 .commerce-home {
@@ -8889,6 +8899,7 @@ body.mini-cart-open .main-wrapper {
 @media (max-width: 920px) {
   :root {
     --storefront-product-card-media-height: 280px;
+    --catalog-storefront-card-media-height: 264px;
     --storefront-featured-card-media-height: 160px;
   }
 
@@ -9346,6 +9357,7 @@ body.mini-cart-open .main-wrapper {
 @media (max-width: 520px) {
   :root {
     --storefront-product-card-media-height: 266px;
+    --catalog-storefront-card-media-height: 248px;
     --storefront-featured-card-media-height: 148px;
   }
 
@@ -10999,13 +11011,14 @@ body.mini-cart-open .main-wrapper {
 .catalog-store-layout {
   margin-top: 14px;
   display: grid;
-  width: 100%;
+  width: fit-content;
   max-width: 100%;
   margin-left: auto;
   margin-right: auto;
-  grid-template-columns: minmax(250px, var(--catalog-sidebar-width)) minmax(0, 1fr);
+  grid-template-columns: minmax(250px, var(--catalog-sidebar-width)) max-content;
   gap: var(--catalog-layout-gap);
   align-items: start;
+  justify-content: center;
 }
 
 .catalog-context-strip {
@@ -11427,7 +11440,7 @@ body.mini-cart-open .main-wrapper {
 }
 
 .catalog-store-content {
-  width: 100%;
+  width: fit-content;
   max-width: 100%;
   display: flex;
   flex-direction: column;
@@ -11638,14 +11651,17 @@ body.mini-cart-open .main-wrapper {
 }
 
 .catalog-product-grid.storefront-grid {
-  grid-template-columns: repeat(auto-fill, minmax(230px, 252px));
+  --catalog-storefront-columns: 4;
+  grid-template-columns: repeat(var(--catalog-storefront-columns), minmax(230px, 252px));
   justify-content: start;
   align-items: stretch;
   gap: 14px;
+  width: fit-content;
+  margin-inline: auto;
 }
 
 .catalog-product-grid.storefront-grid .catalog-product-card-media {
-  height: var(--storefront-product-card-media-height);
+  height: var(--catalog-storefront-card-media-height);
   padding: 12px 12px 0;
 }
 
@@ -12218,6 +12234,7 @@ body.mini-cart-open .main-wrapper {
     grid-template-columns: 1fr;
     justify-content: stretch;
     max-width: none;
+    width: 100%;
   }
 
   .catalog-sidebar {
@@ -12248,8 +12265,9 @@ body.mini-cart-open .main-wrapper {
   }
 
   .catalog-product-grid.storefront-grid {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 252px));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 252px));
     justify-content: start;
+    width: 100%;
   }
 
   .product-related-grid {
@@ -12308,6 +12326,7 @@ body.mini-cart-open .main-wrapper {
   .catalog-product-grid.storefront-grid {
     grid-template-columns: minmax(220px, 252px);
     justify-content: start;
+    width: 100%;
   }
 
   .product-related-grid {

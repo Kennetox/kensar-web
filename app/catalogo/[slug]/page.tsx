@@ -169,7 +169,10 @@ export default async function CatalogProductDetailPage({
                       </span>
                       <span>{product.warranty_text.trim()}</span>
                     </p>
-                    <Link href="/politicas-de-garantia" className="product-warranty-policy-link">
+                    <Link
+                      href="/legal/cambios-devoluciones-garantias#garantias"
+                      className="product-warranty-policy-link"
+                    >
                       Políticas de garantía
                     </Link>
                   </>
