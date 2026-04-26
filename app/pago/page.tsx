@@ -659,7 +659,7 @@ function PagoPageContent() {
       .map((value) => value.trim())
       .filter(Boolean)
       .join(", ");
-    const shippingLabel = deliveryMode === "pickup" ? "Retiro en tienda" : "Envío estándar";
+    const shippingLabel = deliveryMode === "pickup" ? "Retiro en tienda" : "Envío a domicilio";
     const billingFirstName = getFieldValue("billing_first_name");
     const billingLastName = getFieldValue("billing_last_name");
     const billingAddress = getFieldValue("billing_address");
@@ -943,7 +943,7 @@ function PagoPageContent() {
                         <circle cx="12" cy="11" r="2.3" />
                       </svg>
                     </span>
-                    <span>Retiro</span>
+                    <span>Retiro en tienda</span>
                   </button>
                   <button
                     type="button"
@@ -959,7 +959,7 @@ function PagoPageContent() {
                         <path d="m4.5 7.2 7.5 4.6 7.5-4.6" />
                       </svg>
                     </span>
-                    <span>Envío</span>
+                    <span>Envío a domicilio</span>
                   </button>
                 </div>
 
@@ -1090,9 +1090,13 @@ function PagoPageContent() {
                         <h3>Método de envío</h3>
                       </div>
                       <label className="checkout-delivery-method checkout-delivery-method-active">
-                        <span>Envío estándar</span>
-                        <strong>ENVÍO A CONVENIR</strong>
+                        <span>Envío a domicilio</span>
+                        <strong>VALIDACIÓN DE COBERTURA</strong>
                       </label>
+                      <p className="checkout-delivery-warning">
+                        El pago contraentrega está disponible en Palmira y Cali. Para otras ciudades, está sujeto a
+                        validación.
+                      </p>
                     </div>
                   </>
                 ) : (
@@ -1432,9 +1436,11 @@ function PagoPageContent() {
               </div>
             ) : null}
             <div className="checkout-summary-line">
-              <span>{deliveryMode === "pickup" ? "Retiro" : "Envío"}</span>
+              <span>{deliveryMode === "pickup" ? "Retiro en tienda" : "Envío a domicilio"}</span>
               <small>
-                {deliveryMode === "pickup" ? "Retiro en Cra 24 #30-75, Palmira" : "Se calcula al confirmar dirección"}
+                {deliveryMode === "pickup"
+                  ? "Retiro en Cra 24 #30-75, Palmira"
+                  : "El costo y la modalidad de envío se confirmarán por WhatsApp según tu ciudad antes del despacho."}
               </small>
             </div>
             <div className="checkout-summary-line checkout-summary-total">

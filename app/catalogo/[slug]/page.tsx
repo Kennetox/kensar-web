@@ -75,6 +75,13 @@ function getDetailDiscountBadgeText(product: WebCatalogProductDetail): string | 
   return percent > 0 ? `Descuento ${percent}%` : null;
 }
 
+function buildWhatsAppHref(message: string) {
+  const raw = process.env.NEXT_PUBLIC_KENSAR_WHATSAPP?.trim() || "+57 318 565 7508";
+  const digits = raw.replace(/[^\d]/g, "");
+  const base = digits ? `https://wa.me/${digits}` : "https://wa.me/573185657508";
+  return `${base}?text=${encodeURIComponent(message)}`;
+}
+
 export default async function CatalogProductDetailPage({
   params,
 }: CatalogProductDetailPageProps) {
@@ -95,6 +102,9 @@ export default async function CatalogProductDetailPage({
   const fallbackCatalogHref = product.category_path
     ? buildCatalogCategoryHref({ categoryPath: product.category_path })
     : "/";
+  const shippingWhatsAppHref = buildWhatsAppHref(
+    `Hola, quiero saber el costo de envío de ${product.name} a [mi ciudad].`
+  );
 
   return (
     <main className="site-shell internal-page section-space product-page-shell">
@@ -177,10 +187,40 @@ export default async function CatalogProductDetailPage({
                     </Link>
                   </>
                 ) : null}
-                <p className="product-tax-copy">
-                  Impuestos incluidos.{" "}
-                  <span>Los gastos de envío</span> se calcularán al momento de pagar.
-                </p>
+                <div className="product-shipping-copy" aria-label="Condiciones de envío y contraentrega">
+                  <p className="product-shipping-headline">
+                    <span aria-hidden="true">🚚</span>
+                    <span>Envíos a todo Colombia</span>
+                  </p>
+                  <div className="product-shipping-group">
+                    <p className="product-shipping-group-title">
+                      <span aria-hidden="true">🟢</span>
+                      <strong>Palmira y Cali:</strong>
+                    </p>
+                    <p>Envío GRATIS en compras desde $100.000</p>
+                    <p>Pago contraentrega disponible</p>
+                  </div>
+                  <div className="product-shipping-group">
+                    <p className="product-shipping-group-title">
+                      <span aria-hidden="true">📦</span>
+                      <strong>Otras ciudades:</strong>
+                    </p>
+                    <p>Envío por transportadora</p>
+                    <p>Pago anticipado o contraentrega bajo validación</p>
+                  </div>
+                  <p className="product-shipping-whatsapp-note">
+                    <span aria-hidden="true">📲</span>
+                    <span>Confirmamos detalles de envío por WhatsApp antes de despachar</span>
+                  </p>
+                  <a
+                    href={shippingWhatsAppHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="product-shipping-whatsapp-btn"
+                  >
+                    Consultar envío por WhatsApp
+                  </a>
+                </div>
                 <div className="product-pickup-copy">
                   <p className="product-pickup-main">
                     <span className="product-pickup-check" aria-hidden="true">
