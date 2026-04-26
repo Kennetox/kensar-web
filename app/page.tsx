@@ -371,7 +371,6 @@ export default async function HomePage() {
       <CommerceSlider slides={sliderSlides} categories={featuredCategories} intervalMs={8000} />
 
       <section className="commerce-discover" aria-label="Personaliza tus instrumentos">
-        <div className="commerce-categories-divider" aria-hidden="true" />
         <HomePersonalizaHighlight />
       </section>
       <div className="commerce-categories-divider" aria-hidden="true" />

@@ -15,6 +15,7 @@ import WebCartProvider from "./components/WebCartProvider";
 import WebCustomerProvider from "./components/WebCustomerProvider";
 import TopbarScrollBehavior from "./components/TopbarScrollBehavior";
 import CheckoutHeaderMode from "./components/CheckoutHeaderMode";
+import RouteScrollReset from "./components/RouteScrollReset";
 import { getCatalogCategories, getCatalogProducts } from "@/app/lib/metrikCatalog";
 import "./globals.css";
 
@@ -136,6 +137,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className={inter.className}>
         <TopbarScrollBehavior />
         <CheckoutHeaderMode />
+        <RouteScrollReset />
         <WebCustomerProvider>
         <WebCartProvider>
         <header className="topbar">

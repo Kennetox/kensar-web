@@ -296,6 +296,20 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
       typeof item.price === "number" && Number.isFinite(item.price) ? Math.round(item.price) : 0;
     return Math.max(currentMax, numericPrice);
   }, 0);
+  const derivedMinPriceFromItems = productList.items.reduce((currentMin, item) => {
+    const numericPrice =
+      typeof item.price === "number" && Number.isFinite(item.price) ? Math.round(item.price) : Number.POSITIVE_INFINITY;
+    return Math.min(currentMin, numericPrice);
+  }, Number.POSITIVE_INFINITY);
+  const safeDerivedMinPrice = Number.isFinite(derivedMinPriceFromItems) ? derivedMinPriceFromItems : 0;
+  const backendMinPrice = Math.max(Number(productList.filters.price_min || 0), 0);
+  const effectiveAvailableMinPrice = Math.max(
+    0,
+    Math.min(
+      backendMinPrice > 0 ? backendMinPrice : safeDerivedMinPrice,
+      minPrice > 0 ? minPrice : Number.POSITIVE_INFINITY
+    )
+  );
   const backendMaxPrice = Math.max(Number(productList.filters.price_max || 0), 0);
   const effectiveAvailableMaxPrice = Math.max(
     backendMaxPrice,
@@ -350,6 +364,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
             sort={sort}
             minPrice={minPrice}
             maxPrice={maxPrice > 0 ? maxPrice : effectiveAvailableMaxPrice}
+            availableMinPrice={effectiveAvailableMinPrice}
             availableMaxPrice={effectiveAvailableMaxPrice}
             selectedBrands={selectedBrands}
             brands={visibleBrands}

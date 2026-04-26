@@ -11,6 +11,7 @@ type CatalogFiltersSidebarProps = {
   sort: SortOption;
   minPrice: number;
   maxPrice: number;
+  availableMinPrice: number;
   availableMaxPrice: number;
   selectedBrands: string[];
   brands: WebCatalogFilterOption[];
@@ -31,11 +32,25 @@ function formatPriceLabel(value: number) {
   }).format(value);
 }
 
+function formatCompactGuide(value: number) {
+  if (!Number.isFinite(value)) return "0";
+  if (value >= 1_000_000) {
+    const millions = value / 1_000_000;
+    return `${millions % 1 === 0 ? millions.toFixed(0) : millions.toFixed(1)}m`;
+  }
+  if (value >= 1_000) {
+    const thousands = value / 1_000;
+    return `${thousands % 1 === 0 ? thousands.toFixed(0) : thousands.toFixed(1)}k`;
+  }
+  return String(Math.round(value));
+}
+
 export default function CatalogFiltersSidebar({
   query,
   sort,
   minPrice,
   maxPrice,
+  availableMinPrice,
   availableMaxPrice,
   selectedBrands,
   brands,
@@ -44,15 +59,21 @@ export default function CatalogFiltersSidebar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  const safeMin = useMemo(
+    () => Math.max(0, Number.isFinite(availableMinPrice) ? Math.round(availableMinPrice) : 0),
+    [availableMinPrice]
+  );
   const safeMax = useMemo(
-    () => Math.max(0, Number.isFinite(availableMaxPrice) ? Math.round(availableMaxPrice) : 0),
-    [availableMaxPrice]
+    () => Math.max(safeMin, Number.isFinite(availableMaxPrice) ? Math.round(availableMaxPrice) : safeMin),
+    [availableMaxPrice, safeMin]
   );
   const [localQuery, setLocalQuery] = useState(query);
   const [localSort, setLocalSort] = useState<SortOption>(sort);
-  const [localMinPrice, setLocalMinPrice] = useState<number>(clamp(Math.round(minPrice || 0), 0, safeMax || 0));
+  const [localMinPrice, setLocalMinPrice] = useState<number>(
+    clamp(Math.round(minPrice || safeMin), safeMin, safeMax)
+  );
   const [localMaxPrice, setLocalMaxPrice] = useState<number>(
-    clamp(Math.round(maxPrice || safeMax || 0), 0, safeMax || 0)
+    clamp(Math.round(maxPrice || safeMax), safeMin, safeMax)
   );
   const [localBrands, setLocalBrands] = useState<string[]>(selectedBrands);
   const [showAllBrands, setShowAllBrands] = useState(false);
@@ -66,12 +87,12 @@ export default function CatalogFiltersSidebar({
   }, [sort]);
 
   useEffect(() => {
-    setLocalMinPrice(clamp(Math.round(minPrice || 0), 0, safeMax || 0));
-  }, [minPrice, safeMax]);
+    setLocalMinPrice(clamp(Math.round(minPrice || safeMin), safeMin, safeMax));
+  }, [minPrice, safeMin, safeMax]);
 
   useEffect(() => {
-    setLocalMaxPrice(clamp(Math.round(maxPrice || safeMax || 0), 0, safeMax || 0));
-  }, [maxPrice, safeMax]);
+    setLocalMaxPrice(clamp(Math.round(maxPrice || safeMax), safeMin, safeMax));
+  }, [maxPrice, safeMin, safeMax]);
 
   useEffect(() => {
     setLocalBrands(selectedBrands);
@@ -80,6 +101,18 @@ export default function CatalogFiltersSidebar({
   useEffect(() => {
     setShowAllBrands(false);
   }, [brands]);
+
+  const priceRange = Math.max(1, safeMax - safeMin);
+  const minPercent = ((localMinPrice - safeMin) / priceRange) * 100;
+  const maxPercent = ((localMaxPrice - safeMin) / priceRange) * 100;
+  const priceGuides = useMemo(
+    () =>
+      Array.from({ length: 5 }, (_, index) => {
+        const ratio = index / 4;
+        return Math.round(safeMin + ratio * priceRange);
+      }),
+    [safeMin, priceRange]
+  );
 
   const visibleBrands = useMemo(() => {
     if (showAllBrands || brands.length <= INITIAL_BRAND_LIMIT) return brands;
@@ -111,10 +144,10 @@ export default function CatalogFiltersSidebar({
     if (!nextSort || nextSort === "recommended") params.delete("sort");
     else params.set("sort", nextSort);
 
-    if (nextMin > 0) params.set("min_price", String(nextMin));
+    if (nextMin > safeMin) params.set("min_price", String(nextMin));
     else params.delete("min_price");
 
-    if (nextMax > 0) params.set("max_price", String(nextMax));
+    if (nextMax < safeMax) params.set("max_price", String(nextMax));
     else params.delete("max_price");
 
     params.delete("brand");
@@ -160,13 +193,13 @@ export default function CatalogFiltersSidebar({
         <div className="catalog-price-range-inputs">
           <input
             type="number"
-            min={0}
+            min={safeMin}
             max={safeMax}
             step={PRICE_STEP}
             value={localMinPrice}
             onChange={(event) => {
-              const rawValue = Number(event.target.value || 0);
-              const normalized = clamp(rawValue, 0, localMaxPrice);
+              const rawValue = Number(event.target.value || safeMin);
+              const normalized = clamp(rawValue, safeMin, localMaxPrice);
               setLocalMinPrice(normalized);
             }}
             className="catalog-sidebar-search-input"
@@ -175,12 +208,12 @@ export default function CatalogFiltersSidebar({
           <span className="catalog-price-separator">-</span>
           <input
             type="number"
-            min={0}
+            min={safeMin}
             max={safeMax}
             step={PRICE_STEP}
             value={localMaxPrice}
             onChange={(event) => {
-              const rawValue = Number(event.target.value || 0);
+              const rawValue = Number(event.target.value || safeMax);
               const normalized = clamp(rawValue, localMinPrice, safeMax);
               setLocalMaxPrice(normalized);
             }}
@@ -188,36 +221,52 @@ export default function CatalogFiltersSidebar({
             aria-label="Precio máximo"
           />
         </div>
-        <div className="catalog-price-slider-wrap">
-          <input
-            type="range"
-            min={0}
-            max={safeMax}
-            step={PRICE_STEP}
-            value={localMinPrice}
-            onChange={(event) => {
-              const normalized = clamp(Number(event.target.value || 0), 0, localMaxPrice);
-              setLocalMinPrice(normalized);
-            }}
-            className="catalog-price-slider"
-            aria-label="Control deslizante precio mínimo"
+        <div className="catalog-price-slider-shell">
+          <div className="catalog-price-slider-track" aria-hidden="true" />
+          <div
+            className="catalog-price-slider-active"
+            style={{ left: `${minPercent}%`, width: `${Math.max(0, maxPercent - minPercent)}%` }}
+            aria-hidden="true"
           />
-          <input
-            type="range"
-            min={0}
-            max={safeMax}
-            step={PRICE_STEP}
-            value={localMaxPrice}
-            onChange={(event) => {
-              const normalized = clamp(Number(event.target.value || 0), localMinPrice, safeMax);
-              setLocalMaxPrice(normalized);
-            }}
-            className="catalog-price-slider"
-            aria-label="Control deslizante precio máximo"
-          />
+          <div className="catalog-price-slider-wrap">
+            <input
+              type="range"
+              min={safeMin}
+              max={safeMax}
+              step={PRICE_STEP}
+              value={localMinPrice}
+              onChange={(event) => {
+                const normalized = clamp(Number(event.target.value || safeMin), safeMin, localMaxPrice);
+                setLocalMinPrice(normalized);
+              }}
+              className="catalog-price-slider"
+              aria-label="Control deslizante precio mínimo"
+            />
+            <input
+              type="range"
+              min={safeMin}
+              max={safeMax}
+              step={PRICE_STEP}
+              value={localMaxPrice}
+              onChange={(event) => {
+                const normalized = clamp(Number(event.target.value || safeMax), localMinPrice, safeMax);
+                setLocalMaxPrice(normalized);
+              }}
+              className="catalog-price-slider"
+              aria-label="Control deslizante precio máximo"
+            />
+          </div>
+          <div className="catalog-price-guides" aria-hidden="true">
+            {priceGuides.map((value, index) => (
+              <div key={`guide-${index}`} className="catalog-price-guide">
+                <span className="catalog-price-guide-mark" />
+                <small>{formatCompactGuide(value)}</small>
+              </div>
+            ))}
+          </div>
         </div>
         <div className="catalog-price-legend">
-          <small>{formatPriceLabel(0)}</small>
+          <small>{formatPriceLabel(safeMin)}</small>
           <small>{formatPriceLabel(safeMax)}</small>
         </div>
         <button
@@ -292,7 +341,7 @@ export default function CatalogFiltersSidebar({
         onClick={() => {
           setLocalQuery("");
           setLocalSort("recommended");
-          setLocalMinPrice(0);
+          setLocalMinPrice(safeMin);
           setLocalMaxPrice(safeMax);
           setLocalBrands([]);
           const params = new URLSearchParams(searchParams.toString());

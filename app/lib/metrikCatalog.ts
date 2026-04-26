@@ -27,6 +27,7 @@ export type WebCatalogProductCard = {
   slug: string;
   name: string;
   short_description: string | null;
+  long_description?: string | null;
   brand: string | null;
   group_name: string | null;
   category_path: string | null;
@@ -115,9 +116,13 @@ function normalizeCatalogProductCard(
 ): WebCatalogProductCard {
   const itemWithLegacyBadge = item as WebCatalogProductCard & {
     web_badge_text?: string | null;
+    web_short_description?: string | null;
+    web_long_description?: string | null;
   };
   return {
     ...item,
+    short_description: item.short_description ?? itemWithLegacyBadge.web_short_description ?? null,
+    long_description: item.long_description ?? itemWithLegacyBadge.web_long_description ?? null,
     badge_text: item.badge_text ?? itemWithLegacyBadge.web_badge_text ?? null,
     image_url: resolveCatalogAssetUrl(baseUrl, item.image_url),
     image_thumb_url: resolveCatalogAssetUrl(baseUrl, item.image_thumb_url),

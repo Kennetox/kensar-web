@@ -111,13 +111,15 @@ export default function CommerceSlider({ slides, categories, intervalMs = 8000 }
                 role="img"
                 aria-label={slide.alt}
               />
-              <Link
-                href={slide.href}
-                className={`commerce-slider-cta commerce-slider-cta--${slide.id}`}
-                aria-label={slide.ctaLabel}
-              >
-                {slide.ctaLabel}
-              </Link>
+              <div className="commerce-slider-cta-shell">
+                <Link
+                  href={slide.href}
+                  className={`commerce-slider-cta commerce-slider-cta--${slide.id}`}
+                  aria-label={slide.ctaLabel}
+                >
+                  {slide.ctaLabel}
+                </Link>
+              </div>
             </div>
           ))}
         </div>
