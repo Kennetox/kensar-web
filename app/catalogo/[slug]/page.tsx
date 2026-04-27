@@ -20,38 +20,6 @@ type CatalogProductDetailPageProps = {
   params: Promise<{ slug: string }>;
 };
 
-type DescriptionBlock =
-  | { type: "paragraph"; text: string }
-  | { type: "list"; items: string[] };
-
-function extractDescriptionBlocks(text: string | null): DescriptionBlock[] {
-  if (!text) return [];
-  const lines = text
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  const blocks: DescriptionBlock[] = [];
-  let listBuffer: string[] = [];
-
-  const flushListBuffer = () => {
-    if (!listBuffer.length) return;
-    blocks.push({ type: "list", items: [...listBuffer] });
-    listBuffer = [];
-  };
-
-  for (const line of lines) {
-    if (/^[-*•]\s+/.test(line)) {
-      listBuffer.push(line.replace(/^[-*•]\s+/, "").trim());
-      continue;
-    }
-    flushListBuffer();
-    blocks.push({ type: "paragraph", text: line });
-  }
-  flushListBuffer();
-  return blocks;
-}
-
 async function getRelatedProducts(
   currentProductId: number,
   categoryPath?: string | null
@@ -103,9 +71,7 @@ export default async function CatalogProductDetailPage({
   const gallery = [product.image_url, product.image_thumb_url, ...product.gallery].filter(
     (image, index, list): image is string => Boolean(image) && list.indexOf(image) === index
   );
-  const descriptionBlocks = extractDescriptionBlocks(
-    product.long_description || product.short_description
-  );
+  const descriptionText = (product.long_description || product.short_description || "").trim();
   const relatedProducts = await getRelatedProducts(product.id, product.category_path);
   const discountBadge = getDetailDiscountBadgeText(product);
   const commercialBadge = product.badge_text?.trim() || null;
@@ -131,18 +97,8 @@ export default async function CatalogProductDetailPage({
 
           <div className="product-rich-description">
             <h2>Descripción</h2>
-            {descriptionBlocks.length ? (
-              descriptionBlocks.map((block, index) =>
-                block.type === "paragraph" ? (
-                  <p key={`paragraph-${index}`}>{block.text}</p>
-                ) : (
-                  <ul key={`list-${index}`}>
-                    {block.items.map((item, itemIndex) => (
-                      <li key={`list-${index}-bullet-${itemIndex}`}>{item}</li>
-                    ))}
-                  </ul>
-                )
-              )
+            {descriptionText ? (
+              <p className="product-rich-description-raw">{descriptionText}</p>
             ) : (
               <p>
                 Esta referencia está conectada al catálogo operativo de Kensar. Si necesitas una

@@ -3788,8 +3788,13 @@ body.mini-cart-open .main-wrapper {
   margin: 0 0 12px;
 }
 
-.product-rich-description ul {
+.product-rich-description-raw {
   margin: 0;
+  white-space: pre-line;
+}
+
+.product-rich-description ul {
+  margin: 0 0 12px;
   padding-left: 20px;
   display: grid;
   gap: 8px;
