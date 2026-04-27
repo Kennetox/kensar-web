@@ -20,26 +20,36 @@ type CatalogProductDetailPageProps = {
   params: Promise<{ slug: string }>;
 };
 
-function extractDescriptionSections(text: string | null): {
-  paragraphs: string[];
-  bulletItems: string[];
-} {
-  if (!text) return { paragraphs: [], bulletItems: [] };
+type DescriptionBlock =
+  | { type: "paragraph"; text: string }
+  | { type: "list"; items: string[] };
+
+function extractDescriptionBlocks(text: string | null): DescriptionBlock[] {
+  if (!text) return [];
   const lines = text
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
 
-  const bulletItems: string[] = [];
-  const paragraphs: string[] = [];
+  const blocks: DescriptionBlock[] = [];
+  let listBuffer: string[] = [];
+
+  const flushListBuffer = () => {
+    if (!listBuffer.length) return;
+    blocks.push({ type: "list", items: [...listBuffer] });
+    listBuffer = [];
+  };
+
   for (const line of lines) {
     if (/^[-*•]\s+/.test(line)) {
-      bulletItems.push(line.replace(/^[-*•]\s+/, "").trim());
-    } else {
-      paragraphs.push(line);
+      listBuffer.push(line.replace(/^[-*•]\s+/, "").trim());
+      continue;
     }
+    flushListBuffer();
+    blocks.push({ type: "paragraph", text: line });
   }
-  return { paragraphs, bulletItems };
+  flushListBuffer();
+  return blocks;
 }
 
 async function getRelatedProducts(
@@ -93,7 +103,7 @@ export default async function CatalogProductDetailPage({
   const gallery = [product.image_url, product.image_thumb_url, ...product.gallery].filter(
     (image, index, list): image is string => Boolean(image) && list.indexOf(image) === index
   );
-  const { paragraphs, bulletItems } = extractDescriptionSections(
+  const descriptionBlocks = extractDescriptionBlocks(
     product.long_description || product.short_description
   );
   const relatedProducts = await getRelatedProducts(product.id, product.category_path);
@@ -121,21 +131,24 @@ export default async function CatalogProductDetailPage({
 
           <div className="product-rich-description">
             <h2>Descripción</h2>
-            {paragraphs.length ? (
-              paragraphs.map((paragraph, index) => <p key={`paragraph-${index}`}>{paragraph}</p>)
+            {descriptionBlocks.length ? (
+              descriptionBlocks.map((block, index) =>
+                block.type === "paragraph" ? (
+                  <p key={`paragraph-${index}`}>{block.text}</p>
+                ) : (
+                  <ul key={`list-${index}`}>
+                    {block.items.map((item, itemIndex) => (
+                      <li key={`list-${index}-bullet-${itemIndex}`}>{item}</li>
+                    ))}
+                  </ul>
+                )
+              )
             ) : (
               <p>
                 Esta referencia está conectada al catálogo operativo de Kensar. Si necesitas una
                 validación técnica o comercial adicional, te ayudamos por WhatsApp.
               </p>
             )}
-            {bulletItems.length ? (
-              <ul>
-                {bulletItems.map((item, index) => (
-                  <li key={`bullet-${index}`}>{item}</li>
-                ))}
-              </ul>
-            ) : null}
           </div>
         </article>
 
@@ -168,9 +181,6 @@ export default async function CatalogProductDetailPage({
                   <strong>{formatCatalogPrice(product.price)}</strong>
                   {product.compare_price ? <del>{formatCatalogPrice(product.compare_price)}</del> : null}
                 </div>
-                {product.short_description?.trim() ? (
-                  <p className="product-summary-short-copy">{product.short_description.trim()}</p>
-                ) : null}
                 {product.warranty_text?.trim() ? (
                   <>
                     <p className="product-warranty-copy">
