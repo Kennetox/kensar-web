@@ -10,13 +10,16 @@ import { buildCatalogCategoryHref } from "@/app/lib/catalogRoutes";
 import {
   getCatalogCategories,
   getCatalogProducts,
+  getHomeSliders,
   type WebCatalogCategory,
+  type WebCatalogHomeSlider,
   type WebCatalogProductCard,
 } from "@/app/lib/metrikCatalog";
 
 type HomeData = {
   categories: WebCatalogCategory[];
   products: WebCatalogProductCard[];
+  sliders: WebCatalogHomeSlider[];
 };
 
 const fallbackCategories: WebCatalogCategory[] = [
@@ -175,19 +178,22 @@ const fallbackProducts: WebCatalogProductCard[] = [
 
 async function loadHomeData(): Promise<HomeData> {
   try {
-    const [categories, productList] = await Promise.all([
+    const [categories, productList, sliders] = await Promise.all([
       getCatalogCategories(),
       getCatalogProducts({ page: 1 }),
+      getHomeSliders(),
     ]);
 
     return {
       categories: categories.length ? categories : fallbackCategories,
       products: productList.items.length ? productList.items : fallbackProducts,
+      sliders,
     };
   } catch {
     return {
       categories: fallbackCategories,
       products: fallbackProducts,
+      sliders: [],
     };
   }
 }
@@ -197,6 +203,33 @@ function buildCategoryHref(path: string | null, parentPath?: string | null) {
     categoryPath: path,
     parentCategoryPath: parentPath,
   });
+}
+
+function resolveSliderHref(slider: WebCatalogHomeSlider) {
+  const linkType = (slider.link_type || "catalogo").trim().toLowerCase();
+  const rawValue = (slider.link_value || "").trim();
+  if (linkType === "sin_link") {
+    return null;
+  }
+  if (linkType === "categoria") {
+    if (!rawValue) return "/catalogo";
+    return buildCategoryHref(rawValue);
+  }
+  if (linkType === "subcategoria") {
+    const [parentKey, childKey] = rawValue.split("::").map((item) => item.trim());
+    if (!parentKey || !childKey) return "/catalogo";
+    return buildCategoryHref(childKey, parentKey);
+  }
+  if (linkType === "personalizacion") {
+    return "/personaliza";
+  }
+  if (linkType === "contacto") {
+    return rawValue ? `/contacto#${encodeURIComponent(rawValue)}` : "/contacto";
+  }
+  if (linkType === "url_interna") {
+    return rawValue.startsWith("/") ? rawValue : "/catalogo";
+  }
+  return "/catalogo";
 }
 
 function normalizeCategoryValue(value: string | null) {
@@ -272,16 +305,18 @@ async function loadHomeLivingProducts(seedProducts: WebCatalogProductCard[]) {
 }
 
 export default async function HomePage() {
-  const { categories, products } = await loadHomeData();
+  const { categories, products, sliders } = await loadHomeData();
 
   const livingProducts = await loadHomeLivingProducts(products);
-  const sliderSlides = [
+  const fallbackSliderSlides = [
     {
       id: "guitarras",
       image: "/sliders/home/slide-01-desktop.webp",
       alt: "Promociones y descuentos en categorias destacadas",
       href: buildCategoryHref("instrumentos"),
       ctaLabel: "VER GUITARRAS",
+      ctaXPercent: 50,
+      ctaYPercent: 80,
     },
     {
       id: "audio-main",
@@ -289,6 +324,8 @@ export default async function HomePage() {
       alt: "Sonido profesional para eventos y produccion",
       href: "/catalogo",
       ctaLabel: "VER EQUIPOS",
+      ctaXPercent: 50,
+      ctaYPercent: 80,
     },
     {
       id: "contacto",
@@ -296,8 +333,24 @@ export default async function HomePage() {
       alt: "Marcas premium en audio profesional",
       href: "/empresa",
       ctaLabel: "EXPLORAR TIENDA",
+      ctaXPercent: 50,
+      ctaYPercent: 80,
     },
   ];
+  const sliderSlides =
+    sliders.length > 0
+      ? sliders.map((slider) => ({
+          id: `slot-${slider.slot}`,
+          image: slider.image_url || "",
+          alt: slider.alt_text || "Promoción destacada Kensar",
+          href: resolveSliderHref(slider),
+          ctaLabel: slider.cta_label || "",
+          ctaXPercent:
+            typeof slider.cta_x_percent === "number" ? slider.cta_x_percent : 50,
+          ctaYPercent:
+            typeof slider.cta_y_percent === "number" ? slider.cta_y_percent : 80,
+        }))
+      : fallbackSliderSlides;
   const marqueeLogos = [
     { name: "Yamaha", src: "/brands/marquee/yamaha.svg" },
     { name: "Pro DJ", src: "/brands/marquee/prodj.svg" },

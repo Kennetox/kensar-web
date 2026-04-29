@@ -7,8 +7,10 @@ type SlideItem = {
   id: string;
   image: string;
   alt: string;
-  href: string;
-  ctaLabel: string;
+  href: string | null;
+  ctaLabel?: string | null;
+  ctaXPercent?: number;
+  ctaYPercent?: number;
 };
 
 type FeaturedCategory = {
@@ -95,29 +97,89 @@ export default function CommerceSlider({ slides, categories, intervalMs = 8000 }
           onTransitionEnd={handleTrackTransitionEnd}
         >
           {loopSlides.map((slide, index) => (
+            (() => {
+              const hasPresetStyle =
+                slide.id === "guitarras" || slide.id === "audio-main" || slide.id === "contacto";
+              const ctaPositionStyle = {
+                left: `${typeof slide.ctaXPercent === "number" ? slide.ctaXPercent : 50}%`,
+                top: `${typeof slide.ctaYPercent === "number" ? slide.ctaYPercent : 80}%`,
+              } as const;
+              const customCtaStyle = hasPresetStyle
+                ? undefined
+                : {
+                    position: "relative" as const,
+                    background: "rgba(255, 255, 255, 0.86)",
+                    color: "#0f172a",
+                    boxShadow: "0 12px 24px -16px rgba(15, 23, 42, 0.52)",
+                    border: "1px solid rgba(255, 255, 255, 0.45)",
+                  };
+              return (
             <div
               key={`${slide.id}-${index}`}
               className={`commerce-slider-frame commerce-slider-frame-${slide.id}${index === internalIndex ? " is-active" : ""}${
                 hasLoop && (index === 0 || index === loopSlides.length - 1) ? " is-clone" : ""
               }`}
             >
-              <Link href={slide.href} className="commerce-slider-link" aria-label={slide.alt} />
+              {slide.href ? <Link href={slide.href} className="commerce-slider-link" aria-label={slide.alt} /> : null}
               <div
                 className="commerce-slider-layer"
                 style={{ backgroundImage: `url('${slide.image}')` }}
                 role="img"
                 aria-label={slide.alt}
               />
-              <div className="commerce-slider-cta-shell">
-                <Link
-                  href={slide.href}
-                  className={`commerce-slider-cta commerce-slider-cta--${slide.id}`}
-                  aria-label={slide.ctaLabel}
-                >
-                  {slide.ctaLabel}
-                </Link>
-              </div>
+              {(slide.ctaLabel || "").trim() ? (
+                hasPresetStyle ? (
+                  <div className="commerce-slider-cta-shell">
+                    {slide.href ? (
+                      <Link
+                        href={slide.href}
+                        className={`commerce-slider-cta commerce-slider-cta--${slide.id}`}
+                        aria-label={slide.ctaLabel || undefined}
+                      >
+                        {slide.ctaLabel}
+                      </Link>
+                    ) : (
+                      <span
+                        className={`commerce-slider-cta commerce-slider-cta--${slide.id}`}
+                        aria-hidden="true"
+                      >
+                        {slide.ctaLabel}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      position: "absolute",
+                      zIndex: 8,
+                      ...ctaPositionStyle,
+                      transform: "translate(-50%, -50%)",
+                    }}
+                  >
+                    {slide.href ? (
+                      <Link
+                        href={slide.href}
+                        className={`commerce-slider-cta commerce-slider-cta--${slide.id}`}
+                        aria-label={slide.ctaLabel || undefined}
+                        style={customCtaStyle}
+                      >
+                        {slide.ctaLabel}
+                      </Link>
+                    ) : (
+                      <span
+                        className={`commerce-slider-cta commerce-slider-cta--${slide.id}`}
+                        aria-hidden="true"
+                        style={customCtaStyle}
+                      >
+                        {slide.ctaLabel}
+                      </span>
+                    )}
+                  </div>
+                )
+              ) : null}
             </div>
+              );
+            })()
           ))}
         </div>
 

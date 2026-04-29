@@ -13,6 +13,27 @@ export type WebCatalogCategory = {
   product_count: number;
 };
 
+export type WebCatalogHomeSliderLinkType =
+  | "sin_link"
+  | "catalogo"
+  | "categoria"
+  | "subcategoria"
+  | "personalizacion"
+  | "contacto"
+  | "url_interna";
+
+export type WebCatalogHomeSlider = {
+  slot: number;
+  image_url: string | null;
+  alt_text: string | null;
+  cta_label: string | null;
+  cta_x_percent: number;
+  cta_y_percent: number;
+  link_type: WebCatalogHomeSliderLinkType;
+  link_value: string | null;
+  sort_order: number;
+};
+
 export type WebCatalogFilterOption = {
   value: string;
   label: string;
@@ -196,6 +217,24 @@ export async function getCatalogCategories() {
   const baseUrl = getApiBaseUrl();
   const response = await fetchCatalog<{ items: WebCatalogCategory[] }>("/web/catalog/categories");
   return response.items.map((item) => normalizeCatalogCategory(baseUrl, item));
+}
+
+export async function getHomeSliders() {
+  const baseUrl = getApiBaseUrl();
+  const response = await fetch(`${baseUrl}/web/catalog/home-sliders`, {
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    throw new Error(`Catalog request failed: ${response.status}`);
+  }
+  const data = (await response.json()) as { items: WebCatalogHomeSlider[] };
+  return data.items
+    .slice()
+    .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || (a.slot || 0) - (b.slot || 0))
+    .map((item) => ({
+      ...item,
+      image_url: resolveCatalogAssetUrl(baseUrl, item.image_url),
+    }));
 }
 
 export async function getCatalogProducts(input: {
