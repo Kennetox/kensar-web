@@ -1590,6 +1590,13 @@ export default function PersonalizaExperience() {
     setEditingTextValue(layer?.text || "");
   }
 
+  function handleLayerClick(layerId: string, detail: number) {
+    setActiveLayerId(layerId);
+    if (detail >= 2) {
+      handleLayerDoubleClick(layerId);
+    }
+  }
+
   function handleInlineEditorCommit() {
     setIsTextInputFocused(false);
     endHistoryBatch();
@@ -2630,6 +2637,7 @@ export default function PersonalizaExperience() {
                     key={layer.id}
                     className={`${styles.editorText}${isActiveLayer ? ` ${styles.editorTextActive}` : ""}`}
                     onPointerDown={() => setActiveLayerId(layer.id)}
+                    onClick={(event) => handleLayerClick(layer.id, event.detail)}
                     onDoubleClick={() => handleLayerDoubleClick(layer.id)}
                     style={{
                       color: layer.color,
@@ -2676,6 +2684,7 @@ export default function PersonalizaExperience() {
                         <span
                           className={styles.editorTextSelectionBox}
                           data-drag-mode="move"
+                          onClick={(event) => handleLayerClick(layer.id, event.detail)}
                           onDoubleClick={() => handleLayerDoubleClick(layer.id)}
                           aria-hidden="true"
                         />
@@ -2683,6 +2692,7 @@ export default function PersonalizaExperience() {
                           type="button"
                           className={`${styles.editorTransformHandle} ${styles.editorTransformHandleScale} ${styles.editorTransformHandleTopLeft}`}
                           data-drag-mode="scale"
+                          onClick={(event) => handleLayerClick(layer.id, event.detail)}
                           onDoubleClick={() => handleLayerDoubleClick(layer.id)}
                           tabIndex={-1}
                           aria-hidden="true"
@@ -2691,6 +2701,7 @@ export default function PersonalizaExperience() {
                           type="button"
                           className={`${styles.editorTransformHandle} ${styles.editorTransformHandleScale} ${styles.editorTransformHandleTopRight}`}
                           data-drag-mode="scale"
+                          onClick={(event) => handleLayerClick(layer.id, event.detail)}
                           onDoubleClick={() => handleLayerDoubleClick(layer.id)}
                           tabIndex={-1}
                           aria-hidden="true"
@@ -2699,6 +2710,7 @@ export default function PersonalizaExperience() {
                           type="button"
                           className={`${styles.editorTransformHandle} ${styles.editorTransformHandleScale} ${styles.editorTransformHandleBottomLeft}`}
                           data-drag-mode="scale"
+                          onClick={(event) => handleLayerClick(layer.id, event.detail)}
                           onDoubleClick={() => handleLayerDoubleClick(layer.id)}
                           tabIndex={-1}
                           aria-hidden="true"
@@ -2707,6 +2719,7 @@ export default function PersonalizaExperience() {
                           type="button"
                           className={`${styles.editorTransformHandle} ${styles.editorTransformHandleScale} ${styles.editorTransformHandleBottomRight}`}
                           data-drag-mode="scale"
+                          onClick={(event) => handleLayerClick(layer.id, event.detail)}
                           onDoubleClick={() => handleLayerDoubleClick(layer.id)}
                           tabIndex={-1}
                           aria-hidden="true"
@@ -2716,6 +2729,7 @@ export default function PersonalizaExperience() {
                             type="button"
                             className={`${styles.editorTransformHandle} ${styles.editorTransformHandleRotate}`}
                             data-drag-mode="rotate"
+                            onClick={(event) => handleLayerClick(layer.id, event.detail)}
                             onDoubleClick={() => handleLayerDoubleClick(layer.id)}
                             tabIndex={-1}
                             aria-hidden="true"

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   getCatalogProduct,
   getCatalogProducts,
+  getPersonalizationServiceBySku,
   type WebCatalogProductCard,
 } from "@/app/lib/metrikCatalog";
 
@@ -63,6 +64,40 @@ export async function POST(request: Request) {
   const personalizationProduct =
     searchBySku.items.find((item) => (item.sku || "").trim() === personalizationSku) || null;
   if (!personalizationProduct) {
+    const hiddenServiceProduct = await getPersonalizationServiceBySku(personalizationSku);
+    if (hiddenServiceProduct) {
+      const base: CheckoutItemResponse = {
+        id: baseProduct.id,
+        name: baseProduct.name,
+        slug: baseProduct.slug,
+        sku: baseProduct.sku,
+        image_url: baseProduct.image_thumb_url || baseProduct.image_url,
+        brand: baseProduct.brand,
+        stock_status: baseProduct.stock_status,
+        price: Number(baseProduct.price) || 0,
+        compare_price: typeof baseProduct.compare_price === "number" ? baseProduct.compare_price : null,
+      };
+
+      const personalization: CheckoutItemResponse = {
+        id: hiddenServiceProduct.id,
+        name: (hiddenServiceProduct.web_name || hiddenServiceProduct.name || "").trim(),
+        slug: (hiddenServiceProduct.web_slug || "").trim(),
+        sku: hiddenServiceProduct.sku || null,
+        image_url: hiddenServiceProduct.image_thumb_url || hiddenServiceProduct.image_url || null,
+        brand: hiddenServiceProduct.brand || null,
+        stock_status: "service",
+        price: Number(hiddenServiceProduct.price) || 0,
+        compare_price:
+          typeof hiddenServiceProduct.web_compare_price === "number"
+            ? hiddenServiceProduct.web_compare_price
+            : null,
+      };
+
+      return NextResponse.json({
+        base,
+        personalization,
+      });
+    }
     return NextResponse.json(
       {
         detail:

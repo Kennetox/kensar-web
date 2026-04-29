@@ -83,6 +83,21 @@ export type WebCatalogProductDetail = {
   whatsapp_message: string | null;
 };
 
+export type BackofficeCatalogProduct = {
+  id: number;
+  sku: string | null;
+  name: string;
+  web_name?: string | null;
+  web_slug?: string | null;
+  image_url?: string | null;
+  image_thumb_url?: string | null;
+  brand?: string | null;
+  service?: boolean;
+  active?: boolean;
+  price?: number | null;
+  web_compare_price?: number | null;
+};
+
 function getApiBaseUrl() {
   const baseUrl = process.env.METRIK_API_BASE_URL?.trim();
   if (!baseUrl) {
@@ -227,6 +242,21 @@ export async function getCatalogProduct(slug: string) {
   const baseUrl = getApiBaseUrl();
   const response = await fetchCatalogOptional<WebCatalogProductDetail>(`/web/catalog/products/${slug}`);
   return response ? normalizeCatalogProductDetail(baseUrl, response) : null;
+}
+
+export async function getPersonalizationServiceBySku(sku: string) {
+  const params = new URLSearchParams();
+  params.set("sku", sku);
+  const baseUrl = getApiBaseUrl();
+  const response = await fetchCatalogOptional<BackofficeCatalogProduct>(
+    `/web/catalog/personalization/service-by-sku?${params.toString()}`
+  );
+  if (!response) return null;
+  return {
+    ...response,
+    image_url: resolveCatalogAssetUrl(baseUrl, response.image_url || null),
+    image_thumb_url: resolveCatalogAssetUrl(baseUrl, response.image_thumb_url || null),
+  };
 }
 
 export function formatCatalogPrice(value: number | null) {
