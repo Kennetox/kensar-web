@@ -16,7 +16,7 @@ import {
 const PRODUCT_MODEL_MAP: Record<string, string | null> = {
   campana: "/personaliza/models/campana-v1.glb",
   guiro: "/personaliza/models/guiro-v1.glb",
-  maraca: null,
+  maraca: "/personaliza/models/maracas-par-v1.glb",
 };
 const CAMPANA_MODEL_MAP: Record<"clasica" | "cromada", Record<"abierta" | "cerrada", string>> = {
   clasica: {
@@ -43,6 +43,11 @@ const TEXT_LAYOUT_BY_PRODUCT: Record<
   guiro: { centerX: 0.5, centerY: 0.5, widthRatio: 0.82, maxLines: 3 },
   maraca: { centerX: 0.5, centerY: 0.5, widthRatio: 0.82, maxLines: 3 },
 };
+const TEXT_BASE_SCALE_BY_PRODUCT: Record<"campana" | "guiro" | "maraca", number> = {
+  campana: 1,
+  guiro: 1,
+  maraca: 1.55,
+};
 
 export type PaintConfig =
   | { mode: "solid"; color: string }
@@ -54,7 +59,7 @@ export type TextLayer3D = {
   textColor: string;
   textFontFamily: string;
   textFontWeight: number;
-  face?: "front_up" | "front_down" | "left" | "right";
+  face?: "front_up" | "front_down" | "left" | "right" | "maraca_left" | "maraca_right";
   textTransform: {
     scaleX: number;
     scaleY: number;
@@ -83,6 +88,21 @@ function clampValue(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
+function linearChannelToSrgb(channel: number): number {
+  const safe = clampValue(channel, 0, 1);
+  if (safe <= 0.0031308) return safe * 12.92;
+  return 1.055 * Math.pow(safe, 1 / 2.4) - 0.055;
+}
+
+function linearRgbToHex(r: number, g: number, b: number): string {
+  const toHex = (value: number) => {
+    const srgb = linearChannelToSrgb(value);
+    const byte = Math.round(clampValue(srgb, 0, 1) * 255);
+    return byte.toString(16).padStart(2, "0");
+  };
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
 function withCanvasGlyphFallback(fontFamily: string): string {
   const normalized = (fontFamily || "").trim();
   const base = normalized || "Arial, sans-serif";
@@ -96,6 +116,103 @@ function normalizeCanvasTextGlyphs(value: string): string {
     .replace(/\u2764/g, "♥") // heart
     .replace(/\u2B50/g, "★") // white medium star emoji
     .replace(/\u2795/g, "✚"); // heavy plus emoji
+}
+
+function buildMaracaRibbonLabelCanvas(labelText: string): HTMLCanvasElement | null {
+  if (typeof document === "undefined") return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = 2048;
+  canvas.height = 256;
+  const context = canvas.getContext("2d");
+  if (!context) return null;
+  context.fillStyle = "#000000";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = "#ffffff";
+  context.textAlign = "left";
+  context.textBaseline = "middle";
+  context.font = "700 78px Arial, sans-serif";
+  const centerY = Math.round(canvas.height * 0.51);
+  const content = `${labelText.trim()}   •   `;
+  const step = Math.max(120, Math.round(context.measureText(content).width));
+  const phasePx = -24;
+  const verticalScale = 0.34;
+  context.save();
+  context.translate(0, centerY);
+  context.scale(1, verticalScale);
+  for (let x = -phasePx; x < canvas.width + step; x += step) {
+    context.fillText(content, x, 0);
+  }
+  context.restore();
+  return canvas;
+}
+
+function removeEdgeConnectedNeutralBackground(
+  sourceImage: HTMLImageElement
+): HTMLCanvasElement | null {
+  if (typeof document === "undefined") return null;
+  const width = Math.max(1, sourceImage.naturalWidth || sourceImage.width || 1);
+  const height = Math.max(1, sourceImage.naturalHeight || sourceImage.height || 1);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  if (!context) return null;
+  context.drawImage(sourceImage, 0, 0, width, height);
+  const imageData = context.getImageData(0, 0, width, height);
+  const data = imageData.data;
+  const visited = new Uint8Array(width * height);
+  const queue = new Int32Array(width * height);
+  let head = 0;
+  let tail = 0;
+
+  const isNeutralBg = (index: number) => {
+    const a = data[index + 3];
+    if (a < 8) return true;
+    const r = data[index];
+    const g = data[index + 1];
+    const b = data[index + 2];
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const delta = max - min;
+    // Fondo claro/neutro (gris/blanco), pero no colores vivos.
+    return max >= 150 && delta <= 24;
+  };
+
+  const pushIfCandidate = (x: number, y: number) => {
+    if (x < 0 || y < 0 || x >= width || y >= height) return;
+    const pixel = y * width + x;
+    if (visited[pixel]) return;
+    const i = pixel * 4;
+    if (!isNeutralBg(i)) return;
+    visited[pixel] = 1;
+    queue[tail++] = pixel;
+  };
+
+  for (let x = 0; x < width; x += 1) {
+    pushIfCandidate(x, 0);
+    pushIfCandidate(x, height - 1);
+  }
+  for (let y = 0; y < height; y += 1) {
+    pushIfCandidate(0, y);
+    pushIfCandidate(width - 1, y);
+  }
+
+  while (head < tail) {
+    const pixel = queue[head++];
+    const x = pixel % width;
+    const y = Math.floor(pixel / width);
+    pushIfCandidate(x - 1, y);
+    pushIfCandidate(x + 1, y);
+    pushIfCandidate(x, y - 1);
+    pushIfCandidate(x, y + 1);
+  }
+
+  for (let pixel = 0; pixel < visited.length; pixel += 1) {
+    if (!visited[pixel]) continue;
+    data[pixel * 4 + 3] = 0;
+  }
+  context.putImageData(imageData, 0, 0);
+  return canvas;
 }
 
 function resolveMaterialByCandidates<T extends { name?: string }>(
@@ -122,6 +239,25 @@ function resolveMaterialByCandidates<T extends { name?: string }>(
   }
 
   return undefined;
+}
+
+function resolveMaterialsByCandidates<T extends { name?: string }>(materials: T[], candidates: string[]): T[] {
+  const normalizeKey = (value: string) => value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
+  const normalizedCandidates = candidates.map((candidate) => normalizeKey(candidate)).filter(Boolean);
+  const matched: T[] = [];
+  const seen = new Set<number>();
+  for (const candidate of normalizedCandidates) {
+    materials.forEach((material, index) => {
+      if (seen.has(index)) return;
+      const name = normalizeKey(material.name || "");
+      if (!name) return;
+      if (name === candidate || name.includes(candidate)) {
+        matched.push(material);
+        seen.add(index);
+      }
+    });
+  }
+  return matched;
 }
 
 type CameraState = {
@@ -178,7 +314,12 @@ const TEXT_FOCUS_CAMERA_BY_PRODUCT: Record<
 > = {
   campana: { theta: 0, phi: 80, maxRadius: 72 },
   guiro: { theta: 0, phi: 80, maxRadius: 72 },
-  maraca: { theta: 0, phi: 80, maxRadius: 78 },
+  maraca: { theta: 0, phi: 84, maxRadius: 66 },
+};
+const MARACA_TEXT_FOCUS_BASE_TARGET: CameraTargetState = { x: 0, y: -0.12 };
+const MARACA_TEXT_FOCUS_X_BY_FACE: Record<"maraca_left" | "maraca_right", number> = {
+  maraca_left: -0.09,
+  maraca_right: 0.09,
 };
 const GUIRO_BASE_THETA_OFFSET = 0;
 const GUIRO_FACE_THETA_BY_FACE: Record<"front_up" | "front_down" | "left" | "right", number> = {
@@ -225,6 +366,11 @@ const GUIRO_TEXT_OFFSET_SIGN_BY_FACE: Record<
   left: { x: -1, y: -1 },
   right: { x: -1, y: -1 },
 };
+function isGuiroFace(
+  face: TextLayer3D["face"]
+): face is "front_up" | "front_down" | "left" | "right" {
+  return face === "front_up" || face === "front_down" || face === "left" || face === "right";
+}
 const EXPORT_WATERMARK_SRC = "/branding/texto-kensar.png";
 const EXPORT_WATERMARK_OPACITY = 0.2;
 const EXPORT_WATERMARK_WIDTH_RATIO = 0.96;
@@ -295,6 +441,38 @@ const GUIRO_WOOD_COLOR_FACTOR: [number, number, number, number] = [0.42, 0.28, 0
 const GUIRO_TEETH_COLOR_FACTOR: [number, number, number, number] = [1, 1, 1, 1];
 const GUIRO_WOOD_ROUGHNESS = 1;
 const GUIRO_WOOD_METALLIC = 0;
+const MARACA_HEAD_MATERIAL_CANDIDATES = ["cabeza_maracas", "cabeza_maraca", "head_maraca", "head"];
+const MARACA_RIBBON_MATERIAL_CANDIDATES = ["cinta_maracas", "cinta_maraca", "ribbon_maraca", "ribbon"];
+const MARACA_WOOD_MATERIAL_CANDIDATES = ["madera_mango", "wood_handle", "handle_wood"];
+const MARACA_WOOD_TEXT_MATERIAL_CANDIDATES = ["madera_mango_txt", "wood_handle_txt", "handle_text"];
+const MARACA_WOOD_TEXT_LEFT_MATERIAL_CANDIDATES = [
+  "madera_mango_txt_l",
+  "madera_mango_txtl",
+  "madera_mango_txt_left",
+  "wood_handle_txt_l",
+  "handle_text_l",
+];
+const MARACA_WOOD_TEXT_RIGHT_MATERIAL_CANDIDATES = [
+  "madera_mango_txt_r",
+  "madera_mango_txtr",
+  "madera_mango_txt_right",
+  "wood_handle_txt_r",
+  "handle_text_r",
+];
+const MARACA_LOGO_MATERIAL_CANDIDATES = ["logo_placeholder", "logo", "sticker_logo", "maraca_logo"];
+const MARACA_RIBBON_COLOR_FACTOR: [number, number, number, number] = [0.05, 0.05, 0.05, 1];
+const MARACA_WOOD_COLOR_FACTOR: [number, number, number, number] = [0.42, 0.28, 0.16, 1];
+const MARACA_HEAD_STITCHES_TEXTURE_SRC = "/personaliza/models/detalles/costuras.png";
+const MARACA_HEAD_STITCHES_OPACITY = 0.58;
+const MARACA_HEAD_STICKER_TEXTURE_SRC = "/personaliza/models/detalles/logo-kensar-sticker.png";
+const MARACA_HEAD_STICKER_OPACITY = 1;
+const MARACA_RIBBON_LABEL_TEXT = "KENSAR ELECTRONIC ";
+const MARACA_WOOD_TEXT_PAINT: PaintConfig = {
+  mode: "solid",
+  color: linearRgbToHex(MARACA_WOOD_COLOR_FACTOR[0], MARACA_WOOD_COLOR_FACTOR[1], MARACA_WOOD_COLOR_FACTOR[2]),
+};
+const MARACA_DEFAULT_ROUGHNESS = 1;
+const MARACA_DEFAULT_METALLIC = 0;
 const DEFAULT_MATERIAL_CANDIDATES = {
   paint: ["matpaint", "paint", "body", "base", "main", "material", "default"],
   text: ["mat_text_zone", "text_zone", "text", "decal", "label", "logo"],
@@ -312,8 +490,8 @@ const MATERIAL_CANDIDATES_BY_PRODUCT: Record<
     text: ["textura_guiro", "mat_text_zone", "guiro_text_zone", ...DEFAULT_MATERIAL_CANDIDATES.text],
   },
   maraca: {
-    paint: DEFAULT_MATERIAL_CANDIDATES.paint,
-    text: DEFAULT_MATERIAL_CANDIDATES.text,
+    paint: ["cabeza_maracas", ...DEFAULT_MATERIAL_CANDIDATES.paint],
+    text: ["madera_mango_txt", ...DEFAULT_MATERIAL_CANDIDATES.text],
   },
 };
 
@@ -329,7 +507,7 @@ type ModelPreview3DProps = {
   focusOnText?: boolean;
   focusTextOffsetX?: number;
   focusTextOffsetY?: number;
-  activeTextFace?: "front_up" | "front_down" | "left" | "right";
+  activeTextFace?: "front_up" | "front_down" | "left" | "right" | "maraca_left" | "maraca_right";
   paintConfig: PaintConfig;
   textLayers: TextLayer3D[];
 };
@@ -351,6 +529,16 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
   const modelViewerRef = useRef<HTMLElement | null>(null);
   const textureSequenceRef = useRef(0);
   const activeTextureUrlsRef = useRef<string[]>([]);
+  const maracaRibbonLabelTextureRef = useRef<unknown | null>(null);
+  const maracaRibbonLabelMaterialNameRef = useRef<string>("");
+  const maracaRibbonLabelAppliedRef = useRef(false);
+  const maracaLogoTextureRef = useRef<unknown | null>(null);
+  const maracaLogoMaterialNameRef = useRef<string>("");
+  const maracaLogoAppliedRef = useRef(false);
+  const maracaStitchesImageRef = useRef<HTMLImageElement | null>(null);
+  const maracaStitchesImagePromiseRef = useRef<Promise<HTMLImageElement> | null>(null);
+  const maracaStickerImageRef = useRef<HTMLImageElement | null>(null);
+  const maracaStickerImagePromiseRef = useRef<Promise<HTMLImageElement> | null>(null);
   const cameraStateRef = useRef<CameraState>(getDefaultCameraStateByProduct(product));
   const cameraTargetRef = useRef<CameraTargetState>(DEFAULT_CAMERA_TARGET);
   const focusSnapshotRef = useRef<{ camera: CameraState; target: CameraTargetState } | null>(null);
@@ -601,11 +789,13 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
         const averageScale = (scaleXFactor + scaleYFactor) / 2;
         const scaleXRatio = scaleXFactor / averageScale;
         const scaleYRatio = scaleYFactor / averageScale;
-        const scaledFontSize = Math.round(baseFontSize * averageScale);
+        const productBaseScale = TEXT_BASE_SCALE_BY_PRODUCT[productId] || 1;
+        const scaledFontSize = Math.round(baseFontSize * productBaseScale * averageScale);
         const maxWidth = Math.round(canvas.width * layout.widthRatio);
+        const guiroFace = isGuiroFace(layer.face) ? layer.face : "front_up";
         const offsetSign =
           productId === "guiro"
-            ? GUIRO_TEXT_OFFSET_SIGN_BY_FACE[layer.face || "front_up"]
+            ? GUIRO_TEXT_OFFSET_SIGN_BY_FACE[guiroFace]
             : { x: 1, y: 1 };
         const centerX = Math.round(
           canvas.width * (layout.centerX + (layer.textTransform.offsetX / 100) * offsetSign.x)
@@ -641,7 +831,7 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
         context.translate(centerX, centerY);
         const faceRotationOffset =
           productId === "guiro"
-            ? GUIRO_TEXT_ROTATION_OFFSET_BY_FACE[layer.face || "front_up"]
+            ? GUIRO_TEXT_ROTATION_OFFSET_BY_FACE[guiroFace]
             : 0;
         context.rotate(((layer.textTransform.rotation + faceRotationOffset) * Math.PI) / 180);
         context.scale(scaleXRatio, scaleYRatio);
@@ -719,6 +909,16 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
     let usesSingleMaterialFallback = textMaterial === paintMaterial;
     let guiroWoodTintApplied = false;
     let guiroTeethMatteApplied = false;
+    let maracaHeadPaintApplied = false;
+    let maracaRibbonFixedApplied = false;
+    let maracaRibbonLabelApplied = false;
+    let maracaLogoApplied = false;
+    let maracaWoodFixedApplied = false;
+    let maracaWoodTextBaseApplied = false;
+    let maracaRibbonMaterials: Array<(typeof materials)[number]> = [];
+    let maracaLogoMaterials: Array<(typeof materials)[number]> = [];
+    let maracaTextMaterialLeft: (typeof materials)[number] | null = null;
+    let maracaTextMaterialRight: (typeof materials)[number] | null = null;
     const guiroTextFacesApplied: Array<"front_up" | "front_down" | "left" | "right"> = [];
     const guiroTextMaterials: Partial<
       Record<"front_up" | "front_down" | "left" | "right", (typeof materials)[number]>
@@ -756,10 +956,75 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
       textMaterial = guiroTextFrontUpMaterial;
       usesSingleMaterialFallback = textMaterial === paintMaterial;
     }
+    if (product === "maraca") {
+      const maracaHeadMaterials = resolveMaterialsByCandidates(materials, MARACA_HEAD_MATERIAL_CANDIDATES);
+      const maracaHeadMaterial = maracaHeadMaterials[0] || paintMaterial;
+      maracaRibbonMaterials = resolveMaterialsByCandidates(materials, MARACA_RIBBON_MATERIAL_CANDIDATES);
+      maracaLogoMaterials = resolveMaterialsByCandidates(materials, MARACA_LOGO_MATERIAL_CANDIDATES);
+      const maracaWoodMaterials = resolveMaterialsByCandidates(materials, MARACA_WOOD_MATERIAL_CANDIDATES);
+      const maracaWoodTextMaterial = resolveMaterialByCandidates(materials, MARACA_WOOD_TEXT_MATERIAL_CANDIDATES);
+      maracaTextMaterialLeft =
+        resolveMaterialByCandidates(materials, MARACA_WOOD_TEXT_LEFT_MATERIAL_CANDIDATES) ||
+        maracaWoodTextMaterial ||
+        null;
+      maracaTextMaterialRight =
+        resolveMaterialByCandidates(materials, MARACA_WOOD_TEXT_RIGHT_MATERIAL_CANDIDATES) ||
+        maracaWoodTextMaterial ||
+        null;
 
-    textMaterial?.pbrMetallicRoughness?.setBaseColorFactor?.(
-      DEBUG_TEXT_TEXTURE_MODE ? [1, 0.97, 0.82, 1] : [1, 1, 1, 1]
-    );
+      const ribbonMaterialName = maracaRibbonMaterials.map((material) => (material.name || "").trim()).join("|");
+      const ribbonLabelAlreadyApplied =
+        maracaRibbonLabelAppliedRef.current && maracaRibbonLabelMaterialNameRef.current === ribbonMaterialName;
+      // Evita parpadeo: si la textura de la cinta ya estaba aplicada, no la devolvemos al estado base.
+      if (ribbonLabelAlreadyApplied) {
+        for (const material of maracaRibbonMaterials) {
+          material.pbrMetallicRoughness?.setBaseColorFactor?.([1, 1, 1, 1]);
+          material.pbrMetallicRoughness?.setMetallicFactor?.(0);
+          material.pbrMetallicRoughness?.setRoughnessFactor?.(1);
+        }
+      } else {
+        for (const material of maracaRibbonMaterials) {
+          material.pbrMetallicRoughness?.setBaseColorFactor?.(MARACA_RIBBON_COLOR_FACTOR);
+          material.pbrMetallicRoughness?.setMetallicFactor?.(MARACA_DEFAULT_METALLIC);
+          material.pbrMetallicRoughness?.setRoughnessFactor?.(MARACA_DEFAULT_ROUGHNESS);
+        }
+      }
+      maracaRibbonFixedApplied = maracaRibbonMaterials.length > 0;
+      for (const material of maracaLogoMaterials) {
+        material.pbrMetallicRoughness?.setBaseColorFactor?.([1, 1, 1, 1]);
+      }
+
+      for (const material of maracaWoodMaterials) {
+        material.pbrMetallicRoughness?.setBaseColorFactor?.(MARACA_WOOD_COLOR_FACTOR);
+        material.pbrMetallicRoughness?.setMetallicFactor?.(MARACA_DEFAULT_METALLIC);
+        material.pbrMetallicRoughness?.setRoughnessFactor?.(MARACA_DEFAULT_ROUGHNESS);
+      }
+      maracaWoodFixedApplied = maracaWoodMaterials.length > 0;
+
+      const maracaWoodTextMaterials = [maracaTextMaterialLeft, maracaTextMaterialRight].filter(Boolean) as Array<
+        (typeof materials)[number]
+      >;
+      for (const material of maracaWoodTextMaterials) {
+        // La textura de texto para mango ya incluye base madera.
+        // Si multiplicamos por MARACA_WOOD_COLOR_FACTOR se oscurece (parche más oscuro).
+        material.pbrMetallicRoughness?.setBaseColorFactor?.([1, 1, 1, 1]);
+        material.pbrMetallicRoughness?.setMetallicFactor?.(MARACA_DEFAULT_METALLIC);
+        material.pbrMetallicRoughness?.setRoughnessFactor?.(MARACA_DEFAULT_ROUGHNESS);
+      }
+      maracaWoodTextBaseApplied = maracaWoodTextMaterials.length > 0;
+
+      paintMaterial = maracaHeadMaterial;
+      textMaterial = maracaTextMaterialLeft || maracaTextMaterialRight || maracaWoodTextMaterial || textMaterial;
+      maracaHeadPaintApplied = Boolean(maracaHeadMaterial);
+      // En maraca no queremos mezclar paint+text en un solo material.
+      usesSingleMaterialFallback = false;
+    }
+
+    if (product !== "maraca") {
+      textMaterial?.pbrMetallicRoughness?.setBaseColorFactor?.(
+        DEBUG_TEXT_TEXTURE_MODE ? [1, 0.97, 0.82, 1] : [1, 1, 1, 1]
+      );
+    }
 
     const textureFromViewerFactory: ((url: string) => Promise<unknown>) | undefined =
       typeof viewer.createTexture === "function"
@@ -792,11 +1057,55 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
       setDebugSummary("No se pudieron crear los canvas de texturas.");
       return;
     }
+    if (product === "maraca") {
+      const ensureMaracaStitchesImage = async () => {
+        if (maracaStitchesImageRef.current) return maracaStitchesImageRef.current;
+        if (!maracaStitchesImagePromiseRef.current) {
+          maracaStitchesImagePromiseRef.current = new Promise<HTMLImageElement>((resolve, reject) => {
+            const image = new window.Image();
+            image.onload = () => {
+              maracaStitchesImageRef.current = image;
+              resolve(image);
+            };
+            image.onerror = () => reject(new Error("No se pudo cargar costuras.png"));
+            image.src = MARACA_HEAD_STITCHES_TEXTURE_SRC;
+          });
+        }
+        return maracaStitchesImagePromiseRef.current;
+      };
+      try {
+        const stitchesImage = await ensureMaracaStitchesImage();
+        const paintContext = paintTextureCanvas.getContext("2d");
+        if (paintContext) {
+          paintContext.save();
+          paintContext.globalAlpha = MARACA_HEAD_STITCHES_OPACITY;
+          paintContext.globalCompositeOperation = "source-over";
+          paintContext.drawImage(stitchesImage, 0, 0, paintTextureCanvas.width, paintTextureCanvas.height);
+          paintContext.restore();
+        }
+      } catch {
+        setDebugSummary("No se pudo cargar la textura de costuras/logo para maracas.");
+      }
+    }
     if (sequence !== textureSequenceRef.current) return;
-    const textTextureCanvas = buildTextCanvas(textLayers, product, paintConfig, {
+    const textBackgroundPaint = product === "maraca" ? MARACA_WOOD_TEXT_PAINT : paintConfig;
+    const maracaTextLayersLeft =
+      product === "maraca"
+        ? textLayers.filter((layer) => layer.face === "maraca_left").slice(0, 1)
+        : [];
+    const maracaTextLayersRight =
+      product === "maraca"
+        ? textLayers.filter((layer) => layer.face === "maraca_right").slice(0, 1)
+        : [];
+    const textTextureCanvas = buildTextCanvas(
+      product === "maraca" ? maracaTextLayersLeft : textLayers,
+      product,
+      textBackgroundPaint,
+      {
       backgroundMode: product === "guiro" ? "white" : "paint",
       enhanceLightTextOnChrome: product === "campana" && campanaType === "cromada",
-    });
+      }
+    );
     const guiroFaceLayers: Record<"front_up" | "front_down" | "left" | "right", TextLayer3D[]> = {
       front_up: [],
       front_down: [],
@@ -805,7 +1114,7 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
     };
     if (product === "guiro") {
       for (const layer of textLayers) {
-        const face = layer.face || "front_up";
+        const face = isGuiroFace(layer.face) ? layer.face : "front_up";
         guiroFaceLayers[face].push(layer);
       }
     }
@@ -883,6 +1192,30 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
       if (byViewer) return byViewer;
       return tryFactory("model.createTexture", textureFromModelFactory);
     };
+    const createStaticTextureFromCanvas = async (canvas: HTMLCanvasElement, textureLabel: string) => {
+      const textureDataUrl = canvas.toDataURL("image/png");
+      try {
+        if (textureFromViewerFactory) {
+          const texture = await textureFromViewerFactory(textureDataUrl);
+          if (texture) return texture;
+        }
+      } catch (error) {
+        factoryErrors.push(
+          `${textureLabel} viewer.createTexture (data URL): ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+      try {
+        if (textureFromModelFactory) {
+          const texture = await textureFromModelFactory(textureDataUrl);
+          if (texture) return texture;
+        }
+      } catch (error) {
+        factoryErrors.push(
+          `${textureLabel} model.createTexture (data URL): ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+      return null;
+    };
 
     const paintTexture = await createTextureFromCanvas(paintTextureCanvas, "paint");
     const textTexture = await createTextureFromCanvas(textTextureCanvas, "text");
@@ -907,6 +1240,74 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
           return;
         }
         guiroTextTexturesByFace[face] = texture;
+      }
+    }
+    let maracaTextTextureRight: unknown = null;
+    if (product === "maraca") {
+      const maracaTextRightCanvas = buildTextCanvas(maracaTextLayersRight, product, textBackgroundPaint, {
+        backgroundMode: "paint",
+      });
+      if (maracaTextRightCanvas) {
+        maracaTextTextureRight = await createTextureFromCanvas(maracaTextRightCanvas, "text-maraca-right");
+        if (sequence !== textureSequenceRef.current) return;
+      }
+    }
+    let maracaRibbonTexture: unknown = maracaRibbonLabelTextureRef.current;
+    if (product === "maraca" && maracaRibbonMaterials.length && !maracaRibbonTexture) {
+      const ribbonCanvas = buildMaracaRibbonLabelCanvas(MARACA_RIBBON_LABEL_TEXT);
+      if (ribbonCanvas) {
+        maracaRibbonTexture = await createStaticTextureFromCanvas(ribbonCanvas, "maraca-ribbon-label");
+        if (sequence !== textureSequenceRef.current) return;
+        maracaRibbonLabelTextureRef.current = maracaRibbonTexture || null;
+      }
+    }
+    let maracaLogoTexture: unknown = maracaLogoTextureRef.current;
+    if (product === "maraca" && maracaLogoMaterials.length && !maracaLogoTexture) {
+      const ensureMaracaStickerImage = async () => {
+        if (maracaStickerImageRef.current) return maracaStickerImageRef.current;
+        if (!maracaStickerImagePromiseRef.current) {
+          maracaStickerImagePromiseRef.current = new Promise<HTMLImageElement>((resolve, reject) => {
+            const image = new window.Image();
+            image.onload = () => {
+              maracaStickerImageRef.current = image;
+              resolve(image);
+            };
+            image.onerror = () => reject(new Error("No se pudo cargar logo-kensar-sticker.png"));
+            image.src = MARACA_HEAD_STICKER_TEXTURE_SRC;
+          });
+        }
+        return maracaStickerImagePromiseRef.current;
+      };
+      try {
+        const logoImage = await ensureMaracaStickerImage();
+        const cleanedLogoCanvas = removeEdgeConnectedNeutralBackground(logoImage);
+        const logoCanvas = document.createElement("canvas");
+        // En este modelo, la zona del logo no puede ser transparente (se ve hueca).
+        // Base con el mismo color/gradiente, pero sin costuras para evitar repetición en el parche.
+        logoCanvas.width = paintTextureCanvas.width;
+        logoCanvas.height = paintTextureCanvas.height;
+        const logoContext = logoCanvas.getContext("2d");
+        if (logoContext) {
+          logoContext.clearRect(0, 0, logoCanvas.width, logoCanvas.height);
+          paintCanvasBackground(logoContext, logoCanvas.width, logoCanvas.height, paintConfig);
+          logoContext.save();
+          logoContext.globalAlpha = MARACA_HEAD_STICKER_OPACITY;
+          // source-over preserva el blanco del logo.
+          logoContext.globalCompositeOperation = "source-over";
+          logoContext.drawImage(
+            cleanedLogoCanvas || logoImage,
+            0,
+            0,
+            logoCanvas.width,
+            logoCanvas.height
+          );
+          logoContext.restore();
+          maracaLogoTexture = await createStaticTextureFromCanvas(logoCanvas, "maraca-logo-placeholder");
+          if (sequence !== textureSequenceRef.current) return;
+          maracaLogoTextureRef.current = maracaLogoTexture || null;
+        }
+      } catch {
+        maracaLogoTexture = null;
       }
     }
 
@@ -944,7 +1345,53 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
       : paintMaterial
         ? applyTextureToMaterial(paintMaterial, paintTexture)
         : false;
+    if (product === "maraca" && maracaRibbonMaterials.length && maracaRibbonTexture) {
+      const materialName = maracaRibbonMaterials.map((material) => (material.name || "").trim()).join("|");
+      const needsApply =
+        !maracaRibbonLabelAppliedRef.current || maracaRibbonLabelMaterialNameRef.current !== materialName;
+      maracaRibbonLabelApplied = needsApply
+        ? maracaRibbonMaterials.every((material) => applyTextureToMaterial(material, maracaRibbonTexture))
+        : true;
+      if (maracaRibbonLabelApplied) {
+        maracaRibbonLabelAppliedRef.current = true;
+        maracaRibbonLabelMaterialNameRef.current = materialName;
+        for (const material of maracaRibbonMaterials) {
+          material.pbrMetallicRoughness?.setBaseColorFactor?.([1, 1, 1, 1]);
+          material.pbrMetallicRoughness?.setMetallicFactor?.(0);
+          material.pbrMetallicRoughness?.setRoughnessFactor?.(1);
+        }
+      }
+    }
+    if (product === "maraca" && maracaLogoMaterials.length && maracaLogoTexture) {
+      const materialName = maracaLogoMaterials.map((material) => (material.name || "").trim()).join("|");
+      const needsApply = !maracaLogoAppliedRef.current || maracaLogoMaterialNameRef.current !== materialName;
+      maracaLogoApplied = needsApply
+        ? maracaLogoMaterials.every((material) => applyTextureToMaterial(material, maracaLogoTexture, true))
+        : true;
+      if (maracaLogoApplied) {
+        maracaLogoAppliedRef.current = true;
+        maracaLogoMaterialNameRef.current = materialName;
+        for (const material of maracaLogoMaterials) {
+          const logoMaterial = material as {
+            setAlphaMode?: (mode: "OPAQUE" | "MASK" | "BLEND") => void;
+            setDoubleSided?: (value: boolean) => void;
+            setAlphaCutoff?: (value: number) => void;
+          };
+          logoMaterial.setAlphaMode?.("OPAQUE");
+          logoMaterial.setDoubleSided?.(false);
+          material.pbrMetallicRoughness?.setBaseColorFactor?.([1, 1, 1, 1]);
+        }
+      }
+    }
     let textApplied = applyTextureToMaterial(textMaterial, textTexture, true);
+    if (product === "maraca") {
+      const leftApplied = maracaTextMaterialLeft ? applyTextureToMaterial(maracaTextMaterialLeft, textTexture, true) : false;
+      const rightTexture = maracaTextTextureRight || textTexture;
+      const rightApplied = maracaTextMaterialRight
+        ? applyTextureToMaterial(maracaTextMaterialRight, rightTexture, true)
+        : false;
+      textApplied = leftApplied || rightApplied;
+    }
     if (product === "guiro") {
       textApplied = true;
       for (const face of ["front_up", "front_down", "left", "right"] as const) {
@@ -963,9 +1410,9 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
       return;
     }
     setDebugSummary(
-      `OK text+paint | Capas: ${textLayers.length} | Modo pintura: ${paintConfig.mode} | Materiales: ${materialNames.join(", ")}${usesSingleMaterialFallback ? " | Fallback: un solo material (paint+text)" : ""}${product === "guiro" ? ` | Caras texto: ${guiroTextFacesApplied.join(", ") || "sin caras"} | Madera: ${guiroWoodTintApplied ? "ok" : "no encontrada"} | Dientes mate: ${guiroTeethMatteApplied ? "ok" : "no encontrados"}` : ""}`
+      `OK text+paint | Capas: ${textLayers.length} | Modo pintura: ${paintConfig.mode} | Materiales: ${materialNames.join(", ")}${usesSingleMaterialFallback ? " | Fallback: un solo material (paint+text)" : ""}${product === "guiro" ? ` | Caras texto: ${guiroTextFacesApplied.join(", ") || "sin caras"} | Madera: ${guiroWoodTintApplied ? "ok" : "no encontrada"} | Dientes mate: ${guiroTeethMatteApplied ? "ok" : "no encontrados"}` : ""}${product === "maraca" ? ` | Cabeza pintable: ${maracaHeadPaintApplied ? "ok" : "no encontrada"} | Cinta fija: ${maracaRibbonFixedApplied ? "ok" : "no encontrada"} | Cinta label: ${maracaRibbonLabelApplied ? "ok" : "no aplicado"} | Logo placeholder: ${maracaLogoApplied ? "ok" : "no aplicado"} | Madera fija: ${maracaWoodFixedApplied ? "ok" : "no encontrada"} | Madera txt base: ${maracaWoodTextBaseApplied ? "ok" : "no encontrada"}` : ""}`
     );
-  }, [buildPaintCanvas, buildTextCanvas, campanaType, paintConfig, product, textLayers]);
+  }, [buildPaintCanvas, buildTextCanvas, campanaType, paintCanvasBackground, paintConfig, product, textLayers]);
 
   useEffect(() => {
     const viewer = modelViewerRef.current;
@@ -997,12 +1444,28 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
     cameraStateRef.current = defaultCameraState;
     cameraTargetRef.current = DEFAULT_CAMERA_TARGET;
     focusSnapshotRef.current = null;
+    maracaRibbonLabelTextureRef.current = null;
+    maracaRibbonLabelMaterialNameRef.current = "";
+    maracaRibbonLabelAppliedRef.current = false;
+    maracaLogoTextureRef.current = null;
+    maracaLogoMaterialNameRef.current = "";
+    maracaLogoAppliedRef.current = false;
     setIsUpsideDown(false);
     queueMicrotask(() => {
       applyCameraState(defaultCameraState);
       applyCameraTarget(DEFAULT_CAMERA_TARGET);
     });
   }, [applyCameraState, applyCameraTarget, modelSrc, product]);
+
+  useEffect(() => {
+    if (product !== "maraca") return;
+    // El logo placeholder depende del color activo de la cabeza.
+    // Si no invalidamos cache, puede quedarse con el color anterior.
+    maracaLogoTextureRef.current = null;
+    maracaLogoMaterialNameRef.current = "";
+    maracaLogoAppliedRef.current = false;
+    void applyModelCustomization();
+  }, [applyModelCustomization, paintConfig, product]);
 
   useEffect(() => {
     if (focusOnText) {
@@ -1029,21 +1492,36 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
         TEXT_FOCUS_TARGET_MIN,
         TEXT_FOCUS_TARGET_MAX
       );
+      const maracaFaceOffsetX =
+        product === "maraca" && (activeTextFace === "maraca_left" || activeTextFace === "maraca_right")
+          ? MARACA_TEXT_FOCUS_X_BY_FACE[activeTextFace]
+          : 0;
+      const baseTarget = product === "maraca" ? MARACA_TEXT_FOCUS_BASE_TARGET : { x: 0, y: 0 };
       const targetY = clampValue(
+        baseTarget.y +
         -normalizedFocusY * focusGain.yGain * zoomCompensation,
+        TEXT_FOCUS_TARGET_MIN,
+        TEXT_FOCUS_TARGET_MAX
+      );
+      const targetXWithBase = clampValue(
+        targetX + baseTarget.x + maracaFaceOffsetX,
         TEXT_FOCUS_TARGET_MIN,
         TEXT_FOCUS_TARGET_MAX
       );
       const nextCamera = {
         ...cameraStateRef.current,
         theta:
-          product === "guiro"
+          product === "guiro" &&
+          (activeTextFace === "front_up" ||
+            activeTextFace === "front_down" ||
+            activeTextFace === "left" ||
+            activeTextFace === "right")
             ? GUIRO_FACE_THETA_BY_FACE[activeTextFace]
             : focusCamera.theta,
         phi: focusCamera.phi,
         radius: focusedRadius,
       };
-      const nextTarget = { x: targetX, y: targetY };
+      const nextTarget = { x: targetXWithBase, y: targetY };
       cameraStateRef.current = nextCamera;
       cameraTargetRef.current = nextTarget;
       applyCameraState(nextCamera);

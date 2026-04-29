@@ -82,9 +82,6 @@ export default function CommerceSlider({ slides, categories, intervalMs = 8000 }
     setIsAnimating(false);
   }
 
-  const firstCategoryLink = categories[0]?.href || "/catalogo";
-  const firstCategoryName = categories[0]?.name || "categorias";
-
   return (
     <section className="commerce-slider-block" aria-label="Slider principal">
       <div className="commerce-slider-placeholder">
@@ -165,14 +162,6 @@ export default function CommerceSlider({ slides, categories, intervalMs = 8000 }
             <h2>Explora por tipo de producto</h2>
             <p>Elige una categoria y compra mas rapido.</p>
           </div>
-          <div className="commerce-featured-intro-actions">
-            <Link href="/catalogo" className="commerce-featured-intro-cta is-primary">
-              Explorar catalogo
-            </Link>
-            <Link href={firstCategoryLink} className="commerce-featured-intro-cta is-secondary">
-              Ver {firstCategoryName}
-            </Link>
-          </div>
         </div>
 
         <div className="commerce-featured-categories" aria-label="Categorias principales">
@@ -190,10 +179,6 @@ export default function CommerceSlider({ slides, categories, intervalMs = 8000 }
               <h3>{category.name}</h3>
             </Link>
           ))}
-        </div>
-
-        <div className="commerce-featured-more">
-          <Link href="/catalogo">Ver mas</Link>
         </div>
       </div>
     </section>

@@ -7122,7 +7122,7 @@ body.mini-cart-open .main-wrapper {
   width: 100%;
   max-width: 1560px;
   margin: 0 auto;
-  padding: 0 72px;
+  padding: 0 72px 44px;
 }
 
 .commerce-featured-intro {
@@ -8301,7 +8301,7 @@ body.mini-cart-open .main-wrapper {
 .home-product-carousel-item {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .home-product-carousel-item .catalog-product-card-live {
@@ -8360,31 +8360,27 @@ body.mini-cart-open .main-wrapper {
 }
 
 .home-product-carousel-track.is-step-next .home-product-carousel-item {
-  animation: homeCarouselStepNext 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: homeCarouselStepNext 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .home-product-carousel-track.is-step-prev .home-product-carousel-item {
-  animation: homeCarouselStepPrev 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: homeCarouselStepPrev 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes homeCarouselStepNext {
   from {
-    opacity: 0;
-    transform: translateX(14px);
+    transform: translateX(10px);
   }
   to {
-    opacity: 1;
     transform: translateX(0);
   }
 }
 
 @keyframes homeCarouselStepPrev {
   from {
-    opacity: 0;
-    transform: translateX(-14px);
+    transform: translateX(-10px);
   }
   to {
-    opacity: 1;
     transform: translateX(0);
   }
 }
@@ -8446,7 +8442,8 @@ body.mini-cart-open .main-wrapper {
 }
 
 .home-product-carousel-item .catalog-product-card-media {
-  padding: 12px 12px 0;
+  height: calc(var(--storefront-product-card-media-height) - 34px);
+  padding: 10px 10px 0;
 }
 
 .home-product-carousel-item .catalog-badge-stack {
@@ -8465,12 +8462,12 @@ body.mini-cart-open .main-wrapper {
 
 .catalog-product-grid.commerce-discover-grid .catalog-product-card-body,
 .home-product-carousel-item .catalog-product-card-body {
-  padding: 11px 11px 12px;
-  gap: 7px;
+  padding: 9px 9px 9px;
+  gap: 5px;
   display: grid;
   grid-template-rows: minmax(18px, auto) minmax(2.1em, auto) minmax(2.1em, auto) 14px 24px;
   align-content: start;
-  min-height: 168px;
+  min-height: 146px;
 }
 
 .home-product-carousel-item .catalog-product-meta {
@@ -8483,12 +8480,12 @@ body.mini-cart-open .main-wrapper {
 }
 
 .home-product-carousel-item .catalog-product-card-body h3 {
-  font-size: 0.8rem;
+  font-size: 0.73rem;
 }
 
 .home-product-carousel-item .catalog-product-description {
-  font-size: 0.7rem;
-  min-height: 30px;
+  font-size: 0.62rem;
+  min-height: 26px;
 }
 
 .home-product-carousel-item .catalog-product-compare-price {
@@ -8505,7 +8502,7 @@ body.mini-cart-open .main-wrapper {
 }
 
 .home-product-carousel-item .catalog-product-price-row strong {
-  font-size: 0.9rem;
+  font-size: 0.81rem;
 }
 
 .home-product-carousel-item .catalog-product-price-row span {
@@ -8936,6 +8933,7 @@ body.mini-cart-open .main-wrapper {
   .commerce-featured-shell {
     padding-left: 38px;
     padding-right: 38px;
+    padding-bottom: 36px;
   }
 
   .commerce-featured-intro {
@@ -9381,6 +9379,7 @@ body.mini-cart-open .main-wrapper {
   .commerce-featured-shell {
     padding-left: 16px;
     padding-right: 16px;
+    padding-bottom: 28px;
   }
 
   .commerce-featured-card h3 {
@@ -11775,9 +11774,9 @@ body.mini-cart-open .main-wrapper {
 
 .catalog-product-grid.storefront-grid .catalog-product-card-body {
   padding: 11px 11px 12px;
-  gap: 7px;
+  gap: 8px;
   display: grid;
-  grid-template-rows: minmax(18px, auto) minmax(2.1em, auto) minmax(2.1em, auto) 14px 24px;
+  grid-template-rows: minmax(18px, auto) minmax(2.6em, auto) 16px 26px;
   align-content: start;
   min-height: 168px;
 }
@@ -11792,7 +11791,8 @@ body.mini-cart-open .main-wrapper {
 }
 
 .catalog-product-grid.storefront-grid .catalog-product-card-body h3 {
-  font-size: 0.8rem;
+  font-size: 0.92rem;
+  line-height: 1.34;
 }
 
 .catalog-product-grid.storefront-grid .catalog-product-description {
@@ -11801,20 +11801,21 @@ body.mini-cart-open .main-wrapper {
 }
 
 .catalog-product-grid.storefront-grid .catalog-product-compare-price {
-  min-height: 12px;
+  min-height: 16px;
 }
 
 .catalog-product-grid.storefront-grid .catalog-product-compare-price del {
-  font-size: 0.64rem;
+  font-size: 0.72rem;
 }
 
 .catalog-product-grid.storefront-grid .catalog-product-price-row {
-  min-height: 21px;
+  min-height: 26px;
   gap: 12px;
 }
 
 .catalog-product-grid.storefront-grid .catalog-product-price-row strong {
-  font-size: 0.9rem;
+  font-size: 1.08rem;
+  line-height: 1.08;
 }
 
 .catalog-product-grid.storefront-grid .catalog-product-price-row span {

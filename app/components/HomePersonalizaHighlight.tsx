@@ -5,9 +5,8 @@ import { PERSONALIZABLE_PRODUCTS } from "@/app/personaliza/_config/presets";
 
 const PERSONALIZABLE_FAMILIES = PERSONALIZABLE_PRODUCTS.map((item) => ({
   ...item,
-  description:
-    item.id === "maraca" ? "Disponible pronto en el editor." : item.description,
-  isComingSoon: item.id === "maraca",
+  description: item.description,
+  isComingSoon: false,
   shortLabel:
     item.id === "campana" ? "Campana" : item.id === "guiro" ? "Guiro" : "Maracas",
 }));
@@ -42,6 +41,7 @@ export default function HomePersonalizaHighlight() {
                     alt={item.name}
                     fill
                     sizes="(max-width: 900px) 44vw, 22vw"
+                    unoptimized
                     className={styles.mediaImage}
                   />
                 </div>
@@ -52,7 +52,8 @@ export default function HomePersonalizaHighlight() {
           ) : (
             <div key={item.id} className={styles.item}>
               <Link
-                href="/personaliza"
+                href={item.id === "campana" ? "/personaliza?seleccion=campana" : `/personaliza?producto=${item.id}`}
+                scroll
                 className={styles.circleButton}
                 aria-label={`Personalizar ${item.name}`}
               >
@@ -62,6 +63,7 @@ export default function HomePersonalizaHighlight() {
                     alt={item.name}
                     fill
                     sizes="(max-width: 900px) 44vw, 22vw"
+                    unoptimized
                     className={styles.mediaImage}
                   />
                 </div>

@@ -36,8 +36,6 @@ export default function CatalogProductCard({
 }) {
   const discountBadge = getDiscountBadgeText(product);
   const commercialBadge = product.badge_text?.trim() || null;
-  const cardDescription =
-    product.long_description?.trim() || "Sin descripción comercial.";
   const detailHref = catalogReturnTo
     ? `/catalogo/${product.slug}?returnTo=${encodeURIComponent(catalogReturnTo)}`
     : `/catalogo/${product.slug}`;
@@ -86,7 +84,6 @@ export default function CatalogProductCard({
             )}
           </div>
           <h3>{product.name}</h3>
-          <p className="catalog-product-description">{cardDescription}</p>
 
           <div className={`catalog-product-compare-price${product.compare_price ? "" : " is-empty"}`}>
             {product.compare_price ? <del>{formatCatalogPrice(product.compare_price)}</del> : null}

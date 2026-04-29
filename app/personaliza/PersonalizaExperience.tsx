@@ -14,6 +14,7 @@ import {
   PERSONALIZABLE_SIZES,
   STYLE_PRESETS,
   resolvePersonalizableCheckoutBinding,
+  type PersonalizationBindingsMap,
   type PersonalizableProductType,
   type PersonalizableSize,
 } from "./_config/presets";
@@ -31,12 +32,14 @@ type TextColorOption = {
   hex: string;
 };
 type GuiroTextFace = "front_up" | "front_down" | "left" | "right";
+type MaracaTextFace = "maraca_left" | "maraca_right";
+type TextFace = GuiroTextFace | MaracaTextFace;
 type TextLayerState = {
   id: string;
   text: string;
   color: string;
   fontId: string;
-  face: GuiroTextFace;
+  face: TextFace;
   lockScale: boolean;
   scaleRatio: number;
   transform: {
@@ -105,6 +108,10 @@ const TEXT_COLOR_OPTIONS: TextColorOption[] = [
   { id: "blue", label: "Azul", hex: "#60a5fa" },
   { id: "custom", label: "Personalizado", hex: "" },
 ];
+const MARACA_LOCKED_TEXT_COLOR = "#553D00";
+const MARACA_LOCKED_ROTATION = -90;
+const MARACA_EDITOR_WOOD_GRADIENT =
+  "linear-gradient(90deg, #ad8359 0%, #d6b48a 22%, #c8a77c 57%, #9f754f 100%)";
 const FIXED_GRADIENT_ANGLE = 90;
 const TEXT_OFFSET_X_MIN = -24;
 const TEXT_OFFSET_X_MAX = 24;
@@ -114,13 +121,20 @@ const TEXT_SCALE_MIN = 40;
 const TEXT_SCALE_MAX = 180;
 const TEXT_ROTATION_MIN = -180;
 const TEXT_ROTATION_MAX = 180;
+const EDITOR_OFFSET_X_TO_PX = 3.1;
+const EDITOR_OFFSET_Y_TO_PX = 2.4;
 const MAX_TEXT_LAYERS = 2;
 const MAX_TEXT_LAYERS_GUIRO = 4;
+const MAX_TEXT_LAYERS_MARACA = 2;
 const GUIRO_TEXT_FACE_OPTIONS: Array<{ id: GuiroTextFace; label: string }> = [
   { id: "front_up", label: "Frente superior" },
   { id: "front_down", label: "Frente inferior" },
   { id: "left", label: "Lateral izquierda" },
   { id: "right", label: "Lateral derecha" },
+];
+const MARACA_TEXT_FACE_OPTIONS: Array<{ id: MaracaTextFace; label: string }> = [
+  { id: "maraca_left", label: "Maraca izquierda" },
+  { id: "maraca_right", label: "Maraca derecha" },
 ];
 const QUICK_SYMBOL_OPTIONS = ["♥", "★", "☆", "✦", "♪", "♫", "✚", "☀", "⚡", "∞"] as const;
 const HISTORY_LIMIT = 80;
@@ -206,6 +220,13 @@ function clampTextLength(value: string): string {
   return Array.from(value).slice(0, CUSTOM_TEXT_MAX_LENGTH).join("");
 }
 
+function normalizeAngleDeg(angle: number): number {
+  let normalized = angle;
+  while (normalized > 180) normalized -= 360;
+  while (normalized < -180) normalized += 360;
+  return normalized;
+}
+
 function resolveTextColorOptionId(color: string): string {
   const normalized = color.trim().toLowerCase();
   const matched = TEXT_COLOR_OPTIONS.find(
@@ -218,6 +239,11 @@ function getNextGuiroFace(currentLayers: TextLayerState[]): GuiroTextFace {
   const usedFaces = new Set(currentLayers.map((layer) => layer.face));
   const available = GUIRO_TEXT_FACE_OPTIONS.find((option) => !usedFaces.has(option.id));
   return available?.id || "front_up";
+}
+
+function getNextMaracaFace(currentLayers: TextLayerState[]): MaracaTextFace {
+  const used = new Set(currentLayers.map((layer) => layer.face));
+  return used.has("maraca_left") ? "maraca_right" : "maraca_left";
 }
 
 function normalizeHexColor(value: string): string {
@@ -241,7 +267,8 @@ function cleanTraceLine(value: string): string {
   return line;
 }
 
-function getDefaultRotationByFace(face: GuiroTextFace): number {
+function getDefaultRotationByFace(face: TextFace): number {
+  if (face === "maraca_left" || face === "maraca_right") return MARACA_LOCKED_ROTATION;
   return face === "left" || face === "right" ? -90 : 0;
 }
 
@@ -309,6 +336,8 @@ export default function PersonalizaExperience() {
   const [positionPresetId, setPositionPresetId] = useState<(typeof POSITION_PRESET_OPTIONS)[number]["id"]>("center");
   const [textColorOptionId, setTextColorOptionId] = useState<string>("custom");
   const [isDraggingText, setIsDraggingText] = useState(false);
+  const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
+  const [editingTextValue, setEditingTextValue] = useState("");
   const [isDesktop, setIsDesktop] = useState(true);
   const [addToCartStatus, setAddToCartStatus] = useState<PurchaseStatus>("idle");
   const [purchaseStatus, setPurchaseStatus] = useState<PurchaseStatus>("idle");
@@ -317,32 +346,58 @@ export default function PersonalizaExperience() {
   const [isDownloadingPreview, setIsDownloadingPreview] = useState(false);
   const [isModelUpsideDown, setIsModelUpsideDown] = useState(false);
   const [isFloatingDockVisible, setIsFloatingDockVisible] = useState(false);
+  const [showExitGuardModal, setShowExitGuardModal] = useState(false);
+  const [pendingExitHref, setPendingExitHref] = useState<string | null>(null);
+  const [isCurrentDesignInCart, setIsCurrentDesignInCart] = useState(false);
+  const [designBaselineSignature, setDesignBaselineSignature] = useState<string | null>(null);
+  const [checkoutBindingsMap, setCheckoutBindingsMap] = useState<PersonalizationBindingsMap | null>(null);
   const [historyPast, setHistoryPast] = useState<EditorSnapshot[]>([]);
   const [historyFuture, setHistoryFuture] = useState<EditorSnapshot[]>([]);
   const selectorGridRef = useRef<HTMLElement | null>(null);
   const campanaCardRef = useRef<HTMLButtonElement | null>(null);
   const campanaTypeSectionRef = useRef<HTMLDivElement | null>(null);
   const dockVisibilityTriggerRef = useRef<HTMLDivElement | null>(null);
+  const editorCanvasRef = useRef<HTMLDivElement | null>(null);
+  const textInputRef = useRef<HTMLInputElement | null>(null);
   const preview3DRef = useRef<ModelPreview3DHandle | null>(null);
   const isApplyingHistoryRef = useRef(false);
   const lastSnapshotRef = useRef<EditorSnapshot | null>(null);
   const pendingHistoryStartRef = useRef<EditorSnapshot | null>(null);
   const historyCommitTimerRef = useRef<number | null>(null);
   const historyBatchDepthRef = useRef(0);
+  const lastAddedDesignSignatureRef = useRef<string | null>(null);
+  const shouldAutoFocusCampanaOptionsRef = useRef(false);
+  const baselineSessionKeyRef = useRef<string | null>(null);
   const dragStateRef = useRef<{
     pointerId: number | null;
+    mode: "move" | "scale" | "rotate";
     originOffsetX: number;
     originOffsetY: number;
+    originScaleX: number;
+    originScaleY: number;
+    originRotation: number;
     startClientX: number;
     startClientY: number;
+    startAngleDeg: number;
+    centerX: number;
+    centerY: number;
+    startDistanceToCenter: number;
     surfaceWidth: number;
     surfaceHeight: number;
   }>({
     pointerId: null,
+    mode: "move",
     originOffsetX: 0,
     originOffsetY: 0,
+    originScaleX: 100,
+    originScaleY: 100,
+    originRotation: 0,
     startClientX: 0,
     startClientY: 0,
+    startAngleDeg: 0,
+    centerX: 0,
+    centerY: 0,
+    startDistanceToCenter: 1,
     surfaceWidth: 1,
     surfaceHeight: 1,
   });
@@ -352,18 +407,60 @@ export default function PersonalizaExperience() {
   const selectedCampanaTypeFromQuery = (searchParams.get("tipoCampana") || "")
     .trim()
     .toLowerCase();
+  const selectedInstrumentPromptFromQuery = (searchParams.get("seleccion") || "")
+    .trim()
+    .toLowerCase();
   const selectedCampanaType = selectedCampanaTypeFromQuery === "cromada" ? "cromada" : "clasica";
   const isCromadaVariant = selectedProductFromQuery === "campana" && selectedCampanaType === "cromada";
   const isCampanaVariant = selectedProductFromQuery === "campana";
   const isGuiroVariant = product === "guiro";
+  const isMaracaVariant = product === "maraca";
   const isProductSelected =
     selectedProductFromQuery === "campana" ||
     selectedProductFromQuery === "guiro" ||
     selectedProductFromQuery === "maraca";
-  const maxTextLayers = isGuiroVariant ? MAX_TEXT_LAYERS_GUIRO : MAX_TEXT_LAYERS;
+  const shouldOpenCampanaSelector = !isProductSelected && selectedInstrumentPromptFromQuery === "campana";
+  const maxTextLayers = isGuiroVariant
+    ? MAX_TEXT_LAYERS_GUIRO
+    : isMaracaVariant
+      ? MAX_TEXT_LAYERS_MARACA
+      : MAX_TEXT_LAYERS;
   const query = searchParams.toString();
+  const editorSessionKey = `${selectedProductFromQuery || "none"}:${selectedCampanaTypeFromQuery || "clasica"}`;
   const returnTo = `${pathname}${query ? `?${query}` : ""}`;
   const checkoutHref = `/pago?returnTo=${encodeURIComponent(returnTo)}`;
+  const designVisualSignature = useMemo(
+    () =>
+      JSON.stringify({
+        size,
+        campanaBellType,
+        paintMode,
+        solidColorSource,
+        solidPresetId,
+        solidPaintColor,
+        gradientPresetId,
+        gradientStartColor,
+        gradientEndColor,
+        gradientPosition,
+        textLayers,
+      }),
+    [
+      campanaBellType,
+      gradientEndColor,
+      gradientPosition,
+      gradientPresetId,
+      gradientStartColor,
+      paintMode,
+      size,
+      solidColorSource,
+      solidPaintColor,
+      solidPresetId,
+      textLayers,
+    ]
+  );
+  const hasDesignChanges =
+    isProductSelected && designBaselineSignature !== null && designVisualSignature !== designBaselineSignature;
+  const shouldWarnExit = Boolean(hasDesignChanges && !isCurrentDesignInCart);
 
   useEffect(() => {
     const media = window.matchMedia("(min-width: 1024px)");
@@ -379,12 +476,87 @@ export default function PersonalizaExperience() {
   }, [isProductSelected, selectedProductFromQuery]);
 
   useEffect(() => {
+    if (!isProductSelected) {
+      setDesignBaselineSignature(null);
+      baselineSessionKeyRef.current = null;
+      return;
+    }
+    if (baselineSessionKeyRef.current === editorSessionKey) return;
+    baselineSessionKeyRef.current = editorSessionKey;
+    setDesignBaselineSignature(designVisualSignature);
+  }, [designVisualSignature, editorSessionKey, isProductSelected]);
+
+  useEffect(() => {
+    if (!isProductSelected) return;
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, [isProductSelected, selectedProductFromQuery, selectedCampanaType]);
+
+  useEffect(() => {
+    if (!isProductSelected) {
+      setIsCurrentDesignInCart(false);
+      lastAddedDesignSignatureRef.current = null;
+      return;
+    }
+    const isSaved = lastAddedDesignSignatureRef.current === designVisualSignature;
+    setIsCurrentDesignInCart(isSaved);
+  }, [designVisualSignature, isProductSelected]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!shouldWarnExit) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    const handleDocumentClick = (event: MouseEvent) => {
+      if (!shouldWarnExit) return;
+      if (event.defaultPrevented || event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const target = event.target as HTMLElement | null;
+      const anchor = target?.closest("a[href]") as HTMLAnchorElement | null;
+      if (!anchor || anchor.target === "_blank" || anchor.hasAttribute("download")) return;
+      const nextUrl = new URL(anchor.href, window.location.href);
+      if (nextUrl.origin !== window.location.origin) return;
+      const nextHref = `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
+      const currentHref = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      if (nextHref === currentHref) return;
+      event.preventDefault();
+      setPendingExitHref(nextHref);
+      setShowExitGuardModal(true);
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("click", handleDocumentClick, true);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("click", handleDocumentClick, true);
+    };
+  }, [shouldWarnExit]);
+
+  useEffect(() => {
     if (!showCampanaTypes) return;
     const frameId = window.requestAnimationFrame(() => {
       campanaTypeSectionRef.current?.scrollIntoView({
         behavior: "smooth",
         block: "start",
       });
+    });
+    return () => window.cancelAnimationFrame(frameId);
+  }, [showCampanaTypes]);
+
+  useEffect(() => {
+    if (!shouldOpenCampanaSelector) return;
+    shouldAutoFocusCampanaOptionsRef.current = true;
+    setShowCampanaTypes(true);
+  }, [shouldOpenCampanaSelector]);
+
+  useEffect(() => {
+    if (!showCampanaTypes) return;
+    if (!shouldAutoFocusCampanaOptionsRef.current) return;
+    const frameId = window.requestAnimationFrame(() => {
+      campanaTypeSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+      shouldAutoFocusCampanaOptionsRef.current = false;
     });
     return () => window.cancelAnimationFrame(frameId);
   }, [showCampanaTypes]);
@@ -433,6 +605,22 @@ export default function PersonalizaExperience() {
     return () => observer.disconnect();
   }, [isProductSelected]);
 
+  useEffect(() => {
+    let active = true;
+    fetch("/api/personaliza/bindings", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload) => {
+        if (!active || !payload || typeof payload !== "object" || Array.isArray(payload)) return;
+        setCheckoutBindingsMap(payload as PersonalizationBindingsMap);
+      })
+      .catch(() => {
+        // Keep code defaults if backend config is not available.
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const availableSizes = useMemo(() => {
     if (isCampanaVariant || product === "guiro") {
       return PERSONALIZABLE_SIZES.filter((item) => item.id === "small" || item.id === "large");
@@ -450,8 +638,12 @@ export default function PersonalizaExperience() {
     [availableSizes, size]
   );
   const selectedCheckoutBinding = useMemo(
-    () => resolvePersonalizableCheckoutBinding(product, selectedSize.id),
-    [product, selectedSize.id]
+    () =>
+      resolvePersonalizableCheckoutBinding(product, selectedSize.id, {
+        campanaType: selectedCampanaType,
+        bindingsMap: checkoutBindingsMap,
+      }),
+    [checkoutBindingsMap, product, selectedCampanaType, selectedSize.id]
   );
   const availableSolidPresets = useMemo(
     () => (isCromadaVariant ? CROMADA_TINT_PRESETS : SOLID_STYLE_PRESETS),
@@ -495,6 +687,9 @@ export default function PersonalizaExperience() {
     solidPaintColor,
   ]);
   const editorPaintSurfaceStyle = useMemo(() => {
+    if (product === "maraca") {
+      return { background: MARACA_EDITOR_WOOD_GRADIENT };
+    }
     if (paintConfig.mode === "solid") return { background: paintConfig.color };
     const blendCenter = Math.min(90, Math.max(10, paintConfig.position));
     const stopA = Math.max(0, blendCenter - 16);
@@ -528,8 +723,10 @@ export default function PersonalizaExperience() {
             const faceLabel =
               product === "guiro"
                 ? GUIRO_TEXT_FACE_OPTIONS.find((option) => option.id === layer.face)?.label || "Frente"
+                : product === "maraca"
+                  ? MARACA_TEXT_FACE_OPTIONS.find((option) => option.id === layer.face)?.label || "Maraca izquierda"
                 : "";
-            if (textLayers.length > 1 || product === "guiro") {
+            if (textLayers.length > 1 || product === "guiro" || product === "maraca") {
               return `Capa ${index + 1}${faceLabel ? ` (${faceLabel})` : ""}: ${value}`;
             }
             return value;
@@ -563,7 +760,7 @@ export default function PersonalizaExperience() {
   const activeLayerText = activeLayer?.text ?? "";
   const activeLayerColor = activeLayer?.color ?? "#ffffff";
   const activeLayerFontId = activeLayer?.fontId ?? TEXT_FONT_OPTIONS[0].id;
-  const activeLayerFace = activeLayer?.face ?? "front_up";
+  const activeLayerFace: TextFace = activeLayer?.face ?? (isMaracaVariant ? "maraca_left" : "front_up");
   const activeLayerLockScale = activeLayer?.lockScale ?? true;
   const activeLayerTransform = activeLayer?.transform ?? {
     scaleX: 100,
@@ -574,10 +771,10 @@ export default function PersonalizaExperience() {
   };
   const visibleEditorLayers = useMemo(
     () =>
-      isGuiroVariant
+      isGuiroVariant || isMaracaVariant
         ? textLayers.filter((layer) => layer.face === activeLayerFace)
         : textLayers,
-    [activeLayerFace, isGuiroVariant, textLayers]
+    [activeLayerFace, isGuiroVariant, isMaracaVariant, textLayers]
   );
   const shouldFocusTextIn3D = isGuiroVariant ? false : isTextInputFocused;
   const designTraceText = useMemo(() => {
@@ -603,6 +800,8 @@ export default function PersonalizaExperience() {
         const faceLabel =
           product === "guiro"
             ? GUIRO_TEXT_FACE_OPTIONS.find((option) => option.id === layer.face)?.label || "Frente"
+            : product === "maraca"
+              ? MARACA_TEXT_FACE_OPTIONS.find((option) => option.id === layer.face)?.label || "Maraca izquierda"
             : "Frente";
         const colorLabel = resolveTextColorLabel(layer.color);
         return `Capa ${index + 1} · Cara: ${faceLabel} · Color: ${colorLabel} · Texto: "${textValue}"`;
@@ -688,8 +887,10 @@ export default function PersonalizaExperience() {
   );
 
   useEffect(() => {
-    if (!isGuiroVariant || !isTextInputFocused) return;
-    preview3DRef.current?.focusGuiroFace(activeLayerFace);
+    if (!isTextInputFocused) return;
+    if (isGuiroVariant && (activeLayerFace === "front_up" || activeLayerFace === "front_down" || activeLayerFace === "left" || activeLayerFace === "right")) {
+      preview3DRef.current?.focusGuiroFace(activeLayerFace);
+    }
   }, [activeLayerFace, isGuiroVariant, isTextInputFocused]);
 
   const updateActiveLayer = useCallback(
@@ -758,9 +959,9 @@ export default function PersonalizaExperience() {
       {
         id: "layer-1",
         text: "",
-        color: STYLE_PRESETS[0]?.textColor || "#ffffff",
+        color: isMaracaVariant ? MARACA_LOCKED_TEXT_COLOR : STYLE_PRESETS[0]?.textColor || "#ffffff",
         fontId: TEXT_FONT_OPTIONS[0].id,
-        face: "front_up",
+        face: isMaracaVariant ? "maraca_left" : "front_up",
         lockScale: true,
         scaleRatio: 1,
         transform: {
@@ -768,14 +969,14 @@ export default function PersonalizaExperience() {
           scaleY: 100,
           offsetX: 0,
           offsetY: 0,
-          rotation: 0,
+          rotation: isMaracaVariant ? MARACA_LOCKED_ROTATION : 0,
         },
       },
     ]);
     setActiveLayerId("layer-1");
     setPositionPresetId("center");
     setTextColorOptionId("custom");
-  }, [availableSizes, availableSolidPresets]);
+  }, [availableSizes, availableSolidPresets, isMaracaVariant]);
 
   useEffect(() => {
     if (!isProductSelected) return;
@@ -906,15 +1107,14 @@ export default function PersonalizaExperience() {
     preview3DRef.current?.restoreFromCampanaBaseFocus();
   }
 
-  function addSecondTextLayer() {
-    if (textLayers.length >= maxTextLayers) return;
-    const nextFace = isGuiroVariant ? getNextGuiroFace(textLayers) : "front_up";
-    const newLayer: TextLayerState = {
+  function createTextLayerForFace(face: TextFace): TextLayerState {
+    const previousLayerColor = textLayers[textLayers.length - 1]?.color || "#ffffff";
+    return {
       id: `layer-${Date.now()}`,
       text: "",
-      color: "#ffffff",
+      color: isMaracaVariant ? MARACA_LOCKED_TEXT_COLOR : previousLayerColor,
       fontId: TEXT_FONT_OPTIONS[0].id,
-      face: nextFace,
+      face,
       lockScale: true,
       scaleRatio: 1,
       transform: {
@@ -922,9 +1122,19 @@ export default function PersonalizaExperience() {
         scaleY: 90,
         offsetX: 0,
         offsetY: 14,
-        rotation: getDefaultRotationByFace(nextFace),
+        rotation: isMaracaVariant ? MARACA_LOCKED_ROTATION : getDefaultRotationByFace(face),
       },
     };
+  }
+
+  function addSecondTextLayer() {
+    if (textLayers.length >= maxTextLayers) return;
+    const nextFace: TextFace = isGuiroVariant
+      ? getNextGuiroFace(textLayers)
+      : isMaracaVariant
+        ? getNextMaracaFace(textLayers)
+        : "front_up";
+    const newLayer = createTextLayerForFace(nextFace);
     setTextLayers((current) => [...current, newLayer]);
     setActiveLayerId(newLayer.id);
     setPositionPresetId("custom");
@@ -957,6 +1167,21 @@ export default function PersonalizaExperience() {
       },
     }));
   }, [activeLayer, activeLayerId, isGuiroVariant, updateActiveLayer]);
+  useEffect(() => {
+    if (!isMaracaVariant) return;
+    setTextLayers((current) =>
+      current.map((layer) => ({
+        ...layer,
+        color: MARACA_LOCKED_TEXT_COLOR,
+        transform: {
+          ...layer.transform,
+          rotation: MARACA_LOCKED_ROTATION,
+        },
+      }))
+    );
+    setTextColorOptionId("custom");
+  }, [isMaracaVariant]);
+
   useEffect(() => {
     setTextColorOptionId(resolveTextColorOptionId(activeLayerColor));
   }, [activeLayerColor]);
@@ -996,6 +1221,13 @@ export default function PersonalizaExperience() {
       setSolidPaintColor(resolve3DPaintColor(cromadaPreset.fill));
     }
   }, [isCromadaVariant, paintMode, solidColorSource, solidPresetId]);
+
+  useEffect(() => {
+    if (!isMaracaVariant) return;
+    if (paintMode !== "solid") {
+      setPaintMode("solid");
+    }
+  }, [isMaracaVariant, paintMode]);
 
   useEffect(() => {
     if (!isProductSelected) return;
@@ -1121,7 +1353,7 @@ export default function PersonalizaExperience() {
         scaleY: 100,
         offsetX: 0,
         offsetY: 0,
-        rotation: 0,
+        rotation: isMaracaVariant ? MARACA_LOCKED_ROTATION : 0,
       },
     }));
     setPositionPresetId("center");
@@ -1131,27 +1363,47 @@ export default function PersonalizaExperience() {
     if (preset === "center") {
       updateActiveLayer((layer) => ({
         ...layer,
-        transform: { ...layer.transform, offsetX: 0, offsetY: 0, rotation: 0 },
+        transform: {
+          ...layer.transform,
+          offsetX: 0,
+          offsetY: 0,
+          rotation: isMaracaVariant ? MARACA_LOCKED_ROTATION : 0,
+        },
       }));
       return;
     }
     if (preset === "top") {
       updateActiveLayer((layer) => ({
         ...layer,
-        transform: { ...layer.transform, offsetX: 0, offsetY: -12, rotation: 0 },
+        transform: {
+          ...layer.transform,
+          offsetX: 0,
+          offsetY: -12,
+          rotation: isMaracaVariant ? MARACA_LOCKED_ROTATION : 0,
+        },
       }));
       return;
     }
     if (preset === "bottom") {
       updateActiveLayer((layer) => ({
         ...layer,
-        transform: { ...layer.transform, offsetX: 0, offsetY: 12, rotation: 0 },
+        transform: {
+          ...layer.transform,
+          offsetX: 0,
+          offsetY: 12,
+          rotation: isMaracaVariant ? MARACA_LOCKED_ROTATION : 0,
+        },
       }));
       return;
     }
     updateActiveLayer((layer) => ({
       ...layer,
-      transform: { ...layer.transform, offsetX: 6, offsetY: 4, rotation: -10 },
+      transform: {
+        ...layer.transform,
+        offsetX: 6,
+        offsetY: 4,
+        rotation: isMaracaVariant ? MARACA_LOCKED_ROTATION : -10,
+      },
     }));
   }
 
@@ -1162,6 +1414,7 @@ export default function PersonalizaExperience() {
   }
 
   function handleTextColorOptionChange(value: string) {
+    if (isMaracaVariant) return;
     setTextColorOptionId(value);
     const selected = TEXT_COLOR_OPTIONS.find((option) => option.id === value);
     if (!selected || value === "custom" || !selected.hex) return;
@@ -1220,14 +1473,40 @@ export default function PersonalizaExperience() {
   }
 
   function handleEditorPointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    if (event.target === event.currentTarget) return;
+    if (editingLayerId) return;
+    if (event.detail >= 2) return;
+    const dragMode = (event.target as HTMLElement).dataset.dragMode as
+      | "move"
+      | "scale"
+      | "rotate"
+      | undefined;
+    if (!dragMode) return;
     const surface = event.currentTarget;
     const bounds = surface.getBoundingClientRect();
+    const activeLayerElement = (event.target as HTMLElement).closest(`.${styles.editorText}`) as HTMLElement | null;
+    const layerBounds = activeLayerElement?.getBoundingClientRect();
+    const centerX = layerBounds ? layerBounds.left + layerBounds.width / 2 : bounds.left + bounds.width / 2;
+    const centerY = layerBounds ? layerBounds.top + layerBounds.height / 2 : bounds.top + bounds.height / 2;
+    const startAngleDeg = Math.atan2(event.clientY - centerY, event.clientX - centerX) * (180 / Math.PI);
+    const startDistanceToCenter = Math.max(
+      Math.hypot(event.clientX - centerX, event.clientY - centerY),
+      1
+    );
     dragStateRef.current = {
       pointerId: event.pointerId,
+      mode: dragMode,
       originOffsetX: activeLayerTransform.offsetX,
       originOffsetY: activeLayerTransform.offsetY,
+      originScaleX: activeLayerTransform.scaleX,
+      originScaleY: activeLayerTransform.scaleY,
+      originRotation: activeLayerTransform.rotation,
       startClientX: event.clientX,
       startClientY: event.clientY,
+      startAngleDeg,
+      centerX,
+      centerY,
+      startDistanceToCenter,
       surfaceWidth: Math.max(bounds.width, 1),
       surfaceHeight: Math.max(bounds.height, 1),
     };
@@ -1237,10 +1516,55 @@ export default function PersonalizaExperience() {
 
   function handleEditorPointerMove(event: React.PointerEvent<HTMLDivElement>) {
     if (!isDraggingText || dragStateRef.current.pointerId !== event.pointerId) return;
+    if (dragStateRef.current.mode === "rotate") {
+      const currentAngleDeg =
+        Math.atan2(event.clientY - dragStateRef.current.centerY, event.clientX - dragStateRef.current.centerX) *
+        (180 / Math.PI);
+      const deltaAngle = normalizeAngleDeg(currentAngleDeg - dragStateRef.current.startAngleDeg);
+      const nextRotation = clampValue(
+        Math.round(normalizeAngleDeg(dragStateRef.current.originRotation + deltaAngle)),
+        -180,
+        180
+      );
+      setPositionPresetId("custom");
+      updateActiveLayer((layer) => ({
+        ...layer,
+        transform: {
+          ...layer.transform,
+          rotation: isMaracaVariant ? MARACA_LOCKED_ROTATION : nextRotation,
+        },
+      }));
+      return;
+    }
+    if (dragStateRef.current.mode === "scale") {
+      const currentDistanceToCenter = Math.max(
+        Math.hypot(
+          event.clientX - dragStateRef.current.centerX,
+          event.clientY - dragStateRef.current.centerY
+        ),
+        1
+      );
+      const scaleRatio = currentDistanceToCenter / dragStateRef.current.startDistanceToCenter;
+      const nextScale = clampValue(
+        Math.round(dragStateRef.current.originScaleX * scaleRatio),
+        TEXT_SCALE_MIN,
+        TEXT_SCALE_MAX
+      );
+      setPositionPresetId("custom");
+      updateActiveLayer((layer) => ({
+        ...layer,
+        transform: {
+          ...layer.transform,
+          scaleX: nextScale,
+          scaleY: layer.lockScale ? clampValue(Math.round(nextScale * layer.scaleRatio), TEXT_SCALE_MIN, TEXT_SCALE_MAX) : nextScale,
+        },
+      }));
+      return;
+    }
     const deltaX = event.clientX - dragStateRef.current.startClientX;
     const deltaY = event.clientY - dragStateRef.current.startClientY;
-    const mappedX = dragStateRef.current.originOffsetX + (deltaX / dragStateRef.current.surfaceWidth) * 60;
-    const mappedY = dragStateRef.current.originOffsetY + (deltaY / dragStateRef.current.surfaceHeight) * 60;
+    const mappedX = dragStateRef.current.originOffsetX + deltaX / EDITOR_OFFSET_X_TO_PX;
+    const mappedY = dragStateRef.current.originOffsetY + deltaY / EDITOR_OFFSET_Y_TO_PX;
     setPositionPresetId("custom");
     updateActiveLayer((layer) => ({
       ...layer,
@@ -1257,6 +1581,30 @@ export default function PersonalizaExperience() {
     setIsDraggingText(false);
     dragStateRef.current.pointerId = null;
     event.currentTarget.releasePointerCapture(event.pointerId);
+  }
+
+  function handleLayerDoubleClick(layerId: string) {
+    setActiveLayerId(layerId);
+    const layer = textLayers.find((item) => item.id === layerId);
+    setEditingLayerId(layerId);
+    setEditingTextValue(layer?.text || "");
+  }
+
+  function handleInlineEditorCommit() {
+    setIsTextInputFocused(false);
+    endHistoryBatch();
+    setEditingLayerId(null);
+  }
+
+  function handleInlineEditorCancel() {
+    if (editingLayerId) {
+      setTextLayers((current) =>
+        current.map((layer) => (layer.id === editingLayerId ? { ...layer, text: editingTextValue } : layer))
+      );
+    }
+    setIsTextInputFocused(false);
+    endHistoryBatch();
+    setEditingLayerId(null);
   }
 
   async function addCurrentPersonalizationToCart() {
@@ -1379,6 +1727,8 @@ export default function PersonalizaExperience() {
     try {
       setAddToCartStatus("sending");
       await addCurrentPersonalizationToCart();
+      lastAddedDesignSignatureRef.current = designVisualSignature;
+      setIsCurrentDesignInCart(true);
       setAddToCartStatus("success");
       router.push("/personaliza");
     } catch (error) {
@@ -1392,6 +1742,8 @@ export default function PersonalizaExperience() {
     try {
       setPurchaseStatus("sending");
       await addCurrentPersonalizationToCart();
+      lastAddedDesignSignatureRef.current = designVisualSignature;
+      setIsCurrentDesignInCart(true);
       setPurchaseStatus("success");
       router.push(checkoutHref);
     } catch (error) {
@@ -1421,6 +1773,46 @@ export default function PersonalizaExperience() {
 
   function handleCloseCampanaTypes() {
     closeCampanaTypesAndGoTop();
+  }
+
+  function handleChangeProductClick(event: React.MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    if (!shouldWarnExit) {
+      router.push("/personaliza");
+      return;
+    }
+    setPendingExitHref("/personaliza");
+    setShowExitGuardModal(true);
+  }
+
+  function handleConfirmExitNow() {
+    const nextHref = pendingExitHref;
+    setShowExitGuardModal(false);
+    setPendingExitHref(null);
+    if (nextHref) router.push(nextHref);
+  }
+
+  function handleContinueEditing() {
+    setShowExitGuardModal(false);
+    setPendingExitHref(null);
+  }
+
+  async function handleGuardAddToCart() {
+    if (addToCartStatus === "sending" || purchaseStatus === "sending") return;
+    try {
+      setAddToCartStatus("sending");
+      await addCurrentPersonalizationToCart();
+      lastAddedDesignSignatureRef.current = designVisualSignature;
+      setIsCurrentDesignInCart(true);
+      setAddToCartStatus("success");
+      setShowExitGuardModal(false);
+      const nextHref = pendingExitHref;
+      setPendingExitHref(null);
+      if (nextHref) router.push(nextHref);
+    } catch (error) {
+      setAddToCartStatus("error");
+      console.warn(error instanceof Error ? error.message : "No pudimos añadir esta personalización al carrito.");
+    }
   }
 
   if (!isDesktop) {
@@ -1466,7 +1858,6 @@ export default function PersonalizaExperience() {
           aria-label="Selecciona un tipo de instrumento"
         >
           {PERSONALIZABLE_PRODUCTS.map((item) => {
-            const isComingSoon = item.id === "maraca";
             return item.id === "campana" ? (
               <button
                 key={item.id}
@@ -1484,6 +1875,7 @@ export default function PersonalizaExperience() {
                     alt={item.name}
                     fill
                     sizes="(max-width: 1210px) 100vw, 33vw"
+                    unoptimized
                     className={styles.selectorMediaImage}
                   />
                 </div>
@@ -1492,31 +1884,11 @@ export default function PersonalizaExperience() {
                   <p>{item.description}</p>
                 </div>
               </button>
-            ) : isComingSoon ? (
-              <div
-                key={item.id}
-                className={`${styles.selectorCard} ${styles.selectorCardDisabled}`}
-                aria-disabled="true"
-              >
-                <div className={styles.selectorMedia}>
-                  <Image
-                    src={item.cardImage}
-                    alt={item.name}
-                    fill
-                    sizes="(max-width: 1210px) 100vw, 33vw"
-                    className={styles.selectorMediaImage}
-                  />
-                  <span className={styles.selectorSoonBadge}>Próximamente</span>
-                </div>
-                <div className={styles.selectorBody}>
-                  <h2>{item.name}</h2>
-                  <p>Disponible pronto en el editor.</p>
-                </div>
-              </div>
             ) : (
               <Link
                 key={item.id}
                 href={`/personaliza?producto=${item.id}`}
+                scroll
                 className={styles.selectorCard}
               >
                 <div className={styles.selectorMedia}>
@@ -1525,6 +1897,7 @@ export default function PersonalizaExperience() {
                     alt={item.name}
                     fill
                     sizes="(max-width: 1210px) 100vw, 33vw"
+                    unoptimized
                     className={styles.selectorMediaImage}
                   />
                 </div>
@@ -1559,6 +1932,7 @@ export default function PersonalizaExperience() {
               <Link
                 key={option.id}
                 href={`/personaliza?producto=campana&tipoCampana=${option.id}`}
+                scroll
                 className={`${styles.campanaTypeCard}${showCampanaTypes ? ` ${styles.campanaTypeCardVisible}` : ""}`}
                 style={{ transitionDelay: `${80 + index * 90}ms` }}
               >
@@ -1568,6 +1942,7 @@ export default function PersonalizaExperience() {
                     alt={option.name}
                     fill
                     sizes="(max-width: 1210px) 100vw, 50vw"
+                    unoptimized
                     className={`${styles.selectorMediaImage} ${styles.campanaTypeMediaImage}`}
                   />
                 </div>
@@ -1600,9 +1975,12 @@ export default function PersonalizaExperience() {
         <div className={styles.configPanel}>
           <div className={styles.productBadgeRow}>
             <span className={styles.productBadge}>Producto: {selectedProduct.name}</span>
-            <Link href="/personaliza" className={styles.changeProductLink}>
+            {isMaracaVariant ? (
+              <span className={styles.productBadge}>Tamaño: Único</span>
+            ) : null}
+            <button type="button" className={styles.changeProductLink} onClick={handleChangeProductClick}>
               Cambiar producto
-            </Link>
+            </button>
           </div>
 
           {isCampanaVariant ? (
@@ -1636,7 +2014,7 @@ export default function PersonalizaExperience() {
                 </select>
               </label>
             </div>
-          ) : (
+          ) : !isMaracaVariant ? (
             <label className={styles.fieldLabel}>
               Tamaño
               <select
@@ -1651,7 +2029,7 @@ export default function PersonalizaExperience() {
                 ))}
               </select>
             </label>
-          )}
+          ) : null}
 
           <div className={styles.fieldLabel}>
             Estilo
@@ -1663,7 +2041,7 @@ export default function PersonalizaExperience() {
               >
                 Un color
               </button>
-              {!isCromadaVariant ? (
+              {!isCromadaVariant && !isMaracaVariant ? (
                 <button
                   type="button"
                   className={`${styles.paintModeButton}${paintMode === "gradient" ? ` ${styles.paintModeButtonActive}` : ""}`}
@@ -1782,28 +2160,76 @@ export default function PersonalizaExperience() {
                       {`Capa ${index + 1}${
                         isGuiroVariant
                           ? ` · ${GUIRO_TEXT_FACE_OPTIONS.find((option) => option.id === layer.face)?.label || "Frente"}`
+                          : isMaracaVariant
+                            ? ` · ${MARACA_TEXT_FACE_OPTIONS.find((option) => option.id === layer.face)?.label || "Maraca izquierda"}`
                           : ""
                       }`}
                     </option>
                   ))}
                 </select>
               </label>
-              {isGuiroVariant ? (
+              {isGuiroVariant || isMaracaVariant ? (
                 <label className={styles.layerField}>
-                  Cara
+                  {isMaracaVariant ? "Maraca" : "Cara"}
                   <select
                     value={activeLayerFace}
                     onChange={(event) => {
-                      const nextFace = event.target.value as GuiroTextFace;
-                      updateActiveLayer((layer) => ({
-                        ...layer,
-                        face: nextFace,
-                      }));
-                      preview3DRef.current?.focusGuiroFace(nextFace);
+                      const nextFace = event.target.value as TextFace;
+                      if (
+                        (isMaracaVariant && (nextFace === "maraca_left" || nextFace === "maraca_right")) ||
+                        (isGuiroVariant &&
+                          (nextFace === "front_up" ||
+                            nextFace === "front_down" ||
+                            nextFace === "left" ||
+                            nextFace === "right"))
+                      ) {
+                        const existingLayer = textLayers.find((layer) => layer.face === nextFace);
+                        if (existingLayer) {
+                          setActiveLayerId(existingLayer.id);
+                          setPositionPresetId("custom");
+                          if (
+                            isGuiroVariant &&
+                            (nextFace === "front_up" ||
+                              nextFace === "front_down" ||
+                              nextFace === "left" ||
+                              nextFace === "right")
+                          ) {
+                            preview3DRef.current?.focusGuiroFace(nextFace);
+                          }
+                          return;
+                        }
+                        if (textLayers.length < maxTextLayers) {
+                          const newLayer = createTextLayerForFace(nextFace);
+                          setTextLayers((current) => [...current, newLayer]);
+                          setActiveLayerId(newLayer.id);
+                          setPositionPresetId("custom");
+                          if (
+                            isGuiroVariant &&
+                            (nextFace === "front_up" ||
+                              nextFace === "front_down" ||
+                              nextFace === "left" ||
+                              nextFace === "right")
+                          ) {
+                            preview3DRef.current?.focusGuiroFace(nextFace);
+                          }
+                        }
+                        return;
+                      } else {
+                        updateActiveLayer((layer) => ({
+                          ...layer,
+                          face: nextFace,
+                        }));
+                      }
+                      if (
+                        isGuiroVariant &&
+                        (nextFace === "front_up" || nextFace === "front_down" || nextFace === "left" || nextFace === "right")
+                      ) {
+                        preview3DRef.current?.focusGuiroFace(nextFace);
+                      }
                     }}
                     className={styles.selectField}
                   >
-                    {GUIRO_TEXT_FACE_OPTIONS.map((option) => (
+                    {(isMaracaVariant ? MARACA_TEXT_FACE_OPTIONS : GUIRO_TEXT_FACE_OPTIONS).map((option) => (
                       <option key={option.id} value={option.id}>
                         {option.label}
                       </option>
@@ -1831,6 +2257,7 @@ export default function PersonalizaExperience() {
               </div>
             </div>
             <input
+              ref={textInputRef}
               value={activeLayerText}
               onChange={(event) =>
                 updateActiveLayer((layer) => ({
@@ -1968,20 +2395,22 @@ export default function PersonalizaExperience() {
                 }}
               />
             </label>
-            <label className={styles.sliderField}>
-              Rotación: {activeLayerTransform.rotation}°
-              <input
-                type="range"
-                min={TEXT_ROTATION_MIN}
-                max={TEXT_ROTATION_MAX}
-                step={1}
-                value={activeLayerTransform.rotation}
-                onChange={(event) => {
-                  setPositionPresetId("custom");
-                  const nextValue = Number(event.target.value);
-                  updateActiveLayer((layer) => ({
-                    ...layer,
-                    transform: { ...layer.transform, rotation: nextValue },
+              <label className={styles.sliderField}>
+                Rotación: {activeLayerTransform.rotation}°
+                <input
+                  type="range"
+                  min={TEXT_ROTATION_MIN}
+                  max={TEXT_ROTATION_MAX}
+                  step={1}
+                  value={activeLayerTransform.rotation}
+                  disabled={isMaracaVariant}
+                  onChange={(event) => {
+                    if (isMaracaVariant) return;
+                    setPositionPresetId("custom");
+                    const nextValue = Number(event.target.value);
+                    updateActiveLayer((layer) => ({
+                      ...layer,
+                      transform: { ...layer.transform, rotation: nextValue },
                   }));
                 }}
               />
@@ -2024,7 +2453,9 @@ export default function PersonalizaExperience() {
                     src={
                       product === "guiro"
                         ? "/personaliza/icons/guiro-vec.svg"
-                        : "/personaliza/icons/camapana-vec.svg"
+                        : product === "maraca"
+                          ? "/personaliza/icons/maracas-vec.svg"
+                          : "/personaliza/icons/camapana-vec.svg"
                     }
                     alt=""
                     aria-hidden
@@ -2116,6 +2547,7 @@ export default function PersonalizaExperience() {
                 Color
                 <select
                   value={textColorOptionId}
+                  disabled={isMaracaVariant}
                   onChange={(event) => handleTextColorOptionChange(event.target.value)}
                   className={styles.toolbarSelect}
                 >
@@ -2126,7 +2558,18 @@ export default function PersonalizaExperience() {
                   ))}
                 </select>
               </label>
-              {textColorOptionId === "custom" ? (
+              {isMaracaVariant ? (
+                <label className={styles.toolbarField}>
+                  Fijo <span className={styles.pickerValue}>{MARACA_LOCKED_TEXT_COLOR.toUpperCase()}</span>
+                  <input
+                    type="color"
+                    value={MARACA_LOCKED_TEXT_COLOR}
+                    disabled
+                    style={getColorPickerStyle(MARACA_LOCKED_TEXT_COLOR)}
+                    className={styles.colorPicker}
+                  />
+                </label>
+              ) : textColorOptionId === "custom" ? (
                 <label className={styles.toolbarField}>
                   Personalizar <span className={styles.pickerValue}>{activeLayerColor.toUpperCase()}</span>
                   <input
@@ -2151,6 +2594,7 @@ export default function PersonalizaExperience() {
           </div>
 
           <div
+            ref={editorCanvasRef}
             className={`${styles.editorCanvas} ${size === "large" ? styles.previewCanvasLarge : ""} ${
               isDraggingText ? styles.editorCanvasDragging : ""
             }`}
@@ -2171,17 +2615,22 @@ export default function PersonalizaExperience() {
                   ))}
                 </div>
               ) : null}
-              <div className={styles.editorSafeZone} />
+              <div
+                className={`${styles.editorSafeZone}${isMaracaVariant ? ` ${styles.editorSafeZoneMaraca}` : ""}`}
+              />
               {visibleEditorLayers.map((layer, index) => {
                 const font = TEXT_FONT_OPTIONS.find((option) => option.id === layer.fontId) || TEXT_FONT_OPTIONS[0];
-                const layerOffsetXInPx = layer.transform.offsetX * 3.1;
-                const layerOffsetYInPx = layer.transform.offsetY * 2.4;
+                const layerOffsetXInPx = layer.transform.offsetX * EDITOR_OFFSET_X_TO_PX;
+                const layerOffsetYInPx = layer.transform.offsetY * EDITOR_OFFSET_Y_TO_PX;
                 const layerTransform = `translate(calc(-50% + ${layerOffsetXInPx}px), calc(-50% + ${layerOffsetYInPx}px)) rotate(${layer.transform.rotation}deg) scale(${layer.transform.scaleX / 100}, ${layer.transform.scaleY / 100})`;
                 const isActiveLayer = layer.id === activeLayerId;
+                const isEditingLayer = layer.id === editingLayerId;
                 return (
                   <div
                     key={layer.id}
                     className={`${styles.editorText}${isActiveLayer ? ` ${styles.editorTextActive}` : ""}`}
+                    onPointerDown={() => setActiveLayerId(layer.id)}
+                    onDoubleClick={() => handleLayerDoubleClick(layer.id)}
                     style={{
                       color: layer.color,
                       transform: layerTransform,
@@ -2190,7 +2639,90 @@ export default function PersonalizaExperience() {
                       opacity: layer.text.trim() ? 1 : 0.8,
                     }}
                   >
-                    {layer.text.trim() || `Texto capa ${index + 1}`}
+                    {isEditingLayer ? (
+                      <input
+                        autoFocus
+                        type="text"
+                        value={activeLayerText}
+                        className={styles.editorInlineInput}
+                        maxLength={CUSTOM_TEXT_MAX_LENGTH}
+                        onFocus={() => {
+                          setIsTextInputFocused(true);
+                          beginHistoryBatch();
+                        }}
+                        onChange={(event) => {
+                          const nextText = clampTextLength(event.target.value);
+                          updateActiveLayer((current) => ({
+                            ...current,
+                            text: nextText,
+                          }));
+                        }}
+                        onBlur={handleInlineEditorCommit}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            handleInlineEditorCommit();
+                          } else if (event.key === "Escape") {
+                            event.preventDefault();
+                            handleInlineEditorCancel();
+                          }
+                        }}
+                      />
+                    ) : (
+                      layer.text.trim() || `Texto capa ${index + 1}`
+                    )}
+                    {isActiveLayer ? (
+                      <>
+                        <span
+                          className={styles.editorTextSelectionBox}
+                          data-drag-mode="move"
+                          onDoubleClick={() => handleLayerDoubleClick(layer.id)}
+                          aria-hidden="true"
+                        />
+                        <button
+                          type="button"
+                          className={`${styles.editorTransformHandle} ${styles.editorTransformHandleScale} ${styles.editorTransformHandleTopLeft}`}
+                          data-drag-mode="scale"
+                          onDoubleClick={() => handleLayerDoubleClick(layer.id)}
+                          tabIndex={-1}
+                          aria-hidden="true"
+                        />
+                        <button
+                          type="button"
+                          className={`${styles.editorTransformHandle} ${styles.editorTransformHandleScale} ${styles.editorTransformHandleTopRight}`}
+                          data-drag-mode="scale"
+                          onDoubleClick={() => handleLayerDoubleClick(layer.id)}
+                          tabIndex={-1}
+                          aria-hidden="true"
+                        />
+                        <button
+                          type="button"
+                          className={`${styles.editorTransformHandle} ${styles.editorTransformHandleScale} ${styles.editorTransformHandleBottomLeft}`}
+                          data-drag-mode="scale"
+                          onDoubleClick={() => handleLayerDoubleClick(layer.id)}
+                          tabIndex={-1}
+                          aria-hidden="true"
+                        />
+                        <button
+                          type="button"
+                          className={`${styles.editorTransformHandle} ${styles.editorTransformHandleScale} ${styles.editorTransformHandleBottomRight}`}
+                          data-drag-mode="scale"
+                          onDoubleClick={() => handleLayerDoubleClick(layer.id)}
+                          tabIndex={-1}
+                          aria-hidden="true"
+                        />
+                        {!isMaracaVariant ? (
+                          <button
+                            type="button"
+                            className={`${styles.editorTransformHandle} ${styles.editorTransformHandleRotate}`}
+                            data-drag-mode="rotate"
+                            onDoubleClick={() => handleLayerDoubleClick(layer.id)}
+                            tabIndex={-1}
+                            aria-hidden="true"
+                          />
+                        ) : null}
+                      </>
+                    ) : null}
                   </div>
                 );
               })}
@@ -2216,6 +2748,11 @@ export default function PersonalizaExperience() {
         aria-label="Acciones de compra"
       >
         <div className={styles.checkoutActionsInner}>
+          {!selectedCheckoutBinding ? (
+            <p className={styles.checkoutLockedNotice}>
+              Este instrumento no está habilitado para compra: falta configuración de vinculación en Metrik.
+            </p>
+          ) : null}
           <button
             type="button"
             className={styles.checkoutActionSecondary}
@@ -2234,6 +2771,30 @@ export default function PersonalizaExperience() {
           </button>
         </div>
       </section>
+      {showExitGuardModal ? (
+        <div className={styles.exitGuardOverlay} role="presentation">
+          <div className={styles.exitGuardModal} role="dialog" aria-modal="true" aria-label="Confirmar salida">
+            <h2>¿Seguro que quieres salir?</h2>
+            <p>Si sales ahora, perderás este diseño si aún no lo añades al carrito.</p>
+            <div className={styles.exitGuardActions}>
+              <button
+                type="button"
+                className={styles.ctaPrimary}
+                onClick={() => void handleGuardAddToCart()}
+                disabled={addToCartStatus === "sending" || purchaseStatus === "sending"}
+              >
+                {addToCartStatus === "sending" ? "Añadiendo..." : "Añadir al carrito y salir"}
+              </button>
+              <button type="button" className={styles.ctaGhost} onClick={handleConfirmExitNow}>
+                Sí, salir
+              </button>
+              <button type="button" className={styles.ctaGhost} onClick={handleContinueEditing}>
+                Seguir editando
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

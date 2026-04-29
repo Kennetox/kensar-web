@@ -1,7 +1,6 @@
 export type PersonalizableProductType = "campana" | "guiro" | "maraca";
 
 export type PersonalizableSize = "small" | "large";
-export type PersonalizableCommerceProductType = Exclude<PersonalizableProductType, "maraca">;
 
 export type StylePreset = {
   id: string;
@@ -43,7 +42,7 @@ export const PERSONALIZABLE_PRODUCTS: ProductPreset[] = [
     description: "Define estilo y frase para tus maracas.",
     textLabel: "Texto en maracas",
     textPlaceholder: "Ej: Clan Rivera",
-    cardImage: "/personaliza/cards/maracas.png",
+    cardImage: "/personaliza/cards/maracas1.png",
   },
 ];
 
@@ -52,69 +51,72 @@ export const PERSONALIZABLE_SIZES: Array<{ id: PersonalizableSize; label: string
   { id: "large", label: "Grande" },
 ];
 
-type EcommerceSizeConfig = {
-  sku: string;
-  slug: string;
-};
-
-type EcommerceConfigByProduct = Record<PersonalizableCommerceProductType, Record<PersonalizableSize, EcommerceSizeConfig>>;
-type PersonalizationServiceConfig = Record<PersonalizableCommerceProductType, { sku: string }>;
-
-const ECOMMERCE_PRODUCT_BY_SIZE: EcommerceConfigByProduct = {
-  campana: {
-    small: {
-      sku: "92",
-      slug: "campana-mediana",
-    },
-    large: {
-      sku: "93",
-      slug: "campana-grande",
-    },
-  },
-  guiro: {
-    small: {
-      sku: "2780",
-      slug: "guiro-salsero-mediano-instrumento",
-    },
-    large: {
-      sku: "2779",
-      slug: "guiro-salsero-grande-instrumento",
-    },
-  },
-};
-
-const PERSONALIZATION_SERVICE_BY_PRODUCT: PersonalizationServiceConfig = {
-  campana: { sku: "3740" },
-  guiro: { sku: "3741" },
-};
-
 export type PersonalizableCheckoutBinding = {
   productSku: string;
   productSlug: string;
   personalizationSku: string;
 };
 
+export type PersonalizationBindingVariantKey =
+  | "campana_clasica_mediana"
+  | "campana_clasica_grande"
+  | "campana_cromada_mediana"
+  | "campana_cromada_grande"
+  | "guiro_mediano"
+  | "guiro_grande"
+  | "maraca_par";
+
+export type PersonalizationBindingVariant = {
+  product_id?: string | null;
+  product_sku?: string | null;
+  product_slug?: string | null;
+  service_id?: string | null;
+  service_sku?: string | null;
+};
+
+export type PersonalizationBindingsMap = Partial<
+  Record<PersonalizationBindingVariantKey, PersonalizationBindingVariant>
+>;
+
+function resolveVariantKey(
+  product: PersonalizableProductType,
+  size: PersonalizableSize,
+  campanaType?: "clasica" | "cromada"
+): PersonalizationBindingVariantKey | null {
+  if (product === "campana") {
+    if (campanaType === "cromada") return size === "large" ? "campana_cromada_grande" : "campana_cromada_mediana";
+    return size === "large" ? "campana_clasica_grande" : "campana_clasica_mediana";
+  }
+  if (product === "guiro") return size === "large" ? "guiro_grande" : "guiro_mediano";
+  if (product === "maraca") return "maraca_par";
+  return null;
+}
+
 export function resolvePersonalizableCheckoutBinding(
   product: PersonalizableProductType,
-  size: PersonalizableSize
+  size: PersonalizableSize,
+  options?: {
+    campanaType?: "clasica" | "cromada";
+    bindingsMap?: PersonalizationBindingsMap | null;
+  }
 ): PersonalizableCheckoutBinding | null {
-  if (product === "maraca") return null;
-  const productConfig = ECOMMERCE_PRODUCT_BY_SIZE[product][size];
-  const serviceConfig = PERSONALIZATION_SERVICE_BY_PRODUCT[product];
-  return {
-    productSku: productConfig.sku,
-    productSlug: productConfig.slug,
-    personalizationSku: serviceConfig.sku,
-  };
+  const variantKey = resolveVariantKey(product, size, options?.campanaType);
+  const fromBackend = variantKey ? options?.bindingsMap?.[variantKey] : null;
+  if (!fromBackend) return null;
+  const productSku = (fromBackend.product_sku || "").trim();
+  const productSlug = (fromBackend.product_slug || "").trim();
+  const personalizationSku = (fromBackend.service_sku || "").trim();
+  if (!productSku || !productSlug || !personalizationSku) return null;
+  return { productSku, productSlug, personalizationSku };
 }
 
 export const STYLE_PRESETS: StylePreset[] = [
   {
-    id: "negro-clasico",
-    label: "Negro clásico",
+    id: "blanco-clasico",
+    label: "Blanco clásico",
     kind: "solid",
-    fill: "#1f2937",
-    textColor: "#f9fafb",
+    fill: "#ffffff",
+    textColor: "#111827",
   },
   {
     id: "rojo-vivo",

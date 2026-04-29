@@ -36,61 +36,6 @@ function mapCatalogCardToCheckoutItem(product: WebCatalogProductCard): CheckoutI
   };
 }
 
-function parsePositiveIntEnv(value: string | undefined): number | null {
-  const raw = (value || "").trim();
-  if (!raw) return null;
-  const parsed = Number.parseInt(raw, 10);
-  if (!Number.isFinite(parsed) || parsed <= 0) return null;
-  return parsed;
-}
-
-function parseNonNegativeNumberEnv(value: string | undefined): number | null {
-  const raw = (value || "").trim();
-  if (!raw) return null;
-  const normalized = raw.replace(",", ".");
-  const parsed = Number.parseFloat(normalized);
-  if (!Number.isFinite(parsed) || parsed < 0) return null;
-  return parsed;
-}
-
-function resolvePersonalizationFallbackBySku(sku: string): CheckoutItemResponse | null {
-  if (sku === "3740") {
-    const productId = parsePositiveIntEnv(process.env.PERSONALIZA_SERVICE_CAMPANA_PRODUCT_ID);
-    if (!productId) return null;
-    const unitPrice =
-      parseNonNegativeNumberEnv(process.env.PERSONALIZA_SERVICE_CAMPANA_PRICE) ?? 20000;
-    return {
-      id: productId,
-      name: (process.env.PERSONALIZA_SERVICE_CAMPANA_PRODUCT_NAME || "Personalización de Campana").trim(),
-      slug: (process.env.PERSONALIZA_SERVICE_CAMPANA_PRODUCT_SLUG || "personalizacion-de-campana").trim(),
-      sku,
-      image_url: null,
-      brand: null,
-      stock_status: "service",
-      price: unitPrice,
-      compare_price: null,
-    };
-  }
-  if (sku === "3741") {
-    const productId = parsePositiveIntEnv(process.env.PERSONALIZA_SERVICE_GUIRO_PRODUCT_ID);
-    if (!productId) return null;
-    const unitPrice =
-      parseNonNegativeNumberEnv(process.env.PERSONALIZA_SERVICE_GUIRO_PRICE) ?? 20000;
-    return {
-      id: productId,
-      name: (process.env.PERSONALIZA_SERVICE_GUIRO_PRODUCT_NAME || "Personalización de Guiro").trim(),
-      slug: (process.env.PERSONALIZA_SERVICE_GUIRO_PRODUCT_SLUG || "personalizacion-de-guiro").trim(),
-      sku,
-      image_url: null,
-      brand: null,
-      stock_status: "service",
-      price: unitPrice,
-      compare_price: null,
-    };
-  }
-  return null;
-}
-
 export async function POST(request: Request) {
   const payload = (await request.json().catch(() => ({}))) as CheckoutItemsPayload;
   const baseSlug = (payload.base_slug || "").trim();
@@ -117,15 +62,12 @@ export async function POST(request: Request) {
 
   const personalizationProduct =
     searchBySku.items.find((item) => (item.sku || "").trim() === personalizationSku) || null;
-
-  const fallbackPersonalization = resolvePersonalizationFallbackBySku(personalizationSku);
-
-  if (!personalizationProduct && !fallbackPersonalization) {
+  if (!personalizationProduct) {
     return NextResponse.json(
       {
         detail:
           `No encontramos el servicio de personalización SKU ${personalizationSku} en catálogo web. ` +
-          "Configura su product_id en variables de entorno del frontend.",
+          "Configura y publica correctamente el servicio en catálogo web.",
       },
       { status: 404 }
     );
@@ -145,8 +87,6 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     base,
-    personalization: personalizationProduct
-      ? mapCatalogCardToCheckoutItem(personalizationProduct)
-      : fallbackPersonalization!,
+    personalization: mapCatalogCardToCheckoutItem(personalizationProduct),
   });
 }
