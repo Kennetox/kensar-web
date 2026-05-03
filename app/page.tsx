@@ -9,6 +9,7 @@ import Reveal from "@/app/components/Reveal";
 import { buildCatalogCategoryHref } from "@/app/lib/catalogRoutes";
 import {
   getCatalogCategories,
+  getCatalogBestSellers,
   getCatalogProducts,
   getHomeSliders,
   type WebCatalogCategory,
@@ -308,6 +309,9 @@ export default async function HomePage() {
   const { categories, products, sliders } = await loadHomeData();
 
   const livingProducts = await loadHomeLivingProducts(products);
+  const bestSellerProducts = await getCatalogBestSellers({ limit: 10, days: 90 })
+    .then((result) => result.items)
+    .catch(() => []);
   const fallbackSliderSlides = [
     {
       id: "guitarras",
@@ -422,17 +426,62 @@ export default async function HomePage() {
   return (
     <div id="inicio" className="commerce-home home-anchor-section">
       <CommerceSlider slides={sliderSlides} categories={featuredCategories} intervalMs={8000} />
+      <div className="commerce-categories-divider" aria-hidden="true" />
 
       <section className="commerce-discover" aria-label="Personaliza tus instrumentos">
         <HomePersonalizaHighlight />
       </section>
-      <div className="commerce-categories-divider" aria-hidden="true" />
+      <section className="commerce-mid-feature" aria-label="Sección destacada Kensar">
+        {bestSellerProducts.length > 0 ? (
+          <div className="commerce-home-living-products">
+            <Reveal className="commerce-home-living-intro commerce-home-living-intro-left">
+              <h2>Lo mas vendido</h2>
+            </Reveal>
+            <HomeProductCarousel ariaLabel="Carrusel de productos más vendidos">
+              {bestSellerProducts.map((product, index) => (
+                <Reveal
+                  key={`best-${product.id}`}
+                  className="home-product-carousel-item"
+                  delayMs={Math.min(index * 70, 420)}
+                  speed="fast"
+                >
+                  <CatalogProductCard product={product} />
+                  <div className="home-product-carousel-cta">
+                    <AddToCartButton
+                      productId={product.id}
+                      productName={product.name}
+                      productSlug={product.slug}
+                      productSku={product.sku}
+                      imageUrl={product.image_thumb_url || product.image_url}
+                      brand={product.brand}
+                      stockStatus={product.stock_status}
+                      unitPrice={product.price ?? 0}
+                      comparePrice={product.compare_price}
+                    />
+                  </div>
+                </Reveal>
+              ))}
+            </HomeProductCarousel>
+          </div>
+        ) : (
+          <div className="commerce-mid-feature-shell">
+            <p className="commerce-section-kicker">Novedad Kensar</p>
+            <h2>Muy pronto: una nueva experiencia en esta sección</h2>
+            <p className="commerce-mid-feature-copy">
+              Estamos preparando contenido destacado para ayudarte a descubrir más productos y promociones.
+            </p>
+            <Link href="/catalogo" className="commerce-mid-feature-cta">
+              Ver catálogo
+            </Link>
+          </div>
+        )}
+      </section>
 
       <section className="commerce-brand-collage" aria-label="Marcas que respaldan tu sonido">
-        <div className="commerce-brand-collage-head">
+        <Reveal className="commerce-brand-collage-head">
           <p className="commerce-section-kicker">Marcas destacadas</p>
           <h2>Marcas que respaldan tu sonido</h2>
-        </div>
+        </Reveal>
 
         <div className="brand-collage-grid">
           <Link href="/catalogo?brand=yamaha" className="brand-tile brand-tile-main" aria-label="Explorar Yamaha">
@@ -468,22 +517,24 @@ export default async function HomePage() {
           </Link>
         </div>
       </section>
-      <section className="commerce-next-clean-section" aria-label="Banner hogar">
-        <Image
-          src="/sliders/home/banner-hogar.png"
-          alt="Banner de hogar Kensar Electronic"
-          width={1920}
-          height={640}
-          sizes="100vw"
-          unoptimized
-          className="commerce-next-banner-image"
-        />
-
+      <section className="commerce-next-clean-section" aria-label="Tecnologia Kensar">
         {livingProducts.length > 0 ? (
           <div className="commerce-home-living-products">
+            <Reveal className="commerce-home-living-intro">
+              <p className="commerce-section-kicker">Tecnología Kensar</p>
+              <h2>Productos para hogar y entretenimiento</h2>
+              <p className="commerce-home-living-copy">
+                Explora referencias seleccionadas con disponibilidad y precio actualizado.
+              </p>
+            </Reveal>
             <HomeProductCarousel ariaLabel="Carrusel de productos del hogar">
-              {livingProducts.map((product) => (
-                <div key={`hogar-${product.id}`} className="home-product-carousel-item">
+              {livingProducts.map((product, index) => (
+                <Reveal
+                  key={`hogar-${product.id}`}
+                  className="home-product-carousel-item"
+                  delayMs={Math.min(index * 70, 420)}
+                  speed="fast"
+                >
                   <CatalogProductCard product={product} />
                   <div className="home-product-carousel-cta">
                     <AddToCartButton
@@ -498,7 +549,7 @@ export default async function HomePage() {
                       comparePrice={product.compare_price}
                     />
                   </div>
-                </div>
+                </Reveal>
               ))}
             </HomeProductCarousel>
           </div>

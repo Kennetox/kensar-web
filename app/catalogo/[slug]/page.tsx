@@ -24,20 +24,24 @@ async function getRelatedProducts(
   currentProductId: number,
   categoryPath?: string | null
 ): Promise<WebCatalogProductCard[]> {
+  const RELATED_PRODUCTS_LIMIT = 5;
+
   try {
     const categoryRows = await getCatalogProducts({
       category: categoryPath || undefined,
       page: 1,
     });
-    const related = categoryRows.items.filter((item) => item.id !== currentProductId).slice(0, 4);
-    if (related.length >= 4) return related;
+    const related = categoryRows.items
+      .filter((item) => item.id !== currentProductId)
+      .slice(0, RELATED_PRODUCTS_LIMIT);
+    if (related.length >= RELATED_PRODUCTS_LIMIT) return related;
 
     const fallbackRows = await getCatalogProducts({ page: 1 });
     const merged = [...related];
     for (const item of fallbackRows.items) {
       if (item.id === currentProductId || merged.some((row) => row.id === item.id)) continue;
       merged.push(item);
-      if (merged.length >= 4) break;
+      if (merged.length >= RELATED_PRODUCTS_LIMIT) break;
     }
     return merged;
   } catch {
