@@ -25,6 +25,31 @@ type CatalogPageProps = {
 
 type PaginationToken = number | "ellipsis";
 
+function normalizeBrandParamValue(value: string): string {
+  const normalized = value
+    .trim()
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ");
+  const key = normalized
+    .toLocaleLowerCase("es")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+  if (key === "rm") return "Ritmo Musical";
+  return normalized;
+}
+
+function brandIdentityKey(value: string): string {
+  return normalizeBrandParamValue(value)
+    .toLocaleLowerCase("es")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
 function buildCatalogHref(input: {
   q?: string;
   local_q?: string;
@@ -184,6 +209,14 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
     : params.brand?.trim()
     ? [params.brand.trim()]
     : [];
+  const normalizedSelectedBrands = Array.from(
+    new Map(
+      selectedBrands
+        .map((brand) => normalizeBrandParamValue(brand))
+        .filter(Boolean)
+        .map((brand) => [brandIdentityKey(brand), brand])
+    ).values()
+  );
   const sort = (["recommended", "name_asc", "name_desc", "price_asc", "price_desc"].includes(
     (params.sort || "").trim()
   )
@@ -196,7 +229,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
     q: globalQ || undefined,
     local_q: localQ || undefined,
     category: category || undefined,
-    brand: selectedBrands,
+    brand: normalizedSelectedBrands,
     sort,
     min_price: minPrice > 0 ? String(minPrice) : undefined,
     max_price: maxPrice > 0 ? String(maxPrice) : undefined,
@@ -205,7 +238,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
   const isDirectCatalogRoot =
     !category &&
     !effectiveQ &&
-    selectedBrands.length === 0 &&
+    normalizedSelectedBrands.length === 0 &&
     minPrice === 0 &&
     maxPrice === 0 &&
     !rawSort;
@@ -217,7 +250,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
   const { categories, productList, hasError } = await loadCatalogData({
     q: effectiveQ,
     category,
-    brands: selectedBrands,
+    brands: normalizedSelectedBrands,
     sort,
     min_price: minPrice > 0 ? minPrice : undefined,
     max_price: maxPrice > 0 ? maxPrice : undefined,
@@ -249,7 +282,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
     const value = item.value.trim();
     const label = item.label.trim() || value;
     if (!value || !label) return;
-    const normalizedValue = value.toLowerCase();
+    const normalizedValue = brandIdentityKey(value || label);
     const existing = visibleBrandsMap.get(normalizedValue);
     if (existing) {
       existing.count = Math.max(existing.count, Number(item.count || 0));
@@ -261,11 +294,11 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
       count: Number(item.count || 0),
     });
   });
-  selectedBrands.forEach((selectedBrand) => {
-    const normalizedValue = selectedBrand.trim().toLowerCase();
+  normalizedSelectedBrands.forEach((selectedBrand) => {
+    const normalizedValue = brandIdentityKey(selectedBrand);
     if (!normalizedValue || visibleBrandsMap.has(normalizedValue)) return;
     const fallbackBrand = productList.filters.brands.find(
-      (item) => item.value.trim().toLowerCase() === normalizedValue
+      (item) => brandIdentityKey(item.value || item.label) === normalizedValue
     );
     visibleBrandsMap.set(normalizedValue, {
       value: fallbackBrand?.value || fallbackBrand?.label || selectedBrand,
@@ -366,7 +399,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
             maxPrice={maxPrice > 0 ? maxPrice : effectiveAvailableMaxPrice}
             availableMinPrice={effectiveAvailableMinPrice}
             availableMaxPrice={effectiveAvailableMaxPrice}
-            selectedBrands={selectedBrands}
+            selectedBrands={normalizedSelectedBrands}
             brands={visibleBrands}
           />
         </aside>
@@ -388,7 +421,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
               maxPrice={maxPrice > 0 ? maxPrice : effectiveAvailableMaxPrice}
               availableMinPrice={effectiveAvailableMinPrice}
               availableMaxPrice={effectiveAvailableMaxPrice}
-              selectedBrands={selectedBrands}
+              selectedBrands={normalizedSelectedBrands}
               brands={visibleBrands}
             />
           </aside>
@@ -414,7 +447,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
                         q: globalQ || undefined,
                         local_q: localQ || undefined,
                         category: category || undefined,
-                        brand: selectedBrands,
+                        brand: normalizedSelectedBrands,
                         sort,
                         min_price: minPrice > 0 ? String(minPrice) : undefined,
                         max_price: maxPrice > 0 ? String(maxPrice) : undefined,
@@ -443,7 +476,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
                                 q: globalQ || undefined,
                                 local_q: localQ || undefined,
                                 category: category || undefined,
-                                brand: selectedBrands,
+                                brand: normalizedSelectedBrands,
                                 sort,
                                 min_price: minPrice > 0 ? String(minPrice) : undefined,
                                 max_price: maxPrice > 0 ? String(maxPrice) : undefined,
@@ -463,7 +496,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
                         q: globalQ || undefined,
                         local_q: localQ || undefined,
                         category: category || undefined,
-                        brand: selectedBrands,
+                        brand: normalizedSelectedBrands,
                         sort,
                         min_price: minPrice > 0 ? String(minPrice) : undefined,
                         max_price: maxPrice > 0 ? String(maxPrice) : undefined,

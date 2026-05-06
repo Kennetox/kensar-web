@@ -88,7 +88,7 @@ export default async function CatalogProductDetailPage({
   );
 
   return (
-    <main className="site-shell internal-page section-space product-page-shell">
+    <main className="site-shell internal-page section-space product-page-shell product-detail-page">
       <section className="catalog-breadcrumbs">
         <ProductBackToCatalogLink fallbackHref={fallbackCatalogHref} />
         <span>Catálogo</span>
@@ -262,9 +262,9 @@ export default async function CatalogProductDetailPage({
       </section>
 
       {relatedProducts.length ? (
-        <section className="product-related-section">
+        <section className="product-related-section product-related-mobile-scope">
           <h2>También te podría interesar</h2>
-          <ProductHorizontalDragScroll className="catalog-product-grid storefront-grid product-related-grid">
+          <ProductHorizontalDragScroll className="catalog-product-grid storefront-grid product-related-grid product-related-mobile-carousel">
             {relatedProducts.map((related) => (
               <CatalogProductCard key={`related-${related.id}`} product={related} />
             ))}

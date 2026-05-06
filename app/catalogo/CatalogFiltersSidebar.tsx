@@ -21,6 +21,17 @@ type CatalogFiltersSidebarProps = {
 const PRICE_STEP = 1000;
 const INITIAL_BRAND_LIMIT = 10;
 
+function brandIdentityKey(value: string) {
+  return value
+    .trim()
+    .toLocaleLowerCase("es")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[-_]+/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
@@ -138,11 +149,17 @@ export default function CatalogFiltersSidebar({
     if (showAllBrands || brands.length <= INITIAL_BRAND_LIMIT) return brands;
     const firstBatch = brands.slice(0, INITIAL_BRAND_LIMIT);
     const existingValues = new Set(firstBatch.map((item) => item.value));
+    const selectedBrandKeys = new Set(localBrands.map((item) => brandIdentityKey(item)));
     const selectedExtras = brands.filter(
-      (item) => localBrands.includes(item.value) && !existingValues.has(item.value)
+      (item) => selectedBrandKeys.has(brandIdentityKey(item.value)) && !existingValues.has(item.value)
     );
     return [...firstBatch, ...selectedExtras];
   }, [brands, localBrands, showAllBrands]);
+
+  const selectedBrandKeys = useMemo(
+    () => new Set(localBrands.map((item) => brandIdentityKey(item))),
+    [localBrands]
+  );
 
   function commitMinInputValue(raw: string) {
     const parsed = Number(raw);
@@ -236,9 +253,9 @@ export default function CatalogFiltersSidebar({
   }, [priceDirty, localMinPrice, localMaxPrice, applyFilters]);
 
   function handleBrandToggle(brandValue: string, checked: boolean) {
-    const nextBrands = checked
-      ? [...localBrands, brandValue]
-      : localBrands.filter((item) => item !== brandValue);
+    const targetKey = brandIdentityKey(brandValue);
+    const currentWithoutTarget = localBrands.filter((item) => brandIdentityKey(item) !== targetKey);
+    const nextBrands = checked ? [...currentWithoutTarget, brandValue] : currentWithoutTarget;
     setLocalBrands(nextBrands);
     applyFilters({ brands: nextBrands });
   }
@@ -407,7 +424,7 @@ export default function CatalogFiltersSidebar({
         <div className="catalog-brand-checklist">
           {visibleBrands.length ? (
             visibleBrands.map((item) => {
-              const checked = localBrands.includes(item.value);
+              const checked = selectedBrandKeys.has(brandIdentityKey(item.value));
               return (
                 <label key={item.value} className="catalog-brand-item">
                   <input

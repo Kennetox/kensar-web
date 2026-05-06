@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { PointerEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 
 export default function CatalogProductGallery({
@@ -44,6 +45,12 @@ export default function CatalogProductGallery({
     setSlideTick((prev) => prev + 1);
   }
 
+  function handleArrowPointerDown(event: PointerEvent<HTMLButtonElement>, direction: -1 | 1) {
+    event.preventDefault();
+    event.stopPropagation();
+    stepImage(direction);
+  }
+
   return (
     <>
       <Link href={detailHref} className="catalog-product-card-media-link">
@@ -65,7 +72,7 @@ export default function CatalogProductGallery({
           <button
             type="button"
             className="catalog-gallery-arrow is-left"
-            onClick={() => stepImage(-1)}
+            onPointerDown={(event) => handleArrowPointerDown(event, -1)}
             aria-label="Imagen anterior"
           >
             <span aria-hidden="true">‹</span>
@@ -73,7 +80,7 @@ export default function CatalogProductGallery({
           <button
             type="button"
             className="catalog-gallery-arrow is-right"
-            onClick={() => stepImage(1)}
+            onPointerDown={(event) => handleArrowPointerDown(event, 1)}
             aria-label="Imagen siguiente"
           >
             <span aria-hidden="true">›</span>

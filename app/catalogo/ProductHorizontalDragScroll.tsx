@@ -12,6 +12,7 @@ export default function ProductHorizontalDragScroll({
   children,
 }: ProductHorizontalDragScrollProps) {
   const isPointerDownRef = useRef(false);
+  const isMouseDragRef = useRef(false);
   const startXRef = useRef(0);
   const startScrollLeftRef = useRef(0);
   const draggedRef = useRef(false);
@@ -20,7 +21,12 @@ export default function ProductHorizontalDragScroll({
     <div
       className={className}
       onPointerDown={(event) => {
+        if (event.pointerType !== "mouse") {
+          isMouseDragRef.current = false;
+          return;
+        }
         const target = event.currentTarget;
+        isMouseDragRef.current = true;
         isPointerDownRef.current = true;
         draggedRef.current = false;
         startXRef.current = event.clientX;
@@ -28,7 +34,7 @@ export default function ProductHorizontalDragScroll({
         target.setPointerCapture(event.pointerId);
       }}
       onPointerMove={(event) => {
-        if (!isPointerDownRef.current) return;
+        if (!isMouseDragRef.current || !isPointerDownRef.current) return;
         const target = event.currentTarget;
         const deltaX = event.clientX - startXRef.current;
 
@@ -39,11 +45,14 @@ export default function ProductHorizontalDragScroll({
         target.scrollLeft = startScrollLeftRef.current - deltaX;
       }}
       onPointerUp={(event) => {
+        if (!isMouseDragRef.current) return;
         isPointerDownRef.current = false;
+        isMouseDragRef.current = false;
         event.currentTarget.releasePointerCapture(event.pointerId);
       }}
       onPointerCancel={() => {
         isPointerDownRef.current = false;
+        isMouseDragRef.current = false;
       }}
       onClickCapture={(event) => {
         if (!draggedRef.current) return;

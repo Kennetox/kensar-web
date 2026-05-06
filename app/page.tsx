@@ -470,7 +470,7 @@ export default async function HomePage() {
         </Reveal>
 
         <div className="brand-collage-grid">
-          <Link href="/catalogo?brand=yamaha" className="brand-tile brand-tile-main" aria-label="Explorar Yamaha">
+          <Link href={`/catalogo?brand=${encodeURIComponent("Yamaha")}`} className="brand-tile brand-tile-main" aria-label="Explorar Yamaha">
             <div
               className="brand-tile-image"
               style={{ backgroundImage: "url('/brands/collage/hero-yamaha.webp')" }}
@@ -478,7 +478,7 @@ export default async function HomePage() {
             />
           </Link>
 
-          <Link href="/catalogo?brand=pro-dj" className="brand-tile brand-tile-top-left" aria-label="Explorar Pro DJ">
+          <Link href={`/catalogo?brand=${encodeURIComponent("Pro DJ")}`} className="brand-tile brand-tile-top-left" aria-label="Explorar Pro DJ">
             <div
               className="brand-tile-image"
               style={{ backgroundImage: "url('/brands/collage/title-prodj.webp')" }}
@@ -486,7 +486,7 @@ export default async function HomePage() {
             />
           </Link>
 
-          <Link href="/catalogo?brand=rm" className="brand-tile brand-tile-top-right" aria-label="Explorar RM">
+          <Link href={`/catalogo?brand=${encodeURIComponent("Ritmo Musical")}`} className="brand-tile brand-tile-top-right" aria-label="Explorar RM">
             <div
               className="brand-tile-image"
               style={{ backgroundImage: "url('/brands/collage/title-rm1.webp')" }}
@@ -494,7 +494,7 @@ export default async function HomePage() {
             />
           </Link>
 
-          <Link href="/catalogo?brand=spain" className="brand-tile brand-tile-bottom" aria-label="Explorar Spain">
+          <Link href={`/catalogo?brand=${encodeURIComponent("Spain")}`} className="brand-tile brand-tile-bottom" aria-label="Explorar Spain">
             <div
               className="brand-tile-image"
               style={{ backgroundImage: "url('/brands/collage/banner-spain.webp')" }}
