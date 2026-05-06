@@ -9,6 +9,7 @@ export default function TopbarScrollBehavior() {
     let rafId = 0;
     let lastY = window.scrollY;
     let hidden = false;
+    let directionStreak = 0;
 
     function setHidden(nextHidden: boolean) {
       if (hidden === nextHidden) return;
@@ -23,23 +24,29 @@ export default function TopbarScrollBehavior() {
       const delta = currentY - lastY;
       lastY = currentY;
 
-      // On tablet/mobile this utility bar is already hidden by layout rules.
-      if (width <= 1100) {
-        setHidden(false);
-        return;
-      }
-
       if (currentY <= 8) {
+        directionStreak = 0;
         setHidden(false);
         return;
       }
 
-      if (delta > 6 && currentY > 110) {
+      const isMobile = width <= 1100;
+      const hideDelta = isMobile ? 1.5 : 6;
+      const hideOffset = isMobile ? 28 : 110;
+      const showDelta = isMobile ? -1.5 : -6;
+
+      if (delta > hideDelta) {
+        directionStreak = Math.max(0, directionStreak) + 1;
+      } else if (delta < showDelta) {
+        directionStreak = Math.min(0, directionStreak) - 1;
+      }
+
+      if (currentY > hideOffset && directionStreak >= 2) {
         setHidden(true);
         return;
       }
 
-      if (delta < -6) {
+      if (directionStreak <= -1) {
         setHidden(false);
       }
     }

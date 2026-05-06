@@ -146,9 +146,22 @@
 }
 
 @media (max-width: 900px) {
+  .intro {
+    gap: 0;
+  }
+
+  .kicker,
+  .copy {
+    display: none;
+  }
+
   .grid {
     grid-template-columns: repeat(2, minmax(180px, 1fr));
     gap: 12px;
+  }
+
+  .imageTile {
+    aspect-ratio: 16 / 12;
   }
 }
 
@@ -158,7 +171,11 @@
     max-width: 100%;
   }
 
+  .imageTile {
+    aspect-ratio: 16 / 11;
+  }
+
   .tileTitle {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
   }
 }

@@ -6,6 +6,7 @@ import ProductDetailGallery from "@/app/catalogo/ProductDetailGallery";
 import ProductPurchaseCta from "@/app/catalogo/ProductPurchaseCta";
 import ProductKoraAssistLink from "@/app/catalogo/ProductKoraAssistLink";
 import ProductViewTracker from "@/app/catalogo/ProductViewTracker";
+import ProductHorizontalDragScroll from "@/app/catalogo/ProductHorizontalDragScroll";
 import { buildCatalogCategoryHref } from "@/app/lib/catalogRoutes";
 import {
   formatCatalogPrice,
@@ -99,7 +100,7 @@ export default async function CatalogProductDetailPage({
         <article className="product-visual-card">
           <ProductDetailGallery productName={product.name} gallery={gallery} />
 
-          <div className="product-rich-description">
+          <div className="product-rich-description product-rich-description-desktop">
             <h2>Descripción</h2>
             {descriptionText ? (
               <p className="product-rich-description-raw">{descriptionText}</p>
@@ -141,6 +142,9 @@ export default async function CatalogProductDetailPage({
                   <strong>{formatCatalogPrice(product.price)}</strong>
                   {product.compare_price ? <del>{formatCatalogPrice(product.compare_price)}</del> : null}
                 </div>
+                <p className="product-mobile-tax-note">
+                  Impuestos incluidos. <span>Los gastos de envío</span> se calcularán al momento de pagar.
+                </p>
                 {product.warranty_text?.trim() ? (
                   <>
                     <p className="product-warranty-copy">
@@ -245,14 +249,26 @@ export default async function CatalogProductDetailPage({
         </aside>
       </section>
 
+      <section className="product-rich-description product-rich-description-mobile">
+        <h2>Descripción</h2>
+        {descriptionText ? (
+          <p className="product-rich-description-raw">{descriptionText}</p>
+        ) : (
+          <p>
+            Esta referencia está conectada al catálogo operativo de Kensar. Si necesitas una validación técnica o
+            comercial adicional, te ayudamos por WhatsApp.
+          </p>
+        )}
+      </section>
+
       {relatedProducts.length ? (
         <section className="product-related-section">
           <h2>También te podría interesar</h2>
-          <div className="catalog-product-grid storefront-grid product-related-grid">
+          <ProductHorizontalDragScroll className="catalog-product-grid storefront-grid product-related-grid">
             {relatedProducts.map((related) => (
               <CatalogProductCard key={`related-${related.id}`} product={related} />
             ))}
-          </div>
+          </ProductHorizontalDragScroll>
         </section>
       ) : null}
       <ProductViewTracker

@@ -17,7 +17,7 @@ type HomeProductCarouselProps = {
 };
 
 function getVisibleCount(width: number) {
-  if (width <= 520) return 1;
+  if (width <= 520) return 2;
   if (width <= 760) return 2;
   if (width <= 1080) return 3;
   if (width <= 1220) return 4;

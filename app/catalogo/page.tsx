@@ -358,18 +358,28 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
       </section>
 
       <section className="catalog-store-layout">
-        <aside className="catalog-sidebar">
-          <CatalogFiltersSidebar
-            query={localQ}
-            sort={sort}
-            minPrice={minPrice}
-            maxPrice={maxPrice > 0 ? maxPrice : effectiveAvailableMaxPrice}
-            availableMinPrice={effectiveAvailableMinPrice}
-            availableMaxPrice={effectiveAvailableMaxPrice}
-            selectedBrands={selectedBrands}
-            brands={visibleBrands}
-          />
-        </aside>
+        <details className="catalog-filter-disclosure">
+          <summary className="catalog-filter-disclosure-summary">
+            <span>Filtrar y ordenar</span>
+            <span className="catalog-filter-disclosure-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M4 7h16M7 12h10M10 17h4" />
+              </svg>
+            </span>
+          </summary>
+          <aside className="catalog-sidebar">
+            <CatalogFiltersSidebar
+              query={localQ}
+              sort={sort}
+              minPrice={minPrice}
+              maxPrice={maxPrice > 0 ? maxPrice : effectiveAvailableMaxPrice}
+              availableMinPrice={effectiveAvailableMinPrice}
+              availableMaxPrice={effectiveAvailableMaxPrice}
+              selectedBrands={selectedBrands}
+              brands={visibleBrands}
+            />
+          </aside>
+        </details>
 
         <div className="catalog-store-content">
           {productList.items.length ? (

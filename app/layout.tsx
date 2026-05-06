@@ -7,6 +7,7 @@ import TopNav from "./components/TopNav";
 import AccountAccess from "./components/AccountAccess";
 import CartAccess from "./components/CartAccess";
 import HeaderCatalogSearch from "./components/HeaderCatalogSearch";
+import MobileHeaderMenu from "./components/MobileHeaderMenu";
 import FloatingWhatsAppButton from "./components/FloatingWhatsAppButton";
 import KoraChat from "./components/KoraChat";
 import BackToTopButton from "./components/BackToTopButton";
@@ -143,9 +144,22 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <header className="topbar">
           <div className="topbar-utility">
             <div className="topbar-utility-inner">
-              <p><strong>WhatsApp:</strong> +57 318 565 7508</p>
-              <p><strong>Horario:</strong> Lunes a sabado 8:30am - 6:30pm</p>
-              <p><strong>Ubicacion:</strong> Palmira, Valle del Cauca</p>
+              <div className="topbar-utility-marquee" aria-label="Informacion importante de Kensar Electronic">
+                <div className="topbar-utility-marquee-track">
+                  <span><strong>WhatsApp:</strong> +57 318 565 7508</span>
+                  <span><strong>Horario:</strong> Lunes a sabado 8:30am - 6:30pm</span>
+                  <span><strong>Ubicacion:</strong> Palmira, Valle del Cauca</span>
+                  <span><strong>Envios:</strong> Cobertura nacional con operadores aliados</span>
+                  <span><strong>Pago:</strong> Transferencia, tarjetas y credito con aliados</span>
+                </div>
+                <div className="topbar-utility-marquee-track" aria-hidden="true">
+                  <span><strong>WhatsApp:</strong> +57 318 565 7508</span>
+                  <span><strong>Horario:</strong> Lunes a sabado 8:30am - 6:30pm</span>
+                  <span><strong>Ubicacion:</strong> Palmira, Valle del Cauca</span>
+                  <span><strong>Envios:</strong> Cobertura nacional con operadores aliados</span>
+                  <span><strong>Pago:</strong> Transferencia, tarjetas y credito con aliados</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -175,6 +189,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   <Suspense fallback={null}>
                     <CartAccess />
                   </Suspense>
+                  <MobileHeaderMenu categories={headerCategories} brands={headerBrands} />
 
                   <div className="social-links" aria-label="Redes sociales">
                     <a
@@ -250,6 +265,48 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <p>9:00am a 1:30pm</p>
                 <p>Soporte tecnico: Lunes a sabado, 9:00am a 6:00pm</p>
               </section>
+            </div>
+
+            <div className="footer-mobile-accordion" aria-label="Secciones del footer">
+              <details className="footer-mobile-section">
+                <summary>Empresa</summary>
+                <div className="footer-mobile-content">
+                  <Link href="/empresa">Sobre Kensar</Link>
+                  <Link href="/contacto">Información de contacto</Link>
+                  <a
+                    href="https://maps.google.com/?q=Cra+24+%2330-75+Palmira+Colombia"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Ver ubicación en Google Maps
+                  </a>
+                </div>
+              </details>
+
+              <details className="footer-mobile-section">
+                <summary>Contacto y horario</summary>
+                <div className="footer-mobile-content">
+                  <a href="tel:+573185657508">(+57) 318 565 7508</a>
+                  <a href="https://wa.me/573185657508" target="_blank" rel="noreferrer">
+                    WhatsApp directo
+                  </a>
+                  <a href="mailto:kensarelec@gmail.com">kensarelec@gmail.com</a>
+                  <p>Lunes a sabado: 8:30am a 6:30pm</p>
+                  <p>Domingos y festivos: 9:00am a 1:30pm</p>
+                </div>
+              </details>
+
+              <details className="footer-mobile-section">
+                <summary>Políticas y legal</summary>
+                <div className="footer-mobile-content">
+                  <Link href="/legal/privacidad">Política de privacidad</Link>
+                  <Link href="/legal/terminos">Términos y condiciones</Link>
+                  <Link href="/legal/cookies">Política de cookies</Link>
+                  <Link href="/legal/cambios-devoluciones-garantias#cambios-devoluciones">Cambios y devoluciones</Link>
+                  <Link href="/legal/cambios-devoluciones-garantias#garantias">Garantías</Link>
+                  <Link href="/legal/tratamiento-datos">Tratamiento de datos</Link>
+                </div>
+              </details>
             </div>
           </div>
 

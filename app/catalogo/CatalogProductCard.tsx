@@ -1,5 +1,6 @@
 import Link from "next/link";
 import CatalogProductGallery from "@/app/catalogo/CatalogProductGallery";
+import AddToCartButton from "@/app/components/AddToCartButton";
 import {
   formatCatalogPrice,
   getStockLabel,
@@ -30,18 +31,28 @@ function getDiscountBadgeText(product: WebCatalogProductCard): string | null {
 export default function CatalogProductCard({
   product,
   catalogReturnTo,
+  showAddToCart = true,
 }: {
   product: WebCatalogProductCard;
   catalogReturnTo?: string;
+  showAddToCart?: boolean;
 }) {
   const discountBadge = getDiscountBadgeText(product);
   const commercialBadge = product.badge_text?.trim() || null;
+  const stockBadgeLabel = product.stock_status === "out_of_stock" ? "Agotado" : getStockLabel(product.stock_status);
+  const isUnavailable = product.stock_status === "out_of_stock" || product.stock_status === "service" || product.stock_status === "consultar";
+  const stockToneClass =
+    product.stock_status === "in_stock"
+      ? "is-in-stock"
+      : product.stock_status === "low_stock"
+      ? "is-low-stock"
+      : "is-out-stock";
   const detailHref = catalogReturnTo
     ? `/catalogo/${product.slug}?returnTo=${encodeURIComponent(catalogReturnTo)}`
     : `/catalogo/${product.slug}`;
 
   return (
-    <article className="catalog-product-card-live storefront-card">
+    <article className="catalog-product-card-live storefront-card storefront-card-pro">
       <div className="catalog-product-card-media storefront-card-media catalog-hover-gallery">
         <CatalogProductGallery
           detailHref={detailHref}
@@ -53,7 +64,7 @@ export default function CatalogProductCard({
           <div className="catalog-badge-stack" aria-hidden="true">
             {product.stock_status !== "in_stock" ? (
               <span className={`catalog-stock-badge stock-${product.stock_status}`}>
-                {getStockLabel(product.stock_status)}
+                {stockBadgeLabel}
               </span>
             ) : null}
             {product.featured ? <span className="catalog-featured-badge">Destacado</span> : null}
@@ -62,13 +73,12 @@ export default function CatalogProductCard({
           </div>
         ) : null}
       </div>
-
-      <Link
-        href={detailHref}
-        className="catalog-product-card-body-link"
-        aria-label={`Ver detalle de ${product.name}`}
-      >
-        <div className="catalog-product-card-body storefront-card-body">
+      <div className="catalog-product-card-body storefront-card-body">
+        <Link
+          href={detailHref}
+          className="catalog-product-card-body-link"
+          aria-label={`Ver detalle de ${product.name}`}
+        >
           <div className="catalog-product-meta storefront-meta">
             {product.category_name ? (
               <span className="catalog-meta-chip">{product.category_name}</span>
@@ -95,8 +105,30 @@ export default function CatalogProductCard({
               {product.sku ? `SKU ${product.sku}` : "\u00A0"}
             </span>
           </div>
+        </Link>
+        <div className={`catalog-product-stock-line ${stockToneClass}`}>
+          <span className="catalog-product-stock-dot" aria-hidden="true" />
+          <span>{getStockLabel(product.stock_status)}</span>
         </div>
-      </Link>
+        {showAddToCart ? (
+          <div className="catalog-product-card-cta">
+            <AddToCartButton
+              productId={product.id}
+              productName={product.name}
+              productSlug={product.slug}
+              productSku={product.sku}
+              imageUrl={product.image_thumb_url || product.image_url}
+              brand={product.brand}
+              stockStatus={product.stock_status}
+              unitPrice={product.price ?? 0}
+              comparePrice={product.compare_price}
+              showCartIcon={false}
+              wrapClassName="catalog-product-card-cta-wrap"
+              buttonClassName={isUnavailable ? "catalog-product-card-cta-disabled" : "catalog-product-card-cta-button"}
+            />
+          </div>
+        ) : null}
+      </div>
     </article>
   );
 }

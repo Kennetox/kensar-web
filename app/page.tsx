@@ -1,7 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import CatalogProductCard from "@/app/catalogo/CatalogProductCard";
-import AddToCartButton from "@/app/components/AddToCartButton";
 import CommerceSlider from "@/app/components/CommerceSlider";
 import HomeProductCarousel from "@/app/components/HomeProductCarousel";
 import HomePersonalizaHighlight from "@/app/components/HomePersonalizaHighlight";
@@ -435,7 +434,7 @@ export default async function HomePage() {
         {bestSellerProducts.length > 0 ? (
           <div className="commerce-home-living-products">
             <Reveal className="commerce-home-living-intro commerce-home-living-intro-left">
-              <h2>Lo mas vendido</h2>
+              <h2>Lo Más Vendido</h2>
             </Reveal>
             <HomeProductCarousel ariaLabel="Carrusel de productos más vendidos">
               {bestSellerProducts.map((product, index) => (
@@ -446,19 +445,6 @@ export default async function HomePage() {
                   speed="fast"
                 >
                   <CatalogProductCard product={product} />
-                  <div className="home-product-carousel-cta">
-                    <AddToCartButton
-                      productId={product.id}
-                      productName={product.name}
-                      productSlug={product.slug}
-                      productSku={product.sku}
-                      imageUrl={product.image_thumb_url || product.image_url}
-                      brand={product.brand}
-                      stockStatus={product.stock_status}
-                      unitPrice={product.price ?? 0}
-                      comparePrice={product.compare_price}
-                    />
-                  </div>
                 </Reveal>
               ))}
             </HomeProductCarousel>
@@ -524,7 +510,6 @@ export default async function HomePage() {
               <p className="commerce-section-kicker">Tecnología Kensar</p>
               <h2>Productos para hogar y entretenimiento</h2>
               <p className="commerce-home-living-copy">
-                Explora referencias seleccionadas con disponibilidad y precio actualizado.
               </p>
             </Reveal>
             <HomeProductCarousel ariaLabel="Carrusel de productos del hogar">
@@ -536,19 +521,6 @@ export default async function HomePage() {
                   speed="fast"
                 >
                   <CatalogProductCard product={product} />
-                  <div className="home-product-carousel-cta">
-                    <AddToCartButton
-                      productId={product.id}
-                      productName={product.name}
-                      productSlug={product.slug}
-                      productSku={product.sku}
-                      imageUrl={product.image_thumb_url || product.image_url}
-                      brand={product.brand}
-                      stockStatus={product.stock_status}
-                      unitPrice={product.price ?? 0}
-                      comparePrice={product.compare_price}
-                    />
-                  </div>
                 </Reveal>
               ))}
             </HomeProductCarousel>
