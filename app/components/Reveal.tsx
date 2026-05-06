@@ -6,6 +6,7 @@ type RevealProps = {
   children: React.ReactNode;
   className?: string;
   delay?: "none" | "short" | "mid" | "long";
+  delayMs?: number;
   direction?: "up" | "left" | "right";
   speed?: "normal" | "slow" | "fast";
   id?: string;
@@ -15,6 +16,7 @@ export default function Reveal({
   children,
   className = "",
   delay = "none",
+  delayMs,
   direction = "up",
   speed = "normal",
   id,
@@ -28,7 +30,9 @@ export default function Reveal({
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        setVisible(entry.isIntersecting);
+        if (!entry.isIntersecting) return;
+        setVisible(true);
+        observer.disconnect();
       },
       {
         threshold: 0.16,
@@ -52,7 +56,12 @@ export default function Reveal({
     .join(" ");
 
   return (
-    <div ref={ref} id={id} className={classes}>
+    <div
+      ref={ref}
+      id={id}
+      className={classes}
+      style={typeof delayMs === "number" ? { transitionDelay: `${Math.max(0, delayMs)}ms` } : undefined}
+    >
       {children}
     </div>
   );
