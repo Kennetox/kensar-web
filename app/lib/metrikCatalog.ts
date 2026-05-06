@@ -79,6 +79,11 @@ export type WebCatalogProductList = {
   };
 };
 
+export type WebCatalogBestSellerList = {
+  items: WebCatalogProductCard[];
+  updated_at: string;
+};
+
 export type WebCatalogProductDetail = {
   id: number;
   sku: string | null;
@@ -271,6 +276,18 @@ export async function getCatalogProducts(input: {
 
   const baseUrl = getApiBaseUrl();
   const response = await fetchCatalog<WebCatalogProductList>("/web/catalog/products", params);
+  return {
+    ...response,
+    items: response.items.map((item) => normalizeCatalogProductCard(baseUrl, item)),
+  };
+}
+
+export async function getCatalogBestSellers(input?: { limit?: number; days?: number }) {
+  const params = new URLSearchParams();
+  if (input?.limit && input.limit > 0) params.set("limit", String(input.limit));
+  if (input?.days && input.days > 0) params.set("days", String(input.days));
+  const baseUrl = getApiBaseUrl();
+  const response = await fetchCatalog<WebCatalogBestSellerList>("/web/catalog/best-sellers", params);
   return {
     ...response,
     items: response.items.map((item) => normalizeCatalogProductCard(baseUrl, item)),
