@@ -6754,15 +6754,18 @@ body.mini-cart-open .main-wrapper {
   }
 
   .product-commerce-split {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 
   .product-summary-panel {
-    padding-right: 14px;
+    padding-right: 0;
+    border-right: 0;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.24);
+    padding-bottom: 12px;
   }
 
   .product-actions-panel {
-    padding-left: 14px;
+    padding: 12px 0 0;
   }
 
   .product-main-visual {
@@ -6776,6 +6779,59 @@ body.mini-cart-open .main-wrapper {
   .product-gallery-thumb {
     width: 74px;
     height: 74px;
+  }
+
+  .product-page-shell {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 10px 16px 42px;
+    gap: 10px;
+  }
+
+  .product-detail-grid {
+    width: 100%;
+    max-width: none;
+    grid-template-columns: 1fr !important;
+  }
+
+  .product-detail-grid > * {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .product-related-section {
+    margin-top: 18px;
+    gap: 12px;
+  }
+
+  .product-related-section h2 {
+    text-align: left;
+  }
+
+  .product-related-grid {
+    display: flex;
+    flex-wrap: nowrap;
+    grid-template-columns: none;
+    gap: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    touch-action: pan-x;
+    padding-bottom: 6px;
+  }
+
+  .product-related-grid .catalog-product-card-live {
+    flex: 0 0 40vw;
+    min-width: 40vw;
+    max-width: 172px;
+    width: auto;
+    scroll-snap-align: start;
+  }
+
+  .product-related-grid .catalog-gallery-arrow {
+    display: none;
   }
 }
 
@@ -12021,6 +12077,14 @@ body.mini-cart-open .main-wrapper {
   display: contents;
 }
 
+.catalog-filter-mobile {
+  display: none;
+}
+
+.catalog-sidebar-desktop {
+  display: block;
+}
+
 .catalog-filter-disclosure-summary {
   display: none;
 }
@@ -13429,6 +13493,14 @@ body.mini-cart-open .main-wrapper {
   .catalog-filter-disclosure {
     display: block;
     width: 100%;
+  }
+
+  .catalog-filter-mobile {
+    display: block;
+  }
+
+  .catalog-sidebar-desktop {
+    display: none;
   }
 
   .catalog-filter-disclosure-summary {

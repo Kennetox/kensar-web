@@ -358,7 +358,20 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
       </section>
 
       <section className="catalog-store-layout">
-        <details className="catalog-filter-disclosure">
+        <aside className="catalog-sidebar catalog-sidebar-desktop">
+          <CatalogFiltersSidebar
+            query={localQ}
+            sort={sort}
+            minPrice={minPrice}
+            maxPrice={maxPrice > 0 ? maxPrice : effectiveAvailableMaxPrice}
+            availableMinPrice={effectiveAvailableMinPrice}
+            availableMaxPrice={effectiveAvailableMaxPrice}
+            selectedBrands={selectedBrands}
+            brands={visibleBrands}
+          />
+        </aside>
+
+        <details className="catalog-filter-disclosure catalog-filter-mobile">
           <summary className="catalog-filter-disclosure-summary">
             <span>Filtrar y ordenar</span>
             <span className="catalog-filter-disclosure-icon" aria-hidden="true">

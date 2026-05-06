@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Inter } from "next/font/google";
@@ -66,6 +66,13 @@ export const metadata: Metadata = {
       "Catalogo web de Kensar Electronic con atencion comercial directa y operacion conectada a tienda.",
     images: ["/branding/kensar-logo.png"],
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
 };
 
 type HeaderCategory = {
