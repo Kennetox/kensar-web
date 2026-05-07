@@ -476,6 +476,10 @@ function PagoPageContent() {
   const [fieldErrors, setFieldErrors] = useState<CheckoutFieldErrors>({});
   const [personalizationContext, setPersonalizationContext] = useState<Record<string, unknown> | null>(null);
   const previousCartSignatureRef = useRef<string | null>(null);
+  const paymentAnchorRef = useRef<HTMLDivElement | null>(null);
+  const summaryCardRef = useRef<HTMLElement | null>(null);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [isNearPaymentArea, setIsNearPaymentArea] = useState(false);
 
   const cartSignature = useMemo(
     () =>
@@ -522,6 +526,8 @@ function PagoPageContent() {
   const activeCouponPercent = effectiveSnapshot.activeCouponPercent;
   const subtotalWithoutDiscount = effectiveSnapshot.subtotalWithoutDiscount;
   const hasDiscountGap = subtotalWithoutDiscount > subtotalBase + 0.5;
+  const leadItem = items[0] ?? null;
+  const extraSummaryItemsCount = Math.max(0, items.length - 1);
   const customerNameParts = splitCustomerName(customer?.name);
   const billingFieldsOpen = deliveryMode === "pickup" || billingMode === "different";
   const safeReturnTo = useMemo(
@@ -532,6 +538,37 @@ function PagoPageContent() {
   const loginHref = `/cuenta?returnTo=${encodeURIComponent(
     `/pago${safeReturnTo ? `?returnTo=${encodeURIComponent(safeReturnTo)}` : ""}`
   )}`;
+  const showMobileFloatingSummary = hasItems && isMobileViewport && !isNearPaymentArea;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(max-width: 720px)");
+    const sync = () => setIsMobileViewport(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobileViewport) {
+      setIsNearPaymentArea(false);
+      return;
+    }
+    if (typeof window === "undefined" || !paymentAnchorRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        setIsNearPaymentArea(Boolean(entry?.isIntersecting));
+      },
+      {
+        root: null,
+        threshold: 0.15,
+        rootMargin: "0px 0px -72px 0px",
+      }
+    );
+    observer.observe(paymentAnchorRef.current);
+    return () => observer.disconnect();
+  }, [isMobileViewport, hasItems]);
 
   useEffect(() => {
     const candidate = parsePersonalizaCheckoutContext();
@@ -891,7 +928,7 @@ function PagoPageContent() {
                 void handleStartPayment();
               }}
             >
-              <header className="checkout-form-header">
+              <header className="checkout-form-header checkout-desktop-only">
                 <p className="account-section-kicker">Pago</p>
                 <h1>Contacto y entrega</h1>
                 <p>Completa tus datos para confirmar modalidad de entrega, disponibilidad y pago.</p>
@@ -911,6 +948,11 @@ function PagoPageContent() {
               >
                 <div className="checkout-form-section-head">
                   <h2>Contacto</h2>
+                  {!authenticated ? (
+                    <Link href={loginHref} className="guest-mode-note-link guest-mode-note-link-dark checkout-mobile-only">
+                      Iniciar sesión
+                    </Link>
+                  ) : null}
                 </div>
                 <FloatingInput
                   type="email"
@@ -1378,6 +1420,7 @@ function PagoPageContent() {
                   </div>
                 </section>
 
+                <div ref={paymentAnchorRef} className="checkout-mobile-payment-anchor" aria-hidden="true" />
                 <button type="submit" className="checkout-submit-btn checkout-submit-btn-main" disabled={checkoutLoading}>
                   {checkoutLoading ? "Procesando..." : "Pagar ahora"}
                 </button>
@@ -1391,7 +1434,7 @@ function PagoPageContent() {
             </form>
           </article>
 
-          <aside className="checkout-summary-card">
+          <aside ref={summaryCardRef} className="checkout-summary-card">
             <h2>Resumen de tu compra</h2>
             <div className="checkout-summary-items">
               {items.map((item) => (
@@ -1452,6 +1495,29 @@ function PagoPageContent() {
           </aside>
         </section>
       )}
+      {showMobileFloatingSummary && leadItem ? (
+        <button
+          type="button"
+          className="checkout-mobile-floating-summary"
+          onClick={() => summaryCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+        >
+          <span
+            className={`checkout-mobile-floating-thumb${leadItem.image_url ? " has-image" : ""}`}
+            style={leadItem.image_url ? { backgroundImage: `url('${leadItem.image_url}')` } : undefined}
+            aria-hidden="true"
+          >
+            {extraSummaryItemsCount > 0 ? (
+              <span className="checkout-mobile-floating-thumb-badge">+{extraSummaryItemsCount}</span>
+            ) : null}
+          </span>
+          <strong>{formatMoney(totalWithCoupon)}</strong>
+          <span className="checkout-mobile-floating-chevron" aria-hidden="true">
+            <svg viewBox="0 0 16 10" fill="none">
+              <path d="m2 2 6 6 6-6" />
+            </svg>
+          </span>
+        </button>
+      ) : null}
     </main>
   );
 }

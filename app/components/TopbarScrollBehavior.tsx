@@ -29,7 +29,6 @@ export default function TopbarScrollBehavior() {
         setHidden(false);
         return;
       }
-
       const isMobile = width <= 1100;
       const hideDelta = isMobile ? 1.5 : 6;
       const hideOffset = isMobile ? 28 : 110;

@@ -96,16 +96,24 @@ export default function HeaderCatalogSearch() {
     };
   }, [query]);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const term = query.trim();
-    const href = term ? `/catalogo?q=${encodeURIComponent(term)}` : "/catalogo";
+  function buildCatalogSearchHref(term: string): string {
+    const clean = term.trim();
+    return clean ? `/catalogo?q=${encodeURIComponent(clean)}` : "/catalogo";
+  }
+
+  function goToCatalogSearch(term: string) {
+    const href = buildCatalogSearchHref(term);
     setOpen(false);
     if (pathname === "/catalogo") {
       router.replace(href);
       return;
     }
     router.push(href);
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    goToCatalogSearch(query);
   }
 
   return (
@@ -170,6 +178,15 @@ export default function HeaderCatalogSearch() {
                 </Link>
               ))
             : null}
+          {!loading ? (
+            <button
+              type="button"
+              className="header-search-view-all"
+              onClick={() => goToCatalogSearch(query)}
+            >
+              Mostrar todos los resultados de "{query.trim()}"
+            </button>
+          ) : null}
         </div>
       ) : null}
     </div>
