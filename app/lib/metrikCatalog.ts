@@ -133,6 +133,7 @@ function getApiBaseUrl() {
 }
 
 const CATALOG_REVALIDATE_SECONDS = 60;
+const CATALOG_PRODUCTS_REVALIDATE_SECONDS = 10;
 
 function resolveCatalogAssetUrl(baseUrl: string, value: string | null): string | null {
   if (!value) return null;
@@ -201,10 +202,41 @@ async function fetchCatalog<T>(path: string, params?: URLSearchParams): Promise<
   return response.json() as Promise<T>;
 }
 
+async function fetchCatalogFast<T>(path: string, params?: URLSearchParams): Promise<T> {
+  const baseUrl = getApiBaseUrl();
+  const query = params && params.toString() ? `?${params.toString()}` : "";
+  const response = await fetch(`${baseUrl}${path}${query}`, {
+    next: { revalidate: CATALOG_PRODUCTS_REVALIDATE_SECONDS },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Catalog request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<T>;
+}
+
 async function fetchCatalogOptional<T>(path: string): Promise<T | null> {
   const baseUrl = getApiBaseUrl();
   const response = await fetch(`${baseUrl}${path}`, {
     next: { revalidate: CATALOG_REVALIDATE_SECONDS },
+  });
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(`Catalog request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<T>;
+}
+
+async function fetchCatalogOptionalFast<T>(path: string): Promise<T | null> {
+  const baseUrl = getApiBaseUrl();
+  const response = await fetch(`${baseUrl}${path}`, {
+    next: { revalidate: CATALOG_PRODUCTS_REVALIDATE_SECONDS },
   });
 
   if (response.status === 404) {
@@ -275,7 +307,7 @@ export async function getCatalogProducts(input: {
   if (input.page_size && input.page_size > 0) params.set("page_size", String(input.page_size));
 
   const baseUrl = getApiBaseUrl();
-  const response = await fetchCatalog<WebCatalogProductList>("/web/catalog/products", params);
+  const response = await fetchCatalogFast<WebCatalogProductList>("/web/catalog/products", params);
   return {
     ...response,
     items: response.items.map((item) => normalizeCatalogProductCard(baseUrl, item)),
@@ -296,7 +328,9 @@ export async function getCatalogBestSellers(input?: { limit?: number; days?: num
 
 export async function getCatalogProduct(slug: string) {
   const baseUrl = getApiBaseUrl();
-  const response = await fetchCatalogOptional<WebCatalogProductDetail>(`/web/catalog/products/${slug}`);
+  const response = await fetchCatalogOptionalFast<WebCatalogProductDetail>(
+    `/web/catalog/products/${slug}`
+  );
   return response ? normalizeCatalogProductDetail(baseUrl, response) : null;
 }
 
