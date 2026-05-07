@@ -51,6 +51,18 @@ export default function HeaderCatalogSearch() {
   }, []);
 
   useEffect(() => {
+    const className = "search-focus-active";
+    if (open && query.trim().length > 0) {
+      document.body.classList.add(className);
+    } else {
+      document.body.classList.remove(className);
+    }
+    return () => {
+      document.body.classList.remove(className);
+    };
+  }, [open, query]);
+
+  useEffect(() => {
     const term = query.trim();
     if (term.length < 2) {
       setItems([]);

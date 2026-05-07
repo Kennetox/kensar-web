@@ -8,6 +8,7 @@ import AccountAccess from "./components/AccountAccess";
 import CartAccess from "./components/CartAccess";
 import HeaderCatalogSearch from "./components/HeaderCatalogSearch";
 import MobileHeaderMenu from "./components/MobileHeaderMenu";
+import MobileSearchToggle from "./components/MobileSearchToggle";
 import FloatingWhatsAppButton from "./components/FloatingWhatsAppButton";
 import KoraChat from "./components/KoraChat";
 import BackToTopButton from "./components/BackToTopButton";
@@ -183,13 +184,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </Link>
             <div className="topbar-main-right">
               <div className="topbar-actions">
-                <div className="header-search-cluster">
+                <div className="header-search-cluster" id="header-search-cluster">
                   <Suspense fallback={null}>
                     <HeaderCatalogSearch />
                   </Suspense>
                 </div>
 
                 <div className="header-icon-cluster">
+                  <MobileSearchToggle />
                   <Suspense fallback={null}>
                     <AccountAccess />
                   </Suspense>
