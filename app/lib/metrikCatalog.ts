@@ -25,6 +25,7 @@ export type WebCatalogHomeSliderLinkType =
 export type WebCatalogHomeSlider = {
   slot: number;
   image_url: string | null;
+  mobile_image_url?: string | null;
   alt_text: string | null;
   cta_label: string | null;
   cta_x_percent: number;
@@ -271,6 +272,7 @@ export async function getHomeSliders() {
     .map((item) => ({
       ...item,
       image_url: resolveCatalogAssetUrl(baseUrl, item.image_url),
+      mobile_image_url: resolveCatalogAssetUrl(baseUrl, item.mobile_image_url || null),
     }));
 }
 

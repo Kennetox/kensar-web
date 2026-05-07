@@ -345,6 +345,7 @@ export default async function HomePage() {
       ? sliders.map((slider) => ({
           id: `slot-${slider.slot}`,
           image: slider.image_url || "",
+          mobileImage: slider.mobile_image_url || null,
           alt: slider.alt_text || "Promoción destacada Kensar",
           href: resolveSliderHref(slider),
           ctaLabel: slider.cta_label || "",

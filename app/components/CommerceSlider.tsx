@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 type SlideItem = {
   id: string;
   image: string;
+  mobileImage?: string | null;
   alt: string;
   href: string | null;
   ctaLabel?: string | null;
@@ -32,6 +33,7 @@ export default function CommerceSlider({ slides, categories, intervalMs = 8000 }
   const [internalIndex, setInternalIndex] = useState(hasLoop ? 1 : 0);
   const [transitionEnabled, setTransitionEnabled] = useState(true);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const activeIndex = hasLoop ? (internalIndex - 1 + slides.length) % slides.length : 0;
 
   const goToNextSlide = useCallback(() => {
@@ -47,6 +49,14 @@ export default function CommerceSlider({ slides, categories, intervalMs = 8000 }
     setTransitionEnabled(true);
     setInternalIndex((current) => current - 1);
   }, [hasLoop, isAnimating]);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 720px)");
+    const sync = () => setIsMobileViewport(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
 
   useEffect(() => {
     if (!hasLoop) return;
@@ -123,11 +133,15 @@ export default function CommerceSlider({ slides, categories, intervalMs = 8000 }
               {slide.href ? <Link href={slide.href} className="commerce-slider-link" aria-label={slide.alt} /> : null}
               <div
                 className="commerce-slider-layer"
-                style={{ backgroundImage: `url('${slide.image}')` }}
+                style={{
+                  backgroundImage: `url('${
+                    isMobileViewport && slide.mobileImage ? slide.mobileImage : slide.image
+                  }')`,
+                }}
                 role="img"
                 aria-label={slide.alt}
               />
-              {(slide.ctaLabel || "").trim() ? (
+              {!isMobileViewport && (slide.ctaLabel || "").trim() ? (
                 hasPresetStyle ? (
                   <div className="commerce-slider-cta-shell">
                     {slide.href ? (
