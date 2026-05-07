@@ -17,6 +17,8 @@ import {
   type WebCatalogProductDetail,
 } from "@/app/lib/metrikCatalog";
 
+export const dynamic = "force-dynamic";
+
 type CatalogProductDetailPageProps = {
   params: Promise<{ slug: string }>;
 };
