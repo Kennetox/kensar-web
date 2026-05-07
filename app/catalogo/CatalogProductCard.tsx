@@ -76,6 +76,7 @@ export default function CatalogProductCard({
       <div className="catalog-product-card-body storefront-card-body">
         <Link
           href={detailHref}
+          prefetch={false}
           className="catalog-product-card-body-link"
           aria-label={`Ver detalle de ${product.name}`}
         >

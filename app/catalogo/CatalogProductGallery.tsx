@@ -53,7 +53,7 @@ export default function CatalogProductGallery({
 
   return (
     <>
-      <Link href={detailHref} className="catalog-product-card-media-link">
+      <Link href={detailHref} prefetch={false} className="catalog-product-card-media-link">
         <div
           key={`${activeImage ?? "fallback"}-${slideTick}`}
           className={`storefront-media-image is-slide-${slideDirection}`}
