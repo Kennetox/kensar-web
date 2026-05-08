@@ -7,7 +7,8 @@
     "dev:turbo": "next dev --turbo",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "kora:telemetry:summary": "tsc scripts/kora-telemetry-summary.ts --target ES2022 --module commonjs --esModuleInterop --skipLibCheck --outDir .tmp && node .tmp/kora-telemetry-summary.js"
   },
   "dependencies": {
     "libphonenumber-js": "^1.12.41",

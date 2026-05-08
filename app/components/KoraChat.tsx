@@ -102,9 +102,42 @@ type KoraAskResponse = {
     last_recommendation_attributes?: string[];
     last_usage_context?: string | null;
     last_recommendation_type?: string | null;
-    last_intent?: "products" | "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu" | "unknown" | null;
+    last_intent?:
+      | "products"
+      | "payments"
+      | "shipping"
+      | "warranty"
+      | "advisor"
+      | "orders"
+      | "business_location"
+      | "business_hours"
+      | "business_contact"
+      | "business_support"
+      | "returns_policy"
+      | "shipping_policy"
+      | "warranty_policy"
+      | "business_info"
+      | "menu"
+      | "unknown"
+      | null;
     last_non_product_intent?: "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu" | null;
-    last_support_topic?: "payments" | "shipping" | "warranty" | "advisor" | null;
+    last_support_topic?: "payments" | "shipping" | "warranty" | "returns" | "advisor" | null;
+    last_business_topic?: "location" | "hours" | "contact" | "support" | "business_info" | null;
+    last_conversation_topic?:
+      | "products"
+      | "shipping"
+      | "payments"
+      | "warranty"
+      | "returns"
+      | "location"
+      | "hours"
+      | "contact"
+      | "support"
+      | "business_info"
+      | "unknown"
+      | null;
+    last_answer_domain?: "products" | "business" | "support" | "unknown" | null;
+    last_category_opening_context?: string | null;
   };
   memory_patch?: {
     last_recommended_products?: Array<{
@@ -122,9 +155,42 @@ type KoraAskResponse = {
     last_recommendation_attributes?: string[];
     last_usage_context?: string | null;
     last_recommendation_type?: string | null;
-    last_intent?: "products" | "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu" | "unknown" | null;
+    last_intent?:
+      | "products"
+      | "payments"
+      | "shipping"
+      | "warranty"
+      | "advisor"
+      | "orders"
+      | "business_location"
+      | "business_hours"
+      | "business_contact"
+      | "business_support"
+      | "returns_policy"
+      | "shipping_policy"
+      | "warranty_policy"
+      | "business_info"
+      | "menu"
+      | "unknown"
+      | null;
     last_non_product_intent?: "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu" | null;
-    last_support_topic?: "payments" | "shipping" | "warranty" | "advisor" | null;
+    last_support_topic?: "payments" | "shipping" | "warranty" | "returns" | "advisor" | null;
+    last_business_topic?: "location" | "hours" | "contact" | "support" | "business_info" | null;
+    last_conversation_topic?:
+      | "products"
+      | "shipping"
+      | "payments"
+      | "warranty"
+      | "returns"
+      | "location"
+      | "hours"
+      | "contact"
+      | "support"
+      | "business_info"
+      | "unknown"
+      | null;
+    last_answer_domain?: "products" | "business" | "support" | "unknown" | null;
+    last_category_opening_context?: string | null;
   };
   product_cards?: Array<{
     id: number;
@@ -138,12 +204,43 @@ type KoraAskResponse = {
     reason: string | null;
     url: string;
   }>;
+  telemetry_meta?: {
+    resolver_used?:
+      | "business_support"
+      | "contextual_selling"
+      | "recommender"
+      | "product_page_assistant"
+      | "memory_followup"
+      | "nlu_router"
+      | "fallback";
+    response_type?: "explanation" | "recommendation" | "support" | "fallback" | "menu";
+    detected_intent?: string;
+    detected_category?: string | null;
+    detected_attributes?: string[];
+    fallback_used?: boolean;
+  };
+};
+
+type KoraPageContext = {
+  pageType: "home" | "category" | "subcategory" | "product" | "unknown";
+  categorySlug?: string;
+  categoryName?: string;
+  subcategorySlug?: string;
+  subcategoryName?: string;
+  productId?: string | number;
+  productName?: string;
+  productPrice?: number;
+  productBrand?: string;
+  productCategory?: string;
+  productDescription?: string;
+  productAttributes?: Record<string, unknown>;
 };
 
 const SESSION_KEY = "kensar_kora_session_v1";
 const SESSION_OPEN_KEY = "kensar_kora_open_v1";
 const EVENTS_SESSION_KEY = "kensar_kora_events_v1";
 const MEMORY_SESSION_KEY = "kensar_kora_memory_v1";
+const TELEMETRY_SESSION_KEY = "kensar_kora_telemetry_session_v1";
 const WHATSAPP_PHONE = "573185657508";
 const RESPONSE_DELAYS = [520, 640, 760] as const;
 const KORA_NUDGE_TEXT = "Asistente 24/7";
@@ -172,6 +269,25 @@ const FALLBACK_PRODUCT_ACTIONS: ChatAction[] = [
 
 function createId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function normalizeMessage(value: string) {
+  return (value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[¿?¡!.,;:()]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function loadTelemetrySessionId() {
+  if (typeof window === "undefined") return `kora-${createId()}`;
+  const existing = window.sessionStorage.getItem(TELEMETRY_SESSION_KEY);
+  if (existing) return existing;
+  const next = `kora-${createId()}`;
+  window.sessionStorage.setItem(TELEMETRY_SESSION_KEY, next);
+  return next;
 }
 
 function createWelcomeMessage(): ChatMessage {
@@ -416,9 +532,42 @@ type KoraSessionMemory = {
   last_recommendation_attributes?: string[];
   last_usage_context?: string | null;
   last_recommendation_type?: string | null;
-  last_intent?: "products" | "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu" | "unknown" | null;
+  last_intent?:
+    | "products"
+    | "payments"
+    | "shipping"
+    | "warranty"
+    | "advisor"
+    | "orders"
+    | "business_location"
+    | "business_hours"
+    | "business_contact"
+    | "business_support"
+    | "returns_policy"
+    | "shipping_policy"
+    | "warranty_policy"
+    | "business_info"
+    | "menu"
+    | "unknown"
+    | null;
   last_non_product_intent?: "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu" | null;
-  last_support_topic?: "payments" | "shipping" | "warranty" | "advisor" | null;
+  last_support_topic?: "payments" | "shipping" | "warranty" | "returns" | "advisor" | null;
+  last_business_topic?: "location" | "hours" | "contact" | "support" | "business_info" | null;
+  last_conversation_topic?:
+    | "products"
+    | "shipping"
+    | "payments"
+    | "warranty"
+    | "returns"
+    | "location"
+    | "hours"
+    | "contact"
+    | "support"
+    | "business_info"
+    | "unknown"
+    | null;
+  last_answer_domain?: "products" | "business" | "support" | "unknown" | null;
+  last_category_opening_context?: string | null;
 };
 
 function loadKoraMemory(): KoraSessionMemory {
@@ -475,6 +624,11 @@ function loadKoraMemory(): KoraSessionMemory {
       last_intent: typeof parsed?.last_intent === "string" ? parsed.last_intent : undefined,
       last_non_product_intent: typeof parsed?.last_non_product_intent === "string" ? parsed.last_non_product_intent : undefined,
       last_support_topic: typeof parsed?.last_support_topic === "string" ? parsed.last_support_topic : undefined,
+      last_business_topic: typeof parsed?.last_business_topic === "string" ? parsed.last_business_topic : undefined,
+      last_conversation_topic: typeof parsed?.last_conversation_topic === "string" ? parsed.last_conversation_topic : undefined,
+      last_answer_domain: typeof parsed?.last_answer_domain === "string" ? parsed.last_answer_domain : undefined,
+      last_category_opening_context:
+        typeof parsed?.last_category_opening_context === "string" ? parsed.last_category_opening_context : undefined,
     };
   } catch {
     return {};
@@ -490,7 +644,7 @@ function persistKoraMemory(memory: KoraSessionMemory) {
   }
 }
 
-export default function KoraChat() {
+export default function KoraChat({ pageContext }: { pageContext?: KoraPageContext }) {
   const pathname = usePathname();
   const router = useRouter();
   const hydrated = useSyncExternalStore(
@@ -506,6 +660,7 @@ export default function KoraChat() {
   const [nudgeVisible, setNudgeVisible] = useState(false);
   const [nudgePulse, setNudgePulse] = useState(false);
   const [memory, setMemory] = useState<KoraSessionMemory>(loadKoraMemory);
+  const telemetrySessionIdRef = useRef<string>(loadTelemetrySessionId());
   const endRef = useRef<HTMLDivElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const timeoutRef = useRef<number | null>(null);
@@ -517,6 +672,21 @@ export default function KoraChat() {
   const isCatalogRoute = pathname === "/catalogo" || pathname.startsWith("/catalogo/");
   const koraNudgeLoopMs = isCatalogRoute ? 45000 : 27000;
   const { addItem } = useWebCart();
+
+  function sendTelemetryEvent(payload: Record<string, unknown>) {
+    const body = JSON.stringify(payload);
+    if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+      const blob = new Blob([body], { type: "application/json" });
+      navigator.sendBeacon("/api/kora/telemetry", blob);
+      return;
+    }
+    void fetch("/api/kora/telemetry", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+      keepalive: true,
+    }).catch(() => undefined);
+  }
 
   useEffect(() => {
     if (!hydrated || isDisabledRoute) return;
@@ -692,6 +862,7 @@ export default function KoraChat() {
           query,
           path: pathname,
           context: currentProductSlug ? { currentProductSlug } : undefined,
+          pageContext,
           memory,
         }),
       });
@@ -744,6 +915,35 @@ function sanitizeApiActions(actions: ChatAction[] | undefined): ChatAction[] {
     timeoutRef.current = window.setTimeout(async () => {
       const aiReply = await askKora(input);
       if (aiReply) {
+        const productIdsShown = Array.isArray(aiReply.product_cards)
+          ? aiReply.product_cards.map((card) => Number(card.id)).filter((id) => Number.isFinite(id))
+          : [];
+        sendTelemetryEvent({
+          event_type: "conversation_turn",
+          sessionId: telemetrySessionIdRef.current,
+          timestamp: new Date().toISOString(),
+          userMessage: input,
+          normalizedMessage: normalizeMessage(input),
+          detectedIntent: aiReply.telemetry_meta?.detected_intent || aiReply.intent,
+          detectedCategory:
+            aiReply.telemetry_meta?.detected_category ||
+            aiReply.memory_patch?.last_recommendation_category ||
+            aiReply.memory_updates?.preferred_category ||
+            null,
+          detectedAttributes:
+            aiReply.telemetry_meta?.detected_attributes ||
+            aiReply.memory_patch?.last_recommendation_attributes ||
+            [],
+          resolverUsed: aiReply.telemetry_meta?.resolver_used || "fallback",
+          responseType: aiReply.telemetry_meta?.response_type || (aiReply.handled ? "recommendation" : "fallback"),
+          pageContext: pageContext || null,
+          productIdsShown,
+          clickedProductId: null,
+          clickedWhatsApp: null,
+          fallbackUsed: Boolean(aiReply.telemetry_meta?.fallback_used ?? !aiReply.handled),
+          conversationMessageCount: messages.length + 2,
+          routePath: pathname,
+        });
         emitEvent("intent_detected", {
           detected_intent: aiReply.intent,
           handled: aiReply.handled,
@@ -857,9 +1057,43 @@ function sanitizeApiActions(actions: ChatAction[] | undefined): ChatAction[] {
               mergedPatch?.last_support_topic === "payments" ||
               mergedPatch?.last_support_topic === "shipping" ||
               mergedPatch?.last_support_topic === "warranty" ||
+              mergedPatch?.last_support_topic === "returns" ||
               mergedPatch?.last_support_topic === "advisor"
                 ? mergedPatch.last_support_topic
                 : prev.last_support_topic,
+            last_business_topic:
+              mergedPatch?.last_business_topic === "location" ||
+              mergedPatch?.last_business_topic === "hours" ||
+              mergedPatch?.last_business_topic === "contact" ||
+              mergedPatch?.last_business_topic === "support" ||
+              mergedPatch?.last_business_topic === "business_info"
+                ? mergedPatch.last_business_topic
+                : prev.last_business_topic,
+            last_conversation_topic:
+              mergedPatch?.last_conversation_topic === "products" ||
+              mergedPatch?.last_conversation_topic === "shipping" ||
+              mergedPatch?.last_conversation_topic === "payments" ||
+              mergedPatch?.last_conversation_topic === "warranty" ||
+              mergedPatch?.last_conversation_topic === "returns" ||
+              mergedPatch?.last_conversation_topic === "location" ||
+              mergedPatch?.last_conversation_topic === "hours" ||
+              mergedPatch?.last_conversation_topic === "contact" ||
+              mergedPatch?.last_conversation_topic === "support" ||
+              mergedPatch?.last_conversation_topic === "business_info" ||
+              mergedPatch?.last_conversation_topic === "unknown"
+                ? mergedPatch.last_conversation_topic
+                : prev.last_conversation_topic,
+            last_answer_domain:
+              mergedPatch?.last_answer_domain === "products" ||
+              mergedPatch?.last_answer_domain === "business" ||
+              mergedPatch?.last_answer_domain === "support" ||
+              mergedPatch?.last_answer_domain === "unknown"
+                ? mergedPatch.last_answer_domain
+                : prev.last_answer_domain,
+            last_category_opening_context:
+              typeof mergedPatch?.last_category_opening_context === "string"
+                ? mergedPatch.last_category_opening_context
+                : prev.last_category_opening_context,
           }));
         }
         const apiActions = sanitizeApiActions(aiReply.actions);
@@ -905,6 +1139,16 @@ function sanitizeApiActions(actions: ChatAction[] | undefined): ChatAction[] {
   function openWhatsAppWithContext(latestInput: string) {
     const href = buildWhatsAppHrefWithContext(pathname, messages, latestInput);
     window.open(href, "_blank", "noopener,noreferrer");
+    sendTelemetryEvent({
+      event_type: "interaction_click",
+      sessionId: telemetrySessionIdRef.current,
+      timestamp: new Date().toISOString(),
+      clickedProductId: null,
+      clickedWhatsApp: true,
+      routePath: pathname,
+      userMessage: latestInput || null,
+      conversationMessageCount: messages.length,
+    });
     emitEvent("whatsapp_opened", { latest_input: latestInput || null });
   }
 
@@ -980,6 +1224,23 @@ function sanitizeApiActions(actions: ChatAction[] | undefined): ChatAction[] {
       action_id: action.id,
       action_type: action.type,
       action_value: action.value,
+    });
+    const productIdFromAction =
+      Number(action.payload?.product_id) ||
+      Number.parseInt(String(action.value).replace(/[^\d]/g, ""), 10) ||
+      Number.parseInt(String(action.id).replace(/[^\d]/g, ""), 10) ||
+      null;
+    sendTelemetryEvent({
+      event_type: "interaction_click",
+      sessionId: telemetrySessionIdRef.current,
+      timestamp: new Date().toISOString(),
+      clickedProductId: action.type === "link" && action.value.startsWith("/catalogo/") ? productIdFromAction : null,
+      clickedWhatsApp: action.type === "whatsapp",
+      actionType: action.type,
+      actionId: action.id,
+      actionValue: action.value,
+      routePath: pathname,
+      conversationMessageCount: messages.length,
     });
 
     if (action.type === "whatsapp") {
@@ -1191,8 +1452,16 @@ function sanitizeApiActions(actions: ChatAction[] | undefined): ChatAction[] {
               maxLength={140}
               aria-label="Escribir consulta en KORA"
             />
-            <button type="submit" className="kora-chat-send" disabled={isTyping || !draft.trim()}>
-              Enviar
+            <button type="submit" className="kora-chat-send" disabled={isTyping || !draft.trim()} aria-label="Enviar">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M4 12.4 19 4l-3.9 16-4.1-5.1-7 1.5Z"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </button>
           </form>
         </footer>

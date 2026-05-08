@@ -3,11 +3,16 @@ import { getCatalogProduct, getCatalogProducts, formatCatalogPrice, getStockLabe
 import { extractKoraEntities, type KoraNluResult } from "@/app/lib/kora/entities";
 import { buildNluRoutedResponse } from "@/app/lib/kora/response-router";
 import { resolveKoraCatalogRecommendation } from "@/app/lib/kora/recommender";
+import { getKoraBusinessKnowledge } from "@/app/lib/kora/business-knowledge";
+import { resolveContextualSellingResponse } from "@/app/lib/kora/contextual-selling";
+import { sanitizePageContext } from "@/app/lib/kora/page-context";
+import type { KoraContextualSellingDebug, KoraPageContext } from "@/app/lib/kora/knowledge-types";
 
 type AskRequest = {
   query?: string;
   path?: string;
   context?: ProductContext;
+  pageContext?: KoraPageContext;
   memory?: {
     preferred_category?: string | null;
     budget_cop?: number | null;
@@ -33,9 +38,42 @@ type AskRequest = {
     last_recommendation_attributes?: string[];
     last_usage_context?: string | null;
     last_recommendation_type?: string | null;
-    last_intent?: "products" | "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu" | "unknown" | null;
+    last_intent?:
+      | "products"
+      | "payments"
+      | "shipping"
+      | "warranty"
+      | "advisor"
+      | "orders"
+      | "business_location"
+      | "business_hours"
+      | "business_contact"
+      | "business_support"
+      | "returns_policy"
+      | "shipping_policy"
+      | "warranty_policy"
+      | "business_info"
+      | "menu"
+      | "unknown"
+      | null;
     last_non_product_intent?: "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu" | null;
-    last_support_topic?: "payments" | "shipping" | "warranty" | "advisor" | null;
+    last_support_topic?: "payments" | "shipping" | "warranty" | "returns" | "advisor" | null;
+    last_business_topic?: "location" | "hours" | "contact" | "support" | "business_info" | null;
+    last_conversation_topic?:
+      | "products"
+      | "shipping"
+      | "payments"
+      | "warranty"
+      | "returns"
+      | "location"
+      | "hours"
+      | "contact"
+      | "support"
+      | "business_info"
+      | "unknown"
+      | null;
+    last_answer_domain?: "products" | "business" | "support" | "unknown" | null;
+    last_category_opening_context?: string | null;
   };
 };
 
@@ -75,6 +113,14 @@ type AskResponse = {
     | "warranty"
     | "advisor"
     | "orders"
+    | "business_location"
+    | "business_hours"
+    | "business_contact"
+    | "business_support"
+    | "returns_policy"
+    | "shipping_policy"
+    | "warranty_policy"
+    | "business_info"
     | "menu"
     | "unknown";
   answer: string;
@@ -109,9 +155,42 @@ type AskResponse = {
     last_recommendation_attributes?: string[];
     last_usage_context?: string | null;
     last_recommendation_type?: string | null;
-    last_intent?: "products" | "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu" | "unknown" | null;
+    last_intent?:
+      | "products"
+      | "payments"
+      | "shipping"
+      | "warranty"
+      | "advisor"
+      | "orders"
+      | "business_location"
+      | "business_hours"
+      | "business_contact"
+      | "business_support"
+      | "returns_policy"
+      | "shipping_policy"
+      | "warranty_policy"
+      | "business_info"
+      | "menu"
+      | "unknown"
+      | null;
     last_non_product_intent?: "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu" | null;
-    last_support_topic?: "payments" | "shipping" | "warranty" | "advisor" | null;
+    last_support_topic?: "payments" | "shipping" | "warranty" | "returns" | "advisor" | null;
+    last_business_topic?: "location" | "hours" | "contact" | "support" | "business_info" | null;
+    last_conversation_topic?:
+      | "products"
+      | "shipping"
+      | "payments"
+      | "warranty"
+      | "returns"
+      | "location"
+      | "hours"
+      | "contact"
+      | "support"
+      | "business_info"
+      | "unknown"
+      | null;
+    last_answer_domain?: "products" | "business" | "support" | "unknown" | null;
+    last_category_opening_context?: string | null;
   };
   memory_patch?: {
     last_recommended_products?: Array<{
@@ -129,9 +208,42 @@ type AskResponse = {
     last_recommendation_attributes?: string[];
     last_usage_context?: string | null;
     last_recommendation_type?: string | null;
-    last_intent?: "products" | "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu" | "unknown" | null;
+    last_intent?:
+      | "products"
+      | "payments"
+      | "shipping"
+      | "warranty"
+      | "advisor"
+      | "orders"
+      | "business_location"
+      | "business_hours"
+      | "business_contact"
+      | "business_support"
+      | "returns_policy"
+      | "shipping_policy"
+      | "warranty_policy"
+      | "business_info"
+      | "menu"
+      | "unknown"
+      | null;
     last_non_product_intent?: "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu" | null;
-    last_support_topic?: "payments" | "shipping" | "warranty" | "advisor" | null;
+    last_support_topic?: "payments" | "shipping" | "warranty" | "returns" | "advisor" | null;
+    last_business_topic?: "location" | "hours" | "contact" | "support" | "business_info" | null;
+    last_conversation_topic?:
+      | "products"
+      | "shipping"
+      | "payments"
+      | "warranty"
+      | "returns"
+      | "location"
+      | "hours"
+      | "contact"
+      | "support"
+      | "business_info"
+      | "unknown"
+      | null;
+    last_answer_domain?: "products" | "business" | "support" | "unknown" | null;
+    last_category_opening_context?: string | null;
   };
   recommendation_debug?: {
     normalized_query: string;
@@ -153,13 +265,42 @@ type AskResponse = {
     reason: string | null;
     url: string;
   }>;
+  contextual_selling_debug?: KoraContextualSellingDebug;
+  telemetry_meta?: {
+    resolver_used:
+      | "business_support"
+      | "contextual_selling"
+      | "recommender"
+      | "product_page_assistant"
+      | "memory_followup"
+      | "nlu_router"
+      | "fallback";
+    response_type: "explanation" | "recommendation" | "support" | "fallback" | "menu";
+    detected_intent: string;
+    detected_category: string | null;
+    detected_attributes: string[];
+    fallback_used: boolean;
+  };
 };
 
 type Emotion = AskResponse["emotion"];
 type ToneMode = "friendly" | "professional";
 type CustomerGoal = "gift" | "home" | "business" | "studio" | null;
 type NonProductIntent = "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu";
-type SupportTopic = "payments" | "shipping" | "warranty" | "advisor";
+type SupportTopic = "payments" | "shipping" | "warranty" | "returns" | "advisor";
+type BusinessTopic = "location" | "hours" | "contact" | "support" | "business_info";
+type ConversationTopic =
+  | "products"
+  | "shipping"
+  | "payments"
+  | "warranty"
+  | "returns"
+  | "location"
+  | "hours"
+  | "contact"
+  | "support"
+  | "business_info"
+  | "unknown";
 
 type ProductReference = {
   id: number;
@@ -304,9 +445,7 @@ function buildEmpathyLead(emotion: Emotion, tone: ToneMode): string {
       ? "Excelente, avancemos."
       : "¡Qué bueno! Sigamos.";
   }
-  return tone === "professional"
-    ? "Claro, te ayudo con eso."
-    : "Listo, te ayudo.";
+  return "";
 }
 
 function goalHint(goal: CustomerGoal, tone: ToneMode): string {
@@ -318,7 +457,7 @@ function goalHint(goal: CustomerGoal, tone: ToneMode): string {
 }
 
 function prependLead(answer: string, lead: string, hint: string) {
-  const parts = [lead, answer];
+  const parts = [lead, answer].filter(Boolean);
   if (hint) parts.push(hint);
   return parts.join("\n\n");
 }
@@ -336,13 +475,96 @@ function ensureCompanionActions(actions: ChatActionOut[], companionMode: boolean
   ];
 }
 
+function mapIntentToConversationTopic(intent: AskResponse["intent"]): ConversationTopic {
+  if (intent === "products") return "products";
+  if (intent === "shipping" || intent === "shipping_policy") return "shipping";
+  if (intent === "payments") return "payments";
+  if (intent === "warranty" || intent === "warranty_policy") return "warranty";
+  if (intent === "returns_policy") return "returns";
+  if (intent === "business_location") return "location";
+  if (intent === "business_hours") return "hours";
+  if (intent === "business_contact") return "contact";
+  if (intent === "business_support") return "support";
+  if (intent === "business_info") return "business_info";
+  return "unknown";
+}
+
+function mapConversationTopicToDomain(topic: ConversationTopic): "products" | "business" | "support" | "unknown" {
+  if (topic === "products") return "products";
+  if (topic === "shipping" || topic === "payments" || topic === "warranty" || topic === "returns") return "support";
+  if (topic === "location" || topic === "hours" || topic === "contact" || topic === "support" || topic === "business_info") return "business";
+  return "unknown";
+}
+
 function finalizeResponse(
   base: Omit<AskResponse, "emotion" | "companion_mode">,
-  context: { emotion: Emotion; tone: ToneMode; goal: CustomerGoal; companionMode: boolean; nluDebug?: KoraNluResult | null }
+  context: {
+    emotion: Emotion;
+    tone: ToneMode;
+    goal: CustomerGoal;
+    companionMode: boolean;
+    nluDebug?: KoraNluResult | null;
+    contextualSellingDebug?: KoraContextualSellingDebug | null;
+  }
 ): AskResponse {
   const lead = buildEmpathyLead(context.emotion, context.tone);
   const hint = goalHint(context.goal, context.tone);
   const showDebug = process.env.NODE_ENV !== "production";
+  const topic = mapIntentToConversationTopic(base.intent);
+  const domain = mapConversationTopicToDomain(topic);
+  const supportTopic: SupportTopic | undefined =
+    topic === "shipping" ? "shipping" :
+    topic === "payments" ? "payments" :
+    topic === "warranty" ? "warranty" :
+    topic === "returns" ? "returns" :
+    base.intent === "advisor" ? "advisor" :
+    undefined;
+  const businessTopic: BusinessTopic | undefined =
+    topic === "location" ? "location" :
+    topic === "hours" ? "hours" :
+    topic === "contact" ? "contact" :
+    topic === "support" ? "support" :
+    topic === "business_info" ? "business_info" :
+    undefined;
+  const isSupportIntent =
+    base.intent === "payments" ||
+    base.intent === "shipping" ||
+    base.intent === "warranty" ||
+    base.intent === "returns_policy" ||
+    base.intent === "shipping_policy" ||
+    base.intent === "warranty_policy" ||
+    base.intent === "business_location" ||
+    base.intent === "business_hours" ||
+    base.intent === "business_contact" ||
+    base.intent === "business_support" ||
+    base.intent === "business_info" ||
+    base.intent === "advisor";
+  const resolverUsed =
+    context.contextualSellingDebug
+      ? "contextual_selling"
+      : base.recommendation_debug
+        ? "recommender"
+        : isSupportIntent
+          ? "business_support"
+          : base.intent === "products" && base.memory_updates?.last_product_slug
+            ? "product_page_assistant"
+            : base.intent === "products" && base.memory_patch?.last_recommendation_type === "followup"
+              ? "memory_followup"
+              : base.intent === "menu"
+                ? "nlu_router"
+                : base.handled
+                  ? "nlu_router"
+                  : "fallback";
+  const responseType: "explanation" | "recommendation" | "support" | "fallback" | "menu" =
+    base.intent === "menu"
+      ? "menu"
+      : !base.handled || base.resolution_kind === "fallback"
+        ? "fallback"
+        : context.contextualSellingDebug?.detectedGuidanceIntent === "attribute_explanation"
+          ? "explanation"
+          : isSupportIntent
+            ? "support"
+            : "recommendation";
   return {
     ...base,
     answer: prependLead(base.answer, lead, hint),
@@ -358,26 +580,46 @@ function finalizeResponse(
       last_emotion: context.emotion,
       last_intent: base.intent,
       last_non_product_intent:
-        base.intent !== "products" && base.intent !== "unknown"
-          ? (base.intent as NonProductIntent)
+        base.intent === "payments" ||
+        base.intent === "shipping" ||
+        base.intent === "warranty" ||
+        base.intent === "advisor" ||
+        base.intent === "orders" ||
+        base.intent === "menu"
+          ? base.intent
+          : base.intent === "returns_policy"
+            ? "warranty"
           : base.memory_updates?.last_non_product_intent,
       last_support_topic:
-        base.intent === "shipping" || base.intent === "payments" || base.intent === "warranty" || base.intent === "advisor"
-          ? (base.intent as SupportTopic)
-          : base.memory_updates?.last_support_topic,
+        supportTopic ?? base.memory_updates?.last_support_topic,
+      last_business_topic:
+        businessTopic ?? base.memory_updates?.last_business_topic,
+      last_conversation_topic:
+        topic ?? base.memory_updates?.last_conversation_topic,
+      last_answer_domain:
+        domain ?? base.memory_updates?.last_answer_domain,
     },
     recommendation_debug: showDebug ? base.recommendation_debug : undefined,
     nlu_debug: showDebug ? context.nluDebug || undefined : undefined,
+    contextual_selling_debug: showDebug ? context.contextualSellingDebug || undefined : undefined,
+    telemetry_meta: {
+      resolver_used: resolverUsed,
+      response_type: responseType,
+      detected_intent: context.nluDebug?.intent || base.intent,
+      detected_category: context.nluDebug?.category || null,
+      detected_attributes: context.nluDebug?.attributes || [],
+      fallback_used: !base.handled || base.resolution_kind === "fallback",
+    },
   };
 }
 
 function isShortAmbiguousFollowup(text: string) {
   const normalized = normalize(text);
   if (!normalized) return false;
-  if (normalized.length > 46) return false;
+  if (normalized.length > 62) return false;
   if (/\b(quiero|busco|necesito|recomiend|guitarra|cabina|microfono|piano|teclado|camara|cable|parlante)\b/.test(normalized)) return false;
   return (
-    /\b(y|y si|y a|como asi|como así|cuanto|cuánto|tarda|demora|costo|vale|cubre|reclamo|reclamar|nequi|transferencia|cuotas|contra entrega|ciudad|medellin|bogota|barranquilla)\b/.test(
+    /\b(y|y si|y a|como asi|como así|cuanto|cuánto|tarda|demora|costo|vale|cubre|reclamo|reclamar|nequi|transferencia|cuotas|contra entrega|ciudad|medellin|bogota|barranquilla|contacto|correo|numero|número|ubicados|ubicacion|ubicación|abren|domingos|hoy)\b/.test(
       normalized
     ) || normalized.split(/\s+/).length <= 4
   );
@@ -385,39 +627,107 @@ function isShortAmbiguousFollowup(text: string) {
 
 function resolveSupportTopicFromMemory(memory?: AskRequest["memory"]): SupportTopic | null {
   const topic = memory?.last_support_topic;
-  if (topic === "shipping" || topic === "payments" || topic === "warranty" || topic === "advisor") return topic;
+  if (topic === "shipping" || topic === "payments" || topic === "warranty" || topic === "returns" || topic === "advisor") return topic;
   const fallback = memory?.last_non_product_intent;
   if (fallback === "shipping" || fallback === "payments" || fallback === "warranty" || fallback === "advisor") return fallback;
   return null;
 }
 
-function resolveSupportContextFollowup(
+function resolveBusinessTopicFromMemory(memory?: AskRequest["memory"]): BusinessTopic | null {
+  const topic = memory?.last_business_topic;
+  if (topic === "location" || topic === "hours" || topic === "contact" || topic === "support" || topic === "business_info") return topic;
+  const conversation = memory?.last_conversation_topic;
+  if (conversation === "location" || conversation === "hours" || conversation === "contact" || conversation === "support" || conversation === "business_info") {
+    return conversation;
+  }
+  return null;
+}
+
+function hasStrongNewProductIntent(currentIntent: AskResponse["intent"], nlu: KoraNluResult | null) {
+  if (currentIntent === "products") return true;
+  if (nlu?.category) return true;
+  return (
+    nlu?.intent === "product_search" ||
+    nlu?.intent === "product_recommendation" ||
+    nlu?.intent === "cheap_options" ||
+    nlu?.intent === "premium_options" ||
+    nlu?.intent === "product_comparison"
+  );
+}
+
+function resolveUnifiedContextFollowup(
   query: string,
   currentIntent: AskResponse["intent"],
   nlu: KoraNluResult | null,
   memory?: AskRequest["memory"]
 ): Omit<AskResponse, "emotion" | "companion_mode"> | null {
   const normalized = normalize(query);
+  const kb = getKoraBusinessKnowledge();
   const supportTopic = resolveSupportTopicFromMemory(memory);
-  if (!supportTopic) return null;
+  const businessTopic = resolveBusinessTopicFromMemory(memory);
+  const activeTopic = businessTopic || supportTopic || memory?.last_conversation_topic || null;
+  if (!activeTopic || activeTopic === "unknown") return null;
 
-  const hasStrongNewIntent =
-    currentIntent === "products" ||
+  if (hasStrongNewProductIntent(currentIntent, nlu)) return null;
+  const hasStrongNewNonProductIntent =
     currentIntent === "payments" ||
     currentIntent === "shipping" ||
     currentIntent === "warranty" ||
-    currentIntent === "advisor" ||
-    currentIntent === "orders";
-  const hasNewProductSignal = Boolean(
-    nlu?.category ||
-    nlu?.intent === "product_search" ||
-    nlu?.intent === "product_recommendation" ||
-    nlu?.intent === "cheap_options" ||
-    nlu?.intent === "premium_options"
-  );
-
-  if (hasStrongNewIntent || hasNewProductSignal) return null;
+    currentIntent === "returns_policy" ||
+    currentIntent === "shipping_policy" ||
+    currentIntent === "warranty_policy" ||
+    currentIntent === "business_location" ||
+    currentIntent === "business_hours" ||
+    currentIntent === "business_contact" ||
+    currentIntent === "business_support" ||
+    currentIntent === "business_info";
+  if (hasStrongNewNonProductIntent) return null;
   if (!isShortAmbiguousFollowup(normalized)) return null;
+
+  if (activeTopic === "hours") {
+    return {
+      handled: true,
+      intent: "business_hours",
+      answer: `Nuestros horarios son:\n${kb.schedules.weekdays}\n${kb.schedules.saturday}\n${kb.schedules.sunday}`,
+      actions: [
+        { id: "ctx-hours-contact", label: "Contacto", type: "link", value: kb.key_pages.contact },
+        { id: "ctx-hours-location", label: "Ubicación", type: "prompt", value: "Dónde están ubicados" },
+        { id: "ctx-hours-whatsapp", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor", icon: "📞" },
+      ],
+      suggestions: ["¿Abren hoy?", "¿Abren domingos?", "¿Dónde están ubicados?"],
+      memory_updates: { last_business_topic: "hours", last_conversation_topic: "hours", last_answer_domain: "business" },
+    };
+  }
+
+  if (activeTopic === "contact") {
+    return {
+      handled: true,
+      intent: "business_contact",
+      answer: `Puedes escribirnos por WhatsApp al +${kb.whatsapp} o al correo ${kb.email}.`,
+      actions: [
+        { id: "ctx-contact-whatsapp", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor", icon: "📞" },
+        { id: "ctx-contact-page", label: "Ver contacto", type: "link", value: kb.key_pages.contact },
+        { id: "ctx-contact-maps", label: "Ver en Google Maps", type: "link", value: kb.maps_url },
+      ],
+      suggestions: ["¿Cuál es el número?", "¿Cuál es el correo?", "¿Dónde están ubicados?"],
+      memory_updates: { last_business_topic: "contact", last_conversation_topic: "contact", last_answer_domain: "business" },
+    };
+  }
+
+  if (activeTopic === "location") {
+    return {
+      handled: true,
+      intent: "business_location",
+      answer: `Estamos ubicados en ${kb.city}, en la ${kb.address}.`,
+      actions: [
+        { id: "ctx-location-maps", label: "Ver en Google Maps", type: "link", value: kb.maps_url },
+        { id: "ctx-location-contact", label: "Contacto", type: "prompt", value: "Contacto" },
+        { id: "ctx-location-whatsapp", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor", icon: "📞" },
+      ],
+      suggestions: ["¿Tienen tienda física?", "¿Cómo llego?", "¿Qué horario manejan?"],
+      memory_updates: { last_business_topic: "location", last_conversation_topic: "location", last_answer_domain: "business" },
+    };
+  }
 
   if (supportTopic === "shipping") {
     if (/\b(ciudad|medellin|bogota|barranquilla|cali|cartagena|bucaramanga|manizales)\b/.test(normalized)) {
@@ -431,7 +741,7 @@ function resolveSupportContextFollowup(
           { id: "shipping-followup-contact", label: "Ir a contacto", type: "link", value: "/contacto" },
         ],
         suggestions: ["Estoy en Medellín", "¿Cuánto tarda?", "¿Tiene costo?"],
-        memory_updates: { last_support_topic: "shipping", last_non_product_intent: "shipping" },
+        memory_updates: { last_support_topic: "shipping", last_non_product_intent: "shipping", last_conversation_topic: "shipping", last_answer_domain: "support" },
       };
     }
     if (/\b(tarda|demora|tiempo)\b/.test(normalized)) {
@@ -444,7 +754,7 @@ function resolveSupportContextFollowup(
           { id: "shipping-time-advisor", label: "Validar tiempo por WhatsApp", icon: "📞", type: "whatsapp", value: "advisor" },
         ],
         suggestions: ["¿Envían a mi ciudad?", "¿Tiene costo?", "¿Puedo recoger en tienda?"],
-        memory_updates: { last_support_topic: "shipping", last_non_product_intent: "shipping" },
+        memory_updates: { last_support_topic: "shipping", last_non_product_intent: "shipping", last_conversation_topic: "shipping", last_answer_domain: "support" },
       };
     }
     if (/\b(costo|vale|precio|cuanto cuesta)\b/.test(normalized)) {
@@ -457,7 +767,7 @@ function resolveSupportContextFollowup(
           { id: "shipping-cost-advisor", label: "Cotizar envío por WhatsApp", icon: "📞", type: "whatsapp", value: "advisor" },
         ],
         suggestions: ["Estoy en Bogotá", "¿Cuánto tarda?", "¿Puedo recoger en tienda?"],
-        memory_updates: { last_support_topic: "shipping", last_non_product_intent: "shipping" },
+        memory_updates: { last_support_topic: "shipping", last_non_product_intent: "shipping", last_conversation_topic: "shipping", last_answer_domain: "support" },
       };
     }
   }
@@ -473,7 +783,7 @@ function resolveSupportContextFollowup(
         { id: "payments-followup-advisor", label: "Confirmar por WhatsApp", icon: "📞", type: "whatsapp", value: "advisor" },
       ],
       suggestions: ["¿Reciben transferencia?", "¿Manejan cuotas?", "¿Puedo pagar contra entrega?"],
-      memory_updates: { last_support_topic: "payments", last_non_product_intent: "payments" },
+      memory_updates: { last_support_topic: "payments", last_non_product_intent: "payments", last_conversation_topic: "payments", last_answer_domain: "support" },
     };
   }
 
@@ -488,7 +798,21 @@ function resolveSupportContextFollowup(
         { id: "warranty-followup-advisor", label: "Soporte por WhatsApp", icon: "📞", type: "whatsapp", value: "advisor" },
       ],
       suggestions: ["¿Qué cubre la garantía?", "¿Cuánto tiempo cubre?", "¿Cómo reclamo?"],
-      memory_updates: { last_support_topic: "warranty", last_non_product_intent: "warranty" },
+      memory_updates: { last_support_topic: "warranty", last_non_product_intent: "warranty", last_conversation_topic: "warranty", last_answer_domain: "support" },
+    };
+  }
+
+  if (supportTopic === "returns") {
+    return {
+      handled: true,
+      intent: "returns_policy",
+      answer: "Sí, te ayudamos con cambios y devoluciones según la política vigente. Si me dices el caso, te indico el paso exacto.",
+      actions: [
+        { id: "ctx-returns-policy", label: "Ver política de cambios/devoluciones", type: "link", value: kb.policies.returns },
+        { id: "ctx-returns-whatsapp", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor", icon: "📞" },
+      ],
+      suggestions: ["¿Puedo cambiarlo?", "¿Me devuelven el dinero?", "¿Cuánto tiempo tengo?"],
+      memory_updates: { last_support_topic: "returns", last_non_product_intent: "warranty", last_conversation_topic: "returns", last_answer_domain: "support" },
     };
   }
 
@@ -502,7 +826,7 @@ function resolveSupportContextFollowup(
         { id: "advisor-followup-menu", label: "Volver al menú", type: "command", value: "menu" },
       ],
       suggestions: ["Necesito cotización", "Tengo una duda de pago", "Quiero soporte de garantía"],
-      memory_updates: { last_support_topic: "advisor", last_non_product_intent: "advisor" },
+      memory_updates: { last_support_topic: "advisor", last_non_product_intent: "advisor", last_conversation_topic: "support", last_answer_domain: "support" },
     };
   }
 
@@ -525,6 +849,13 @@ function shouldAskDisambiguation(
 function detectIntent(text: string): AskResponse["intent"] {
   if (!text) return "unknown";
   if (/\b(hola|inicio|menu)\b/.test(text)) return "menu";
+  if (/\b(donde estan|dónde están|ubicad|tienda fisica|tienda física|donde los encuentro)\b/.test(text)) return "business_location";
+  if (/\b(horario|horarios|a que hora abren|a qué hora abren|abren domingos|atienden hoy)\b/.test(text)) return "business_hours";
+  if (/\b(cual es el whatsapp|cuál es el whatsapp|numero de whatsapp|número de whatsapp|correo|email|contacto)\b/.test(text)) return "business_contact";
+  if (/\b(soporte tecnico|soporte técnico|arreglan equipos|servicio tecnico|servicio técnico)\b/.test(text)) return "business_support";
+  if (/\b(devolucion|devolución|devoluciones|politica de cambios|política de cambios)\b/.test(text)) return "returns_policy";
+  if (/\b(politica de envios|política de envíos|politica de envio|política de envío)\b/.test(text)) return "shipping_policy";
+  if (/\b(politica de garantia|política de garantía|que cubre la garantia|qué cubre la garantía)\b/.test(text)) return "warranty_policy";
   if (/\b(asesor|whatsapp|humano|agente)\b/.test(text)) return "advisor";
   if (/\b(pago|pagos|tarjeta|credito|addi|sistecredito|cuotas)\b/.test(text)) return "payments";
   if (/\b(envio|envios|despacho|domicilio|entrega|ciudad)\b/.test(text)) return "shipping";
@@ -532,6 +863,150 @@ function detectIntent(text: string): AskResponse["intent"] {
   if (/\b(orden|pedido|mis pedidos|estado)\b/.test(text)) return "orders";
   if (/\b(producto|productos|catalogo|sku|codigo|precio|recomienda|recomendacion|quiero)\b/.test(text)) return "products";
   return "unknown";
+}
+
+function resolveBusinessIntentFromNluOrText(nlu: KoraNluResult | null, query: string): AskResponse["intent"] | null {
+  const normalized = normalize(query);
+  if (/\b(cual es el whatsapp|cuál es el whatsapp|numero de whatsapp|número de whatsapp)\b/.test(normalized)) {
+    return "business_contact";
+  }
+  const nluIntent = nlu?.intent || null;
+  if (
+    nluIntent === "business_location" ||
+    nluIntent === "business_hours" ||
+    nluIntent === "business_contact" ||
+    nluIntent === "business_support" ||
+    nluIntent === "returns_policy" ||
+    nluIntent === "shipping_policy" ||
+    nluIntent === "warranty_policy" ||
+    nluIntent === "business_info"
+  ) {
+    return nluIntent;
+  }
+  const byText = detectIntent(normalized);
+  if (
+    byText === "business_location" ||
+    byText === "business_hours" ||
+    byText === "business_contact" ||
+    byText === "business_support" ||
+    byText === "returns_policy" ||
+    byText === "shipping_policy" ||
+    byText === "warranty_policy" ||
+    byText === "business_info"
+  ) {
+    return byText;
+  }
+  return null;
+}
+
+function resolveBusinessKnowledgeResponse(nlu: KoraNluResult | null, query: string): Omit<AskResponse, "emotion" | "companion_mode"> | null {
+  const intent = resolveBusinessIntentFromNluOrText(nlu, query);
+  if (!intent) return null;
+  const kb = getKoraBusinessKnowledge();
+
+  if (intent === "business_location") {
+    return {
+      handled: true,
+      intent,
+      answer: `Estamos ubicados en ${kb.city}, en la ${kb.address}.`,
+      actions: [
+        { id: "biz-maps", label: "Ver en Google Maps", type: "link", value: kb.maps_url },
+        { id: "biz-whatsapp-location", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor", icon: "📞" },
+        { id: "biz-hours", label: "Ver horarios", type: "prompt", value: "Qué horario manejan" },
+      ],
+      suggestions: ["¿Tienen tienda física?", "¿Qué horario manejan?", "¿Abren domingos?"],
+    };
+  }
+
+  if (intent === "business_hours") {
+    return {
+      handled: true,
+      intent,
+      answer: `Nuestros horarios son:\n${kb.schedules.weekdays}\n${kb.schedules.saturday}\n${kb.schedules.sunday}`,
+      actions: [
+        { id: "biz-contact-hours", label: "Contacto", type: "link", value: kb.key_pages.contact },
+        { id: "biz-whatsapp-hours", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor", icon: "📞" },
+      ],
+      suggestions: ["¿Abren hoy?", "¿Dónde están ubicados?", "¿Tienen tienda física?"],
+    };
+  }
+
+  if (intent === "business_contact") {
+    return {
+      handled: true,
+      intent,
+      answer: `Puedes escribirnos por WhatsApp al +${kb.whatsapp} o al correo ${kb.email}.`,
+      actions: [
+        { id: "biz-contact-whatsapp", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor", icon: "📞" },
+        { id: "biz-contact-page", label: "Ver contacto", type: "link", value: kb.key_pages.contact },
+      ],
+      suggestions: ["¿Dónde están ubicados?", "¿Qué horario manejan?", "¿Hacen soporte técnico?"],
+    };
+  }
+
+  if (intent === "business_support") {
+    return {
+      handled: true,
+      intent,
+      answer: `${kb.support.technical_support} ${kb.support.repair_services}`,
+      actions: [
+        { id: "biz-support-whatsapp", label: "Contactar soporte por WhatsApp", type: "whatsapp", value: "advisor", icon: "📞" },
+        { id: "biz-support-warranty", label: "Política de garantía", type: "link", value: kb.policies.warranty },
+      ],
+      suggestions: ["¿Cómo funciona la garantía?", "¿Cómo reclamo?", "¿Dónde los contacto?"],
+    };
+  }
+
+  if (intent === "returns_policy") {
+    return {
+      handled: true,
+      intent,
+      answer: "La política de devoluciones y cambios está disponible en nuestro sitio. Si quieres, te guiamos según tu caso y producto.",
+      actions: [
+        { id: "biz-returns-policy", label: "Ver política de cambios/devoluciones", type: "link", value: kb.policies.returns },
+        { id: "biz-returns-whatsapp", label: "Hablar con asesor", type: "whatsapp", value: "advisor", icon: "📞" },
+      ],
+      suggestions: ["¿Cómo funciona la garantía?", "¿Hacen soporte técnico?", "¿Dónde están ubicados?"],
+    };
+  }
+
+  if (intent === "shipping_policy") {
+    return {
+      handled: true,
+      intent,
+      answer: "La política de envíos depende de ciudad, disponibilidad y tipo de producto. Te guiamos con el caso exacto por contacto o WhatsApp.",
+      actions: [
+        { id: "biz-shipping-policy", label: "Ver contacto", type: "link", value: kb.policies.shipping },
+        { id: "biz-shipping-whatsapp", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor", icon: "📞" },
+      ],
+      suggestions: ["¿Envían a mi ciudad?", "¿Cuánto tarda?", "¿Tiene costo?"],
+    };
+  }
+
+  if (intent === "warranty_policy") {
+    return {
+      handled: true,
+      intent,
+      answer: "La política de garantía está publicada en nuestro sitio. Si me compartes el producto o SKU, te orientamos paso a paso.",
+      actions: [
+        { id: "biz-warranty-policy", label: "Ver política de garantía", type: "link", value: kb.policies.warranty },
+        { id: "biz-warranty-whatsapp", label: "Soporte por WhatsApp", type: "whatsapp", value: "advisor", icon: "📞" },
+      ],
+      suggestions: ["¿Qué cubre la garantía?", "¿Cómo reclamo?", "¿Hacen soporte técnico?"],
+    };
+  }
+
+  return {
+    handled: true,
+    intent: "business_info",
+    answer: `${kb.business_name} está en ${kb.city}. Te ayudamos con productos, pagos, envíos, garantías y soporte por WhatsApp.`,
+    actions: [
+      { id: "biz-info-catalog", label: "Ver catálogo", type: "link", value: kb.key_pages.catalog },
+      { id: "biz-info-contact", label: "Ver contacto", type: "link", value: kb.key_pages.contact },
+      { id: "biz-info-whatsapp", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor", icon: "📞" },
+    ],
+    suggestions: ["¿Dónde están ubicados?", "¿Qué horario manejan?", "¿Hacen soporte técnico?"],
+  };
 }
 
 function isGreetingOnly(text: string) {
@@ -696,6 +1171,46 @@ function buildBaseCommercialActions(): ChatActionOut[] {
 function isCapabilityHelpIntent(text: string) {
   return /\b(con que|con qué|en que|en qué|como|cómo).{0,24}\b(puedes ayudar|me ayudas|ayudarme|haces)\b/.test(text) ||
     /\b(que puedes hacer|qué puedes hacer|como funciona kora|cómo funciona kora)\b/.test(text);
+}
+
+function hasStrongExplanatoryIntent(text: string) {
+  return /\b(que es|qué es|que son|qué son|que significa|qué significa|para que sirve|para qué sirve|como funciona|cómo funciona|diferencia entre|diferencia hay entre|cual es la diferencia|cuál es la diferencia|explicame|explícame)\b/.test(
+    text
+  );
+}
+
+function hasAmbiguousGuidanceIntent(text: string) {
+  return /\b(no se cual comprar|no sé cuál comprar|cual me recomiendas|cuál me recomiendas|ayudame a escoger|ayúdame a escoger|quiero algo para|necesito sonido para|buen bajo|bajo potente|que suene duro)\b/.test(
+    text
+  );
+}
+
+function hasLearningGuidanceIntent(text: string) {
+  return /\b(guitarra|teclado|piano|microfono|micrófono)\b/.test(text) && /\b(principiante|aprender|me sirve para cantar|me sirve)\b/.test(text);
+}
+
+function hasChurchAudioGuidanceIntent(text: string) {
+  return /\b(iglesia|templo|culto)\b/.test(text) && /\b(sonido|cabina|cabinas|microfono|micrófono|parlante|equipo)\b/.test(text);
+}
+
+function isShortAttributeRefinement(text: string, nlu: KoraNluResult | null, memory?: AskRequest["memory"]) {
+  if (!nlu || !memory) return false;
+  if (!memory.last_recommendation_category && memory.last_conversation_topic !== "products") return false;
+  const hasAttr = Array.isArray(nlu.attributes) && nlu.attributes.length > 0;
+  if (!hasAttr) return false;
+  const looksShort = text.length <= 60 || text.split(/\s+/).length <= 6;
+  const hasRefineToken =
+    /\b(bluetooth|inalambrico|inalámbrico|recargable|bateria|batería|bajo|potente|mas potente|más potente|con buen bajo)\b/.test(text);
+  return looksShort && hasRefineToken;
+}
+
+function mergeRecommendationAttributes(
+  prev: string[] | undefined,
+  current: string[] | undefined
+): Array<"cheap" | "premium" | "high_output_bass" | "bluetooth" | "rechargeable"> {
+  const allowed = new Set(["cheap", "premium", "high_output_bass", "bluetooth", "rechargeable"]);
+  const merged = new Set<string>([...(prev || []), ...(current || [])].filter((value) => allowed.has(value)));
+  return Array.from(merged) as Array<"cheap" | "premium" | "high_output_bass" | "bluetooth" | "rechargeable">;
 }
 
 async function resolveProductsResponse(
@@ -1050,6 +1565,7 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as AskRequest | null;
   const query = String(body?.query || "").trim();
   const normalized = normalize(query);
+  const pageContext = sanitizePageContext(body?.pageContext);
   let nluDebug: KoraNluResult | null = null;
   try {
     nluDebug = extractKoraEntities(query);
@@ -1062,6 +1578,10 @@ export async function POST(request: Request) {
   const companionMode = companionModeForEmotion(emotion);
   const greetingOnly = isGreetingOnly(normalized);
   const smallTalk = isSmallTalk(normalized);
+  const explanatoryFirst = hasStrongExplanatoryIntent(normalized);
+  const ambiguousGuidanceFirst = hasAmbiguousGuidanceIntent(normalized);
+  const learningGuidanceFirst = hasLearningGuidanceIntent(normalized);
+  const churchAudioGuidanceFirst = hasChurchAudioGuidanceIntent(normalized);
 
   if (query.length < 2) {
     return NextResponse.json<AskResponse>(
@@ -1076,7 +1596,7 @@ export async function POST(request: Request) {
         ],
         suggestions: buildBaseSuggestions(),
         },
-        { emotion, tone, goal, companionMode, nluDebug }
+        { emotion, tone, goal, companionMode, nluDebug, contextualSellingDebug: null }
       ),
       { status: 200 }
     );
@@ -1106,6 +1626,35 @@ export async function POST(request: Request) {
     if (productWelcome) {
       return NextResponse.json<AskResponse>(
         finalizeResponse(productWelcome, { emotion, tone, goal, companionMode, nluDebug }),
+        { status: 200 }
+      );
+    }
+
+    const openingByPageContext = resolveContextualSellingResponse({
+      message: query,
+      nlu: nluDebug,
+      memory: {
+        preferred_category: body?.memory?.preferred_category,
+        last_recommendation_category: body?.memory?.last_recommendation_category,
+        last_usage_context: body?.memory?.last_usage_context,
+        last_answer_domain: body?.memory?.last_answer_domain,
+        last_category_opening_context: body?.memory?.last_category_opening_context,
+      },
+      pageContext,
+    });
+    if (openingByPageContext && openingByPageContext.debug?.contextualSellingReason === "category_page_opening") {
+      return NextResponse.json<AskResponse>(
+        finalizeResponse(
+          {
+            handled: true,
+            intent: "products",
+            answer: openingByPageContext.answer,
+            actions: openingByPageContext.actions,
+            suggestions: openingByPageContext.suggestions,
+            memory_updates: openingByPageContext.memory_updates,
+          },
+          { emotion, tone, goal, companionMode, nluDebug, contextualSellingDebug: openingByPageContext.debug || null }
+        ),
         { status: 200 }
       );
     }
@@ -1155,10 +1704,71 @@ export async function POST(request: Request) {
     );
   }
 
-  if (nluDebug) {
+  const businessReply = resolveBusinessKnowledgeResponse(nluDebug, query);
+  if (businessReply) {
+    return NextResponse.json<AskResponse>(
+      finalizeResponse(businessReply, { emotion, tone, goal, companionMode, nluDebug, contextualSellingDebug: null }),
+      { status: 200 }
+    );
+  }
+
+  const supportFollowup = resolveUnifiedContextFollowup(query, intent, nluDebug, body?.memory);
+  if (supportFollowup) {
+    return NextResponse.json<AskResponse>(
+      finalizeResponse(supportFollowup, { emotion, tone, goal, companionMode, nluDebug, contextualSellingDebug: null }),
+      { status: 200 }
+    );
+  }
+
+  const contextualSelling = resolveContextualSellingResponse({
+    message: query,
+    nlu: nluDebug,
+    memory: {
+      preferred_category: body?.memory?.preferred_category,
+      last_recommendation_category: body?.memory?.last_recommendation_category,
+      last_usage_context: body?.memory?.last_usage_context,
+      last_answer_domain: body?.memory?.last_answer_domain,
+      last_category_opening_context: body?.memory?.last_category_opening_context,
+    },
+    pageContext,
+  });
+  if (contextualSelling && (explanatoryFirst || ambiguousGuidanceFirst || learningGuidanceFirst || churchAudioGuidanceFirst)) {
+    return NextResponse.json<AskResponse>(
+      finalizeResponse(
+        {
+          handled: true,
+          intent: "products",
+          answer: contextualSelling.answer,
+          actions: contextualSelling.actions,
+          suggestions: contextualSelling.suggestions,
+          memory_updates: contextualSelling.memory_updates,
+        },
+        { emotion, tone, goal, companionMode, nluDebug, contextualSellingDebug: contextualSelling.debug || null }
+      ),
+      { status: 200 }
+    );
+  }
+
+  let nluForRecommendation = nluDebug;
+  let queryForRecommendation = query;
+  if (isShortAttributeRefinement(normalized, nluDebug, body?.memory)) {
+    nluForRecommendation = {
+      ...(nluDebug as KoraNluResult),
+      intent: "product_recommendation",
+      attributes: mergeRecommendationAttributes(
+        body?.memory?.last_recommendation_attributes || [],
+        nluDebug?.attributes || []
+      ),
+      category: nluDebug?.category || body?.memory?.last_recommendation_category || body?.memory?.preferred_category || null,
+      confidence: Math.max(nluDebug?.confidence || 0.6, 0.72),
+    };
+    queryForRecommendation = `${body?.memory?.last_recommendation_query || body?.memory?.last_query || body?.memory?.last_recommendation_category || ""} ${query}`.trim();
+  }
+
+  if (nluForRecommendation) {
     const recommendation = await resolveKoraCatalogRecommendation({
-      query,
-      nlu: nluDebug,
+      query: queryForRecommendation,
+      nlu: nluForRecommendation,
       memory: {
         preferred_category: body?.memory?.preferred_category,
         budget_cop: body?.memory?.budget_cop,
@@ -1172,8 +1782,18 @@ export async function POST(request: Request) {
       },
     });
     if (recommendation) {
+      if (nluForRecommendation.attributes?.length) {
+        const mergedAttrs = mergeRecommendationAttributes(
+          body?.memory?.last_recommendation_attributes || [],
+          nluForRecommendation.attributes
+        );
+        recommendation.memory_patch = {
+          ...(recommendation.memory_patch || {}),
+          last_recommendation_attributes: mergedAttrs,
+        };
+      }
       return NextResponse.json<AskResponse>(
-        finalizeResponse(recommendation, { emotion, tone, goal, companionMode, nluDebug }),
+        finalizeResponse(recommendation, { emotion, tone, goal, companionMode, nluDebug, contextualSellingDebug: null }),
         { status: 200 }
       );
     }
@@ -1187,16 +1807,25 @@ export async function POST(request: Request) {
     });
     if (routed) {
       return NextResponse.json<AskResponse>(
-        finalizeResponse(routed, { emotion, tone, goal, companionMode, nluDebug }),
+        finalizeResponse(routed, { emotion, tone, goal, companionMode, nluDebug, contextualSellingDebug: null }),
         { status: 200 }
       );
     }
   }
 
-  const supportFollowup = resolveSupportContextFollowup(query, intent, nluDebug, body?.memory);
-  if (supportFollowup) {
+  if (contextualSelling) {
     return NextResponse.json<AskResponse>(
-      finalizeResponse(supportFollowup, { emotion, tone, goal, companionMode, nluDebug }),
+      finalizeResponse(
+        {
+          handled: true,
+          intent: "products",
+          answer: contextualSelling.answer,
+          actions: contextualSelling.actions,
+          suggestions: contextualSelling.suggestions,
+          memory_updates: contextualSelling.memory_updates,
+        },
+        { emotion, tone, goal, companionMode, nluDebug, contextualSellingDebug: contextualSelling.debug || null }
+      ),
       { status: 200 }
     );
   }
@@ -1204,7 +1833,7 @@ export async function POST(request: Request) {
   const contextualProductReply = await resolveProductPageAssistantResponse(query, body?.path, body?.context);
   if (contextualProductReply) {
     return NextResponse.json<AskResponse>(
-      finalizeResponse(contextualProductReply, { emotion, tone, goal, companionMode, nluDebug }),
+      finalizeResponse(contextualProductReply, { emotion, tone, goal, companionMode, nluDebug, contextualSellingDebug: null }),
       { status: 200 }
     );
   }
@@ -1212,7 +1841,7 @@ export async function POST(request: Request) {
   const memoryFollowupReply = await resolveMemoryProductFollowup(query, body?.memory);
   if (memoryFollowupReply) {
     return NextResponse.json<AskResponse>(
-      finalizeResponse(memoryFollowupReply, { emotion, tone, goal, companionMode, nluDebug }),
+      finalizeResponse(memoryFollowupReply, { emotion, tone, goal, companionMode, nluDebug, contextualSellingDebug: null }),
       { status: 200 }
     );
   }

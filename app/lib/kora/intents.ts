@@ -8,6 +8,14 @@ export type KoraIntentId =
   | "warranty"
   | "payments"
   | "human_advisor"
+  | "business_location"
+  | "business_hours"
+  | "business_contact"
+  | "business_support"
+  | "returns_policy"
+  | "shipping_policy"
+  | "warranty_policy"
+  | "business_info"
   | "unknown";
 
 export type KoraIntentDefinition = {
@@ -18,6 +26,54 @@ export type KoraIntentDefinition = {
 };
 
 export const KORA_INTENTS: KoraIntentDefinition[] = [
+  {
+    id: "business_contact",
+    priority: 98,
+    aliases: ["whatsapp", "contacto", "telefono", "teléfono", "correo", "email", "como los contacto", "cómo los contacto"],
+    examples: ["cuál es el whatsapp", "cómo los contacto"],
+  },
+  {
+    id: "business_location",
+    priority: 97,
+    aliases: ["donde estan", "dónde están", "ubicados", "ubicacion", "ubicación", "tienda fisica", "tienda física", "donde los encuentro"],
+    examples: ["dónde están ubicados", "tienen tienda física"],
+  },
+  {
+    id: "business_hours",
+    priority: 96,
+    aliases: ["horario", "horarios", "a que hora abren", "a qué hora abren", "abren domingos", "atienden hoy"],
+    examples: ["qué horario manejan", "abren domingos"],
+  },
+  {
+    id: "business_support",
+    priority: 95,
+    aliases: ["soporte tecnico", "soporte técnico", "arreglan equipos", "servicio tecnico", "servicio técnico", "contacto soporte"],
+    examples: ["hacen soporte técnico", "arreglan equipos"],
+  },
+  {
+    id: "returns_policy",
+    priority: 94,
+    aliases: ["devolucion", "devolución", "devoluciones", "cambios", "politica de cambios", "política de cambios"],
+    examples: ["cómo funcionan las devoluciones", "política de cambios"],
+  },
+  {
+    id: "shipping_policy",
+    priority: 94,
+    aliases: ["politica de envios", "política de envíos", "politica de envio", "política de envío", "como es el envio", "cómo es el envío"],
+    examples: ["política de envíos", "cómo funciona el envío"],
+  },
+  {
+    id: "warranty_policy",
+    priority: 94,
+    aliases: ["politica de garantia", "política de garantía", "garantia", "garantía", "que cubre la garantia", "qué cubre la garantía"],
+    examples: ["política de garantía", "qué cubre la garantía"],
+  },
+  {
+    id: "business_info",
+    priority: 92,
+    aliases: ["quienes son", "quiénes son", "informacion de la empresa", "información de la empresa", "sobre ustedes"],
+    examples: ["quiénes son ustedes", "información de la empresa"],
+  },
   {
     id: "human_advisor",
     priority: 100,

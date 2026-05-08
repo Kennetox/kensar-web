@@ -30,7 +30,7 @@ export default function MobileHeaderMenu({ categories }: MobileHeaderMenuProps) 
   const [activeParentPath, setActiveParentPath] = useState<string | null>(null);
 
   const parentCategories = useMemo(
-    () => categories.filter((category) => !category.parent_path).sort((a, b) => a.name.localeCompare(b.name, "es")),
+    () => categories.filter((category) => !category.parent_path),
     [categories]
   );
 
