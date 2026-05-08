@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import Image from "next/image";
 import { useWebCart } from "@/app/components/WebCartProvider";
 
 type ActionType = "command" | "link" | "whatsapp" | "prompt" | "add_to_cart";
@@ -39,6 +40,18 @@ type ChatMessage = {
   role: "bot" | "user";
   text: string;
   actions?: ChatAction[];
+  productCards?: Array<{
+    id: number;
+    slug: string;
+    name: string;
+    price: number | null;
+    price_mode: string | null;
+    brand: string | null;
+    category_name: string | null;
+    image_url: string | null;
+    reason: string | null;
+    url: string;
+  }>;
 };
 
 type KoraCategoryItem = {
@@ -60,6 +73,8 @@ type KoraAskResponse = {
   answer: string;
   actions?: ChatAction[];
   suggestions?: string[];
+  confidence_score?: number;
+  resolution_kind?: "direct" | "disambiguation" | "fallback";
   emotion?: "neutral" | "frustrated" | "urgent" | "happy" | "doubtful";
   companion_mode?: boolean;
   memory_updates?: {
@@ -68,7 +83,61 @@ type KoraAskResponse = {
     tone_mode?: "friendly" | "professional" | null;
     customer_goal?: "gift" | "home" | "business" | "studio" | null;
     last_emotion?: "neutral" | "frustrated" | "urgent" | "happy" | "doubtful" | null;
+    last_product_slug?: string | null;
+    last_product_name?: string | null;
+    last_product_sku?: string | null;
+    last_query?: string | null;
+    last_recommended_products?: Array<{
+      id: number;
+      slug: string;
+      name: string;
+      price: number | null;
+      category_path: string | null;
+      category_name: string | null;
+      brand: string | null;
+      score?: number | null;
+    }>;
+    last_recommendation_query?: string | null;
+    last_recommendation_category?: string | null;
+    last_recommendation_attributes?: string[];
+    last_usage_context?: string | null;
+    last_recommendation_type?: string | null;
+    last_intent?: "products" | "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu" | "unknown" | null;
+    last_non_product_intent?: "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu" | null;
+    last_support_topic?: "payments" | "shipping" | "warranty" | "advisor" | null;
   };
+  memory_patch?: {
+    last_recommended_products?: Array<{
+      id: number;
+      slug: string;
+      name: string;
+      price: number | null;
+      category_path: string | null;
+      category_name: string | null;
+      brand: string | null;
+      score?: number | null;
+    }>;
+    last_recommendation_query?: string | null;
+    last_recommendation_category?: string | null;
+    last_recommendation_attributes?: string[];
+    last_usage_context?: string | null;
+    last_recommendation_type?: string | null;
+    last_intent?: "products" | "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu" | "unknown" | null;
+    last_non_product_intent?: "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu" | null;
+    last_support_topic?: "payments" | "shipping" | "warranty" | "advisor" | null;
+  };
+  product_cards?: Array<{
+    id: number;
+    slug: string;
+    name: string;
+    price: number | null;
+    price_mode: string | null;
+    brand: string | null;
+    category_name: string | null;
+    image_url: string | null;
+    reason: string | null;
+    url: string;
+  }>;
 };
 
 const SESSION_KEY = "kensar_kora_session_v1";
@@ -77,7 +146,6 @@ const EVENTS_SESSION_KEY = "kensar_kora_events_v1";
 const MEMORY_SESSION_KEY = "kensar_kora_memory_v1";
 const WHATSAPP_PHONE = "573185657508";
 const RESPONSE_DELAYS = [520, 640, 760] as const;
-const QUICK_HINTS = "Ejemplo: “métodos de pago”, “envíos”, “garantía”, “quiero audio”";
 const KORA_NUDGE_TEXT = "Asistente 24/7";
 const KORA_AVATAR_SRC = "/branding/kora-avatar.png";
 const KORA_NUDGE_INITIAL_DELAY_MS = 9000;
@@ -130,8 +198,14 @@ function createUnknownMessage(): ChatMessage {
   return {
     id: createId(),
     role: "bot",
-    text: "Aún estoy en versión inicial. Puedo ayudarte con productos, pagos, envíos, garantías o contacto con asesor.",
-    actions: MAIN_ACTIONS,
+    text: "No estoy segura de qué producto buscas. ¿Quieres que te ayude con sonido, instrumentos, cámaras, cables o formas de pago?",
+    actions: [
+      { id: "unknown-sound", label: "Cabinas y sonido", type: "prompt", value: "Quiero ver cabinas y sonido" },
+      { id: "unknown-instruments", label: "Instrumentos musicales", type: "prompt", value: "Quiero ver instrumentos musicales" },
+      { id: "unknown-security", label: "Cámaras de seguridad", type: "prompt", value: "Quiero ver cámaras de seguridad" },
+      { id: "unknown-payments", label: "Formas de pago", type: "command", value: "payments" },
+      { id: "unknown-advisor", label: "Hablar con asesor", icon: "📞", type: "command", value: "advisor" },
+    ],
   };
 }
 
@@ -323,6 +397,28 @@ type KoraSessionMemory = {
   tone_mode?: "friendly" | "professional" | null;
   customer_goal?: "gift" | "home" | "business" | "studio" | null;
   last_emotion?: "neutral" | "frustrated" | "urgent" | "happy" | "doubtful" | null;
+  last_product_slug?: string | null;
+  last_product_name?: string | null;
+  last_product_sku?: string | null;
+  last_query?: string | null;
+  last_recommended_products?: Array<{
+    id: number;
+    slug: string;
+    name: string;
+    price: number | null;
+    category_path: string | null;
+    category_name: string | null;
+    brand: string | null;
+    score?: number | null;
+  }>;
+  last_recommendation_query?: string | null;
+  last_recommendation_category?: string | null;
+  last_recommendation_attributes?: string[];
+  last_usage_context?: string | null;
+  last_recommendation_type?: string | null;
+  last_intent?: "products" | "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu" | "unknown" | null;
+  last_non_product_intent?: "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu" | null;
+  last_support_topic?: "payments" | "shipping" | "warranty" | "advisor" | null;
 };
 
 function loadKoraMemory(): KoraSessionMemory {
@@ -350,6 +446,35 @@ function loadKoraMemory(): KoraSessionMemory {
         parsed?.last_emotion === "neutral"
           ? parsed.last_emotion
           : undefined,
+      last_product_slug: typeof parsed?.last_product_slug === "string" ? parsed.last_product_slug : undefined,
+      last_product_name: typeof parsed?.last_product_name === "string" ? parsed.last_product_name : undefined,
+      last_product_sku: typeof parsed?.last_product_sku === "string" ? parsed.last_product_sku : undefined,
+      last_query: typeof parsed?.last_query === "string" ? parsed.last_query : undefined,
+      last_recommended_products: Array.isArray(parsed?.last_recommended_products)
+        ? parsed.last_recommended_products
+            .slice(0, 5)
+            .map((row) => ({
+              id: Number(row?.id) || 0,
+              slug: typeof row?.slug === "string" ? row.slug : "",
+              name: typeof row?.name === "string" ? row.name : "",
+              price: Number.isFinite(Number(row?.price)) ? Number(row.price) : null,
+              category_path: typeof row?.category_path === "string" ? row.category_path : null,
+              category_name: typeof row?.category_name === "string" ? row.category_name : null,
+              brand: typeof row?.brand === "string" ? row.brand : null,
+              score: Number.isFinite(Number(row?.score)) ? Number(row.score) : undefined,
+            }))
+            .filter((row) => row.id > 0 && row.slug && row.name)
+        : undefined,
+      last_recommendation_query: typeof parsed?.last_recommendation_query === "string" ? parsed.last_recommendation_query : undefined,
+      last_recommendation_category: typeof parsed?.last_recommendation_category === "string" ? parsed.last_recommendation_category : undefined,
+      last_recommendation_attributes: Array.isArray(parsed?.last_recommendation_attributes)
+        ? parsed.last_recommendation_attributes.filter((value) => typeof value === "string").slice(0, 8)
+        : undefined,
+      last_usage_context: typeof parsed?.last_usage_context === "string" ? parsed.last_usage_context : undefined,
+      last_recommendation_type: typeof parsed?.last_recommendation_type === "string" ? parsed.last_recommendation_type : undefined,
+      last_intent: typeof parsed?.last_intent === "string" ? parsed.last_intent : undefined,
+      last_non_product_intent: typeof parsed?.last_non_product_intent === "string" ? parsed.last_non_product_intent : undefined,
+      last_support_topic: typeof parsed?.last_support_topic === "string" ? parsed.last_support_topic : undefined,
     };
   } catch {
     return {};
@@ -593,7 +718,7 @@ export default function KoraChat() {
       }));
   }
 
-  function sanitizeApiActions(actions: ChatAction[] | undefined): ChatAction[] {
+function sanitizeApiActions(actions: ChatAction[] | undefined): ChatAction[] {
     if (!Array.isArray(actions)) return [];
     return actions
       .slice(0, 6)
@@ -621,49 +746,135 @@ export default function KoraChat() {
       if (aiReply) {
         emitEvent("intent_detected", {
           detected_intent: aiReply.intent,
+          handled: aiReply.handled,
+          confidence_score: typeof aiReply.confidence_score === "number" ? Number(aiReply.confidence_score.toFixed(3)) : null,
+          resolution_kind: aiReply.resolution_kind || null,
           emotion: aiReply.emotion ?? null,
           companion_mode: Boolean(aiReply.companion_mode),
         });
-        if (aiReply.memory_updates && typeof aiReply.memory_updates === "object") {
+        if (
+          (aiReply.memory_updates && typeof aiReply.memory_updates === "object") ||
+          (aiReply.memory_patch && typeof aiReply.memory_patch === "object")
+        ) {
+          const mergedPatch = {
+            ...(aiReply.memory_updates || {}),
+            ...(aiReply.memory_patch || {}),
+          };
           setMemory((prev) => ({
             ...prev,
             preferred_category:
-              typeof aiReply.memory_updates?.preferred_category === "string"
-                ? aiReply.memory_updates.preferred_category
+              typeof mergedPatch?.preferred_category === "string"
+                ? mergedPatch.preferred_category
                 : prev.preferred_category,
-            budget_cop: Number.isFinite(Number(aiReply.memory_updates?.budget_cop))
-              ? Number(aiReply.memory_updates?.budget_cop)
+            budget_cop: Number.isFinite(Number(mergedPatch?.budget_cop))
+              ? Number(mergedPatch?.budget_cop)
               : prev.budget_cop,
             tone_mode:
-              aiReply.memory_updates?.tone_mode === "professional" || aiReply.memory_updates?.tone_mode === "friendly"
-                ? aiReply.memory_updates.tone_mode
+              mergedPatch?.tone_mode === "professional" || mergedPatch?.tone_mode === "friendly"
+                ? mergedPatch.tone_mode
                 : prev.tone_mode,
             customer_goal:
-              aiReply.memory_updates?.customer_goal === "gift" ||
-              aiReply.memory_updates?.customer_goal === "home" ||
-              aiReply.memory_updates?.customer_goal === "business" ||
-              aiReply.memory_updates?.customer_goal === "studio"
-                ? aiReply.memory_updates.customer_goal
+              mergedPatch?.customer_goal === "gift" ||
+              mergedPatch?.customer_goal === "home" ||
+              mergedPatch?.customer_goal === "business" ||
+              mergedPatch?.customer_goal === "studio"
+                ? mergedPatch.customer_goal
                 : prev.customer_goal,
             last_emotion:
-              aiReply.memory_updates?.last_emotion === "frustrated" ||
-              aiReply.memory_updates?.last_emotion === "urgent" ||
-              aiReply.memory_updates?.last_emotion === "happy" ||
-              aiReply.memory_updates?.last_emotion === "doubtful" ||
-              aiReply.memory_updates?.last_emotion === "neutral"
-                ? aiReply.memory_updates.last_emotion
+              mergedPatch?.last_emotion === "frustrated" ||
+              mergedPatch?.last_emotion === "urgent" ||
+              mergedPatch?.last_emotion === "happy" ||
+              mergedPatch?.last_emotion === "doubtful" ||
+              mergedPatch?.last_emotion === "neutral"
+                ? mergedPatch.last_emotion
                 : prev.last_emotion,
+            last_product_slug:
+              typeof mergedPatch?.last_product_slug === "string"
+                ? mergedPatch.last_product_slug
+                : prev.last_product_slug,
+            last_product_name:
+              typeof mergedPatch?.last_product_name === "string"
+                ? mergedPatch.last_product_name
+                : prev.last_product_name,
+            last_product_sku:
+              typeof mergedPatch?.last_product_sku === "string"
+                ? mergedPatch.last_product_sku
+                : prev.last_product_sku,
+            last_query:
+              typeof mergedPatch?.last_query === "string"
+                ? mergedPatch.last_query
+                : prev.last_query,
+            last_recommended_products:
+              Array.isArray(mergedPatch?.last_recommended_products)
+                ? mergedPatch.last_recommended_products
+                    .slice(0, 5)
+                    .map((row) => ({
+                      id: Number(row?.id) || 0,
+                      slug: typeof row?.slug === "string" ? row.slug : "",
+                      name: typeof row?.name === "string" ? row.name : "",
+                      price: Number.isFinite(Number(row?.price)) ? Number(row.price) : null,
+                      category_path: typeof row?.category_path === "string" ? row.category_path : null,
+                      category_name: typeof row?.category_name === "string" ? row.category_name : null,
+                      brand: typeof row?.brand === "string" ? row.brand : null,
+                      score: Number.isFinite(Number(row?.score)) ? Number(row.score) : undefined,
+                    }))
+                    .filter((row) => row.id > 0 && row.slug && row.name)
+                : prev.last_recommended_products,
+            last_recommendation_query:
+              typeof mergedPatch?.last_recommendation_query === "string"
+                ? mergedPatch.last_recommendation_query
+                : prev.last_recommendation_query,
+            last_recommendation_category:
+              typeof mergedPatch?.last_recommendation_category === "string"
+                ? mergedPatch.last_recommendation_category
+                : prev.last_recommendation_category,
+            last_recommendation_attributes:
+              Array.isArray(mergedPatch?.last_recommendation_attributes)
+                ? mergedPatch.last_recommendation_attributes.filter((value) => typeof value === "string").slice(0, 8)
+                : prev.last_recommendation_attributes,
+            last_usage_context:
+              typeof mergedPatch?.last_usage_context === "string"
+                ? mergedPatch.last_usage_context
+                : prev.last_usage_context,
+            last_recommendation_type:
+              typeof mergedPatch?.last_recommendation_type === "string"
+                ? mergedPatch.last_recommendation_type
+                : prev.last_recommendation_type,
+            last_intent:
+              typeof mergedPatch?.last_intent === "string"
+                ? mergedPatch.last_intent
+                : prev.last_intent,
+            last_non_product_intent:
+              mergedPatch?.last_non_product_intent === "payments" ||
+              mergedPatch?.last_non_product_intent === "shipping" ||
+              mergedPatch?.last_non_product_intent === "warranty" ||
+              mergedPatch?.last_non_product_intent === "advisor" ||
+              mergedPatch?.last_non_product_intent === "orders" ||
+              mergedPatch?.last_non_product_intent === "menu"
+                ? mergedPatch.last_non_product_intent
+                : prev.last_non_product_intent,
+            last_support_topic:
+              mergedPatch?.last_support_topic === "payments" ||
+              mergedPatch?.last_support_topic === "shipping" ||
+              mergedPatch?.last_support_topic === "warranty" ||
+              mergedPatch?.last_support_topic === "advisor"
+                ? mergedPatch.last_support_topic
+                : prev.last_support_topic,
           }));
         }
         const apiActions = sanitizeApiActions(aiReply.actions);
+        const productCards = sanitizeProductCards(aiReply.product_cards);
+        const productCardLinks = new Set(productCards.map((card) => card.url));
         const suggestionActions = buildSuggestionActions(aiReply.suggestions);
-        const mergedActions = [...apiActions, ...suggestionActions].slice(0, 7);
+        const filteredApiActions = apiActions.filter((action) => !(action.type === "link" && productCardLinks.has(action.value)));
+        const mergedActions = [...filteredApiActions, ...suggestionActions].slice(0, 7);
         setMessages((current) => [
           ...current,
           {
             id: createId(),
             role: "bot",
             text: aiReply.answer.trim() || createUnknownMessage().text,
+            productCards: productCards.length ? productCards : undefined,
             actions: mergedActions.length ? mergedActions : undefined,
           },
         ]);
@@ -880,11 +1091,28 @@ export default function KoraChat() {
               className="kora-chat-reset"
               onClick={handleResetConversation}
               aria-label="Reiniciar conversación"
+              title="Reiniciar conversación"
             >
-              Reiniciar
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4h-4"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </button>
             <button type="button" className="kora-chat-close" onClick={() => closeChat("header_close")} aria-label="Cerrar chat">
-              ×
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M6 9l6 6 6-6"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </button>
           </div>
         </header>
@@ -896,6 +1124,31 @@ export default function KoraChat() {
               className={`kora-chat-message ${message.role === "bot" ? "is-bot" : "is-user"}`}
             >
               <p>{message.text}</p>
+              {message.productCards?.length ? (
+                <div className="kora-product-cards">
+                  <div className="kora-product-cards-track">
+                    {message.productCards.map((card) => (
+                      <button
+                        type="button"
+                        key={`card-${message.id}-${card.id}`}
+                        className="kora-product-card"
+                        onClick={() => handleAction({ id: `card-open-${card.id}`, label: `Ver ${card.name}`, type: "link", value: card.url })}
+                        aria-label={`Ver ${card.name}`}
+                      >
+                        <ProductCardMedia
+                          imageUrl={card.image_url}
+                          name={card.name}
+                          fallbackLabel={(card.category_name || card.name || "P").slice(0, 1).toUpperCase()}
+                        />
+                        <div className="kora-product-card-body">
+                          <p className="kora-product-card-name">{card.name}</p>
+                          <p className="kora-product-card-meta">{formatCardPrice(card.price, card.price_mode)}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               {message.actions?.length ? (
                 <div className="kora-chat-actions">
                   {message.actions.map((action) => (
@@ -914,7 +1167,16 @@ export default function KoraChat() {
             </article>
           ))}
 
-          {isTyping ? <p className="kora-chat-typing">KORA está escribiendo...</p> : null}
+          {isTyping ? (
+            <div className="kora-chat-typing" role="status" aria-live="polite" aria-label="KORA está escribiendo">
+              <span className="kora-chat-typing-label">KORA está escribiendo</span>
+              <span className="kora-chat-typing-dots" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+              </span>
+            </div>
+          ) : null}
           <div ref={endRef} />
         </div>
 
@@ -933,9 +1195,66 @@ export default function KoraChat() {
               Enviar
             </button>
           </form>
-          <p>{QUICK_HINTS}</p>
         </footer>
       </section>
     </div>
   );
+}
+
+function sanitizeProductCards(cards: KoraAskResponse["product_cards"]) {
+  if (!Array.isArray(cards)) return [];
+  return cards
+    .slice(0, 5)
+    .map((card) => ({
+      id: Number(card?.id) || 0,
+      slug: typeof card?.slug === "string" ? card.slug : "",
+      name: typeof card?.name === "string" ? card.name : "",
+      price: Number.isFinite(Number(card?.price)) ? Number(card?.price) : null,
+      price_mode: typeof card?.price_mode === "string" ? card.price_mode : null,
+      brand: typeof card?.brand === "string" ? card.brand : null,
+      category_name: typeof card?.category_name === "string" ? card.category_name : null,
+      image_url: typeof card?.image_url === "string" ? card.image_url : null,
+      reason: typeof card?.reason === "string" ? card.reason : null,
+      url: typeof card?.url === "string" ? card.url : "",
+    }))
+    .filter((card) => card.id > 0 && card.name && card.url);
+}
+
+function ProductCardMedia({
+  imageUrl,
+  name,
+  fallbackLabel,
+}: {
+  imageUrl: string | null;
+  name: string;
+  fallbackLabel: string;
+}) {
+  const [failed, setFailed] = useState(false);
+  const safeFallback = (fallbackLabel || "P").slice(0, 1).toUpperCase();
+
+  return (
+    <div className="kora-product-card-media" aria-hidden="true">
+      {!imageUrl || failed ? (
+        <span>{safeFallback}</span>
+      ) : (
+        <Image
+          src={imageUrl}
+          alt={name}
+          width={92}
+          height={92}
+          unoptimized
+          onError={() => setFailed(true)}
+        />
+      )}
+    </div>
+  );
+}
+
+function formatCardPrice(price: number | null, priceMode: string | null) {
+  if (priceMode === "consultar" || price === null) return "Precio a consultar";
+  return new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0,
+  }).format(price);
 }

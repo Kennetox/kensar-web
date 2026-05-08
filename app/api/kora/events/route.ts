@@ -14,6 +14,30 @@ function sanitizeText(value: unknown, maxLength: number) {
   return value.slice(0, maxLength).trim();
 }
 
+function sanitizePayload(value: unknown): Record<string, string | number | boolean | null> {
+  if (!value || typeof value !== "object") return {};
+  const output: Record<string, string | number | boolean | null> = {};
+  const entries = Object.entries(value as Record<string, unknown>).slice(0, 40);
+  for (const [key, raw] of entries) {
+    const safeKey = sanitizeText(key, 64);
+    if (!safeKey) continue;
+    if (typeof raw === "string") {
+      output[safeKey] = sanitizeText(raw, 240);
+      continue;
+    }
+    if (typeof raw === "number") {
+      output[safeKey] = Number.isFinite(raw) ? raw : null;
+      continue;
+    }
+    if (typeof raw === "boolean") {
+      output[safeKey] = raw;
+      continue;
+    }
+    output[safeKey] = null;
+  }
+  return output;
+}
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as KoraEventBody;
@@ -25,7 +49,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, detail: "Invalid event payload" }, { status: 400 });
     }
 
-    const payload = body.payload && typeof body.payload === "object" ? body.payload : {};
+    const payload = sanitizePayload(body.payload);
     const eventRecord = {
       event,
       path: eventPath,

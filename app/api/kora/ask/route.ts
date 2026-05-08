@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { getCatalogProduct, getCatalogProducts, formatCatalogPrice, getStockLabel } from "@/app/lib/metrikCatalog";
+import { extractKoraEntities, type KoraNluResult } from "@/app/lib/kora/entities";
+import { buildNluRoutedResponse } from "@/app/lib/kora/response-router";
+import { resolveKoraCatalogRecommendation } from "@/app/lib/kora/recommender";
 
 type AskRequest = {
   query?: string;
@@ -11,6 +14,28 @@ type AskRequest = {
     tone_mode?: "friendly" | "professional" | null;
     customer_goal?: "gift" | "home" | "business" | "studio" | null;
     last_emotion?: "neutral" | "frustrated" | "urgent" | "happy" | "doubtful" | null;
+    last_product_slug?: string | null;
+    last_product_name?: string | null;
+    last_product_sku?: string | null;
+    last_query?: string | null;
+    last_recommended_products?: Array<{
+      id: number;
+      slug: string;
+      name: string;
+      price: number | null;
+      category_path: string | null;
+      category_name: string | null;
+      brand: string | null;
+      score?: number | null;
+    }>;
+    last_recommendation_query?: string | null;
+    last_recommendation_category?: string | null;
+    last_recommendation_attributes?: string[];
+    last_usage_context?: string | null;
+    last_recommendation_type?: string | null;
+    last_intent?: "products" | "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu" | "unknown" | null;
+    last_non_product_intent?: "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu" | null;
+    last_support_topic?: "payments" | "shipping" | "warranty" | "advisor" | null;
   };
 };
 
@@ -55,6 +80,8 @@ type AskResponse = {
   answer: string;
   actions: ChatActionOut[];
   suggestions: string[];
+  confidence_score?: number;
+  resolution_kind?: "direct" | "disambiguation" | "fallback";
   emotion: "neutral" | "frustrated" | "urgent" | "happy" | "doubtful";
   companion_mode: boolean;
   memory_updates?: {
@@ -63,18 +90,85 @@ type AskResponse = {
     tone_mode?: "friendly" | "professional" | null;
     customer_goal?: "gift" | "home" | "business" | "studio" | null;
     last_emotion?: "neutral" | "frustrated" | "urgent" | "happy" | "doubtful" | null;
+    last_product_slug?: string | null;
+    last_product_name?: string | null;
+    last_product_sku?: string | null;
+    last_query?: string | null;
+    last_recommended_products?: Array<{
+      id: number;
+      slug: string;
+      name: string;
+      price: number | null;
+      category_path: string | null;
+      category_name: string | null;
+      brand: string | null;
+      score?: number | null;
+    }>;
+    last_recommendation_query?: string | null;
+    last_recommendation_category?: string | null;
+    last_recommendation_attributes?: string[];
+    last_usage_context?: string | null;
+    last_recommendation_type?: string | null;
+    last_intent?: "products" | "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu" | "unknown" | null;
+    last_non_product_intent?: "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu" | null;
+    last_support_topic?: "payments" | "shipping" | "warranty" | "advisor" | null;
   };
+  memory_patch?: {
+    last_recommended_products?: Array<{
+      id: number;
+      slug: string;
+      name: string;
+      price: number | null;
+      category_path: string | null;
+      category_name: string | null;
+      brand: string | null;
+      score?: number | null;
+    }>;
+    last_recommendation_query?: string | null;
+    last_recommendation_category?: string | null;
+    last_recommendation_attributes?: string[];
+    last_usage_context?: string | null;
+    last_recommendation_type?: string | null;
+    last_intent?: "products" | "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu" | "unknown" | null;
+    last_non_product_intent?: "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu" | null;
+    last_support_topic?: "payments" | "shipping" | "warranty" | "advisor" | null;
+  };
+  recommendation_debug?: {
+    normalized_query: string;
+    applied_aliases: string[];
+    expanded_queries: string[];
+    selected_category_paths: string[];
+    product_scores: Array<{ id: number; slug: string; score: number }>;
+  };
+  nlu_debug?: KoraNluResult | null;
+  product_cards?: Array<{
+    id: number;
+    slug: string;
+    name: string;
+    price: number | null;
+    price_mode: string | null;
+    brand: string | null;
+    category_name: string | null;
+    image_url: string | null;
+    reason: string | null;
+    url: string;
+  }>;
 };
 
 type Emotion = AskResponse["emotion"];
 type ToneMode = "friendly" | "professional";
 type CustomerGoal = "gift" | "home" | "business" | "studio" | null;
+type NonProductIntent = "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu";
+type SupportTopic = "payments" | "shipping" | "warranty" | "advisor";
 
 type ProductReference = {
   id: number;
   name: string;
   slug: string;
   sku: string | null;
+  group_name?: string | null;
+  category_path?: string | null;
+  category_name?: string | null;
   image_url: string | null;
   image_thumb_url?: string | null;
   brand: string | null;
@@ -244,23 +338,188 @@ function ensureCompanionActions(actions: ChatActionOut[], companionMode: boolean
 
 function finalizeResponse(
   base: Omit<AskResponse, "emotion" | "companion_mode">,
-  context: { emotion: Emotion; tone: ToneMode; goal: CustomerGoal; companionMode: boolean }
+  context: { emotion: Emotion; tone: ToneMode; goal: CustomerGoal; companionMode: boolean; nluDebug?: KoraNluResult | null }
 ): AskResponse {
   const lead = buildEmpathyLead(context.emotion, context.tone);
   const hint = goalHint(context.goal, context.tone);
+  const showDebug = process.env.NODE_ENV !== "production";
   return {
     ...base,
     answer: prependLead(base.answer, lead, hint),
     actions: ensureCompanionActions(base.actions, context.companionMode),
     emotion: context.emotion,
     companion_mode: context.companionMode,
+    confidence_score: typeof base.confidence_score === "number" ? base.confidence_score : base.handled ? 0.82 : 0.34,
+    resolution_kind: base.resolution_kind ?? (base.handled ? "direct" : "fallback"),
     memory_updates: {
       ...(base.memory_updates ?? {}),
       tone_mode: context.tone,
       customer_goal: context.goal,
       last_emotion: context.emotion,
+      last_intent: base.intent,
+      last_non_product_intent:
+        base.intent !== "products" && base.intent !== "unknown"
+          ? (base.intent as NonProductIntent)
+          : base.memory_updates?.last_non_product_intent,
+      last_support_topic:
+        base.intent === "shipping" || base.intent === "payments" || base.intent === "warranty" || base.intent === "advisor"
+          ? (base.intent as SupportTopic)
+          : base.memory_updates?.last_support_topic,
     },
+    recommendation_debug: showDebug ? base.recommendation_debug : undefined,
+    nlu_debug: showDebug ? context.nluDebug || undefined : undefined,
   };
+}
+
+function isShortAmbiguousFollowup(text: string) {
+  const normalized = normalize(text);
+  if (!normalized) return false;
+  if (normalized.length > 46) return false;
+  if (/\b(quiero|busco|necesito|recomiend|guitarra|cabina|microfono|piano|teclado|camara|cable|parlante)\b/.test(normalized)) return false;
+  return (
+    /\b(y|y si|y a|como asi|como así|cuanto|cuánto|tarda|demora|costo|vale|cubre|reclamo|reclamar|nequi|transferencia|cuotas|contra entrega|ciudad|medellin|bogota|barranquilla)\b/.test(
+      normalized
+    ) || normalized.split(/\s+/).length <= 4
+  );
+}
+
+function resolveSupportTopicFromMemory(memory?: AskRequest["memory"]): SupportTopic | null {
+  const topic = memory?.last_support_topic;
+  if (topic === "shipping" || topic === "payments" || topic === "warranty" || topic === "advisor") return topic;
+  const fallback = memory?.last_non_product_intent;
+  if (fallback === "shipping" || fallback === "payments" || fallback === "warranty" || fallback === "advisor") return fallback;
+  return null;
+}
+
+function resolveSupportContextFollowup(
+  query: string,
+  currentIntent: AskResponse["intent"],
+  nlu: KoraNluResult | null,
+  memory?: AskRequest["memory"]
+): Omit<AskResponse, "emotion" | "companion_mode"> | null {
+  const normalized = normalize(query);
+  const supportTopic = resolveSupportTopicFromMemory(memory);
+  if (!supportTopic) return null;
+
+  const hasStrongNewIntent =
+    currentIntent === "products" ||
+    currentIntent === "payments" ||
+    currentIntent === "shipping" ||
+    currentIntent === "warranty" ||
+    currentIntent === "advisor" ||
+    currentIntent === "orders";
+  const hasNewProductSignal = Boolean(
+    nlu?.category ||
+    nlu?.intent === "product_search" ||
+    nlu?.intent === "product_recommendation" ||
+    nlu?.intent === "cheap_options" ||
+    nlu?.intent === "premium_options"
+  );
+
+  if (hasStrongNewIntent || hasNewProductSignal) return null;
+  if (!isShortAmbiguousFollowup(normalized)) return null;
+
+  if (supportTopic === "shipping") {
+    if (/\b(ciudad|medellin|bogota|barranquilla|cali|cartagena|bucaramanga|manizales)\b/.test(normalized)) {
+      return {
+        handled: true,
+        intent: "shipping",
+        answer:
+          "Sí, hacemos envíos a diferentes ciudades de Colombia. Si quieres, dime tu ciudad y te orientamos mejor sobre cobertura y tiempos.",
+        actions: [
+          { id: "shipping-followup-advisor", label: "Confirmar cobertura por WhatsApp", icon: "📞", type: "whatsapp", value: "advisor" },
+          { id: "shipping-followup-contact", label: "Ir a contacto", type: "link", value: "/contacto" },
+        ],
+        suggestions: ["Estoy en Medellín", "¿Cuánto tarda?", "¿Tiene costo?"],
+        memory_updates: { last_support_topic: "shipping", last_non_product_intent: "shipping" },
+      };
+    }
+    if (/\b(tarda|demora|tiempo)\b/.test(normalized)) {
+      return {
+        handled: true,
+        intent: "shipping",
+        answer:
+          "El tiempo depende de la ciudad y disponibilidad del producto, pero normalmente puede variar según el destino y la transportadora.",
+        actions: [
+          { id: "shipping-time-advisor", label: "Validar tiempo por WhatsApp", icon: "📞", type: "whatsapp", value: "advisor" },
+        ],
+        suggestions: ["¿Envían a mi ciudad?", "¿Tiene costo?", "¿Puedo recoger en tienda?"],
+        memory_updates: { last_support_topic: "shipping", last_non_product_intent: "shipping" },
+      };
+    }
+    if (/\b(costo|vale|precio|cuanto cuesta)\b/.test(normalized)) {
+      return {
+        handled: true,
+        intent: "shipping",
+        answer:
+          "El valor del envío depende de la ciudad, tamaño del producto y transportadora.",
+        actions: [
+          { id: "shipping-cost-advisor", label: "Cotizar envío por WhatsApp", icon: "📞", type: "whatsapp", value: "advisor" },
+        ],
+        suggestions: ["Estoy en Bogotá", "¿Cuánto tarda?", "¿Puedo recoger en tienda?"],
+        memory_updates: { last_support_topic: "shipping", last_non_product_intent: "shipping" },
+      };
+    }
+  }
+
+  if (supportTopic === "payments") {
+    return {
+      handled: true,
+      intent: "payments",
+      answer:
+        "Sí, podemos orientarte con transferencias, cuotas, Nequi y otras formas de pago según el pedido. Si quieres, te indico la mejor opción para tu compra.",
+      actions: [
+        { id: "payments-followup-page", label: "Ver opciones de pago", type: "link", value: "/pago" },
+        { id: "payments-followup-advisor", label: "Confirmar por WhatsApp", icon: "📞", type: "whatsapp", value: "advisor" },
+      ],
+      suggestions: ["¿Reciben transferencia?", "¿Manejan cuotas?", "¿Puedo pagar contra entrega?"],
+      memory_updates: { last_support_topic: "payments", last_non_product_intent: "payments" },
+    };
+  }
+
+  if (supportTopic === "warranty") {
+    return {
+      handled: true,
+      intent: "warranty",
+      answer:
+        "En garantía te ayudamos con cobertura, tiempos y proceso de reclamo. Si me compartes el producto o SKU, te indico el paso exacto.",
+      actions: [
+        { id: "warranty-followup-legal", label: "Ver políticas", type: "link", value: "/legal/cambios-devoluciones-garantias" },
+        { id: "warranty-followup-advisor", label: "Soporte por WhatsApp", icon: "📞", type: "whatsapp", value: "advisor" },
+      ],
+      suggestions: ["¿Qué cubre la garantía?", "¿Cuánto tiempo cubre?", "¿Cómo reclamo?"],
+      memory_updates: { last_support_topic: "warranty", last_non_product_intent: "warranty" },
+    };
+  }
+
+  if (supportTopic === "advisor") {
+    return {
+      handled: true,
+      intent: "advisor",
+      answer: "Claro, te conecto con un asesor para resolverlo rápido por WhatsApp.",
+      actions: [
+        { id: "advisor-followup-open", label: "Abrir WhatsApp", icon: "📞", type: "whatsapp", value: "advisor" },
+        { id: "advisor-followup-menu", label: "Volver al menú", type: "command", value: "menu" },
+      ],
+      suggestions: ["Necesito cotización", "Tengo una duda de pago", "Quiero soporte de garantía"],
+      memory_updates: { last_support_topic: "advisor", last_non_product_intent: "advisor" },
+    };
+  }
+
+  return null;
+}
+
+function shouldAskDisambiguation(
+  ranked: ProductReference[],
+  query: string
+) {
+  const tokens = extractMeaningfulTerms(query);
+  if (ranked.length < 2) return false;
+  if (tokens.length >= 3) return false;
+  const first = scoreProductMatch(ranked[0], query);
+  const second = scoreProductMatch(ranked[1], query);
+  const gap = Math.abs(first - second);
+  return gap <= 1.2;
 }
 
 function detectIntent(text: string): AskResponse["intent"] {
@@ -318,12 +577,125 @@ function buildCatalogSearchQuery(text: string): string {
     .trim();
 }
 
+function tokenize(text: string): string[] {
+  return normalize(text)
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter(Boolean);
+}
+
+const PRODUCT_FOLLOWUP_STOPWORDS = new Set([
+  "de",
+  "del",
+  "para",
+  "con",
+  "por",
+  "el",
+  "la",
+  "los",
+  "las",
+  "un",
+  "una",
+  "quiero",
+  "dame",
+  "mostrar",
+  "muestrame",
+  "busca",
+  "buscar",
+  "que",
+  "qué",
+  "como",
+  "cómo",
+  "uno",
+  "una",
+  "opcion",
+  "opción",
+  "algo",
+  "mas",
+  "más",
+]);
+
+function extractMeaningfulTerms(text: string): string[] {
+  return tokenize(text).filter((token) => token.length >= 3 && !PRODUCT_FOLLOWUP_STOPWORDS.has(token));
+}
+
+function stringSimilarity(a: string, b: string) {
+  const left = normalize(a);
+  const right = normalize(b);
+  if (!left || !right) return 0;
+  if (left === right) return 1;
+  if (left.includes(right) || right.includes(left)) return 0.88;
+
+  const leftTerms = new Set(extractMeaningfulTerms(left));
+  const rightTerms = new Set(extractMeaningfulTerms(right));
+  if (!leftTerms.size || !rightTerms.size) return 0;
+
+  let matches = 0;
+  leftTerms.forEach((term) => {
+    if (rightTerms.has(term)) matches += 1;
+  });
+  const union = new Set([...leftTerms, ...rightTerms]).size;
+  return union ? matches / union : 0;
+}
+
+function scoreProductMatch(item: ProductReference, query: string, preferredCategory?: string | null): number {
+  const normalizedQuery = normalize(query);
+  const terms = extractMeaningfulTerms(normalizedQuery);
+  const corpus = normalize(
+    [item.name, item.brand || "", item.sku || "", item.group_name || "", item.category_name || ""]
+      .filter(Boolean)
+      .join(" ")
+  );
+
+  let score = 0;
+  for (const term of terms) {
+    if (corpus.includes(term)) score += 2.5;
+  }
+  score += stringSimilarity(item.name, normalizedQuery) * 4;
+  if (item.sku && normalizedQuery.includes(normalize(item.sku))) score += 5;
+  if (preferredCategory && item.category_path && preferredCategory === item.category_path) score += 1.5;
+  if (item.stock_status === "in_stock") score += 1;
+  if (item.stock_status === "low_stock") score += 0.4;
+  return score;
+}
+
+function hasProductFollowupSignal(text: string) {
+  return /\b(ese|esa|este|esta|el de arriba|el anterior|otro|otra|similar|parecido|alternativa|mas barato|mas economico|mas potente|premium)\b/.test(
+    text
+  );
+}
+
+function findBestScoredProducts(items: ProductReference[], query: string, preferredCategory?: string | null) {
+  return [...items]
+    .map((item) => ({ item, score: scoreProductMatch(item, query, preferredCategory) }))
+    .sort((a, b) => b.score - a.score || a.item.name.localeCompare(b.item.name))
+    .filter((row) => row.score > 0.2)
+    .map((row) => row.item);
+}
+
 function buildBaseSuggestions(): string[] {
   return [
-    "Quiero opciones de audio hasta 300 mil",
-    "Qué métodos de pago manejan",
-    "Cómo funciona la garantía",
+    "Ver catálogo",
+    "Recomiéndame un producto",
+    "Métodos de pago",
+    "Envíos y garantías",
+    "Hablar con asesor",
   ];
+}
+
+function buildBaseCommercialActions(): ChatActionOut[] {
+  return [
+    { id: "base-catalog", label: "Ver catálogo", icon: "🛍️", type: "command", value: "products" },
+    { id: "base-recommend", label: "Recomiéndame un producto", type: "prompt", value: "Recomiéndame un producto" },
+    { id: "base-payments", label: "Métodos de pago", type: "command", value: "payments" },
+    { id: "base-shipping-warranty", label: "Envíos y garantías", type: "prompt", value: "Quiero saber de envíos y garantías" },
+    { id: "base-advisor", label: "Hablar con asesor", icon: "📞", type: "command", value: "advisor" },
+  ];
+}
+
+function isCapabilityHelpIntent(text: string) {
+  return /\b(con que|con qué|en que|en qué|como|cómo).{0,24}\b(puedes ayudar|me ayudas|ayudarme|haces)\b/.test(text) ||
+    /\b(que puedes hacer|qué puedes hacer|como funciona kora|cómo funciona kora)\b/.test(text);
 }
 
 async function resolveProductsResponse(
@@ -334,15 +706,16 @@ async function resolveProductsResponse(
   const budget = parseBudgetCop(normalized) ?? (Number(memory?.budget_cop) || null);
   const categoryPath = detectCategoryPath(normalized) || (memory?.preferred_category || null);
   const searchQuery = buildCatalogSearchQuery(normalized);
+  const rawSearch = searchQuery || normalized;
 
   let result = await getCatalogProducts({
-    q: searchQuery || undefined,
+    q: rawSearch || undefined,
     category: categoryPath || undefined,
     page: 1,
   }).catch(() => null);
 
-  if (!result && searchQuery) {
-    result = await getCatalogProducts({ q: searchQuery, page: 1 }).catch(() => null);
+  if ((!result || result.items.length === 0) && rawSearch) {
+    result = await getCatalogProducts({ q: rawSearch, page: 1 }).catch(() => null);
   }
 
   if (!result) {
@@ -363,7 +736,34 @@ async function resolveProductsResponse(
   const filtered = budget
     ? result.items.filter((item) => item.price === null || item.price <= budget)
     : result.items;
-  const topItems = filtered.slice(0, 3);
+  const ranked = findBestScoredProducts(filtered, rawSearch, categoryPath);
+  const effective = ranked.length ? ranked : filtered;
+  const topItems = effective.slice(0, 3);
+
+  if (shouldAskDisambiguation(effective, rawSearch)) {
+    const options = effective.slice(0, 3);
+    return {
+      handled: true,
+      intent: "products",
+      answer: "Veo varias coincidencias muy parecidas. ¿Cuál de estas opciones querías revisar primero?",
+      actions: options.map((item) => ({
+        id: `kora-disambiguate-${item.id}`,
+        label: `${item.name}${item.sku ? ` (SKU ${item.sku})` : ""}`,
+        type: "link",
+        value: `/catalogo/${item.slug}`,
+      })),
+      suggestions: ["Dame una opción más económica", "Filtra por marca", "Ver catálogo completo"],
+      confidence_score: 0.64,
+      resolution_kind: "disambiguation",
+      emotion: "neutral",
+      companion_mode: false,
+      memory_updates: {
+        preferred_category: categoryPath || undefined,
+        budget_cop: budget || undefined,
+        last_query: rawSearch || undefined,
+      },
+    };
+  }
 
   if (!topItems.length) {
     const budgetText = budget ? ` por debajo de ${formatCatalogPrice(budget)}` : "";
@@ -438,7 +838,10 @@ async function resolveProductsResponse(
     memory_updates: {
       preferred_category: categoryPath || undefined,
       budget_cop: budget || undefined,
+      last_query: rawSearch || undefined,
     },
+    confidence_score: ranked.length ? 0.86 : 0.78,
+    resolution_kind: "direct",
   };
 }
 
@@ -563,6 +966,9 @@ async function resolveProductPageAssistantResponse(
     companion_mode: false,
     memory_updates: {
       preferred_category: current.category_path || undefined,
+      last_product_slug: current.slug,
+      last_product_name: current.name,
+      last_product_sku: current.sku || undefined,
     },
   };
 }
@@ -599,6 +1005,43 @@ async function resolveProductPageWelcome(
     companion_mode: false,
     memory_updates: {
       preferred_category: current.category_path || undefined,
+      last_product_slug: current.slug,
+      last_product_name: current.name,
+      last_product_sku: current.sku || undefined,
+    },
+  };
+}
+
+async function resolveMemoryProductFollowup(
+  query: string,
+  memory?: AskRequest["memory"]
+): Promise<AskResponse | null> {
+  const normalized = normalize(query);
+  if (!hasProductFollowupSignal(normalized)) return null;
+
+  const slug = normalize(String(memory?.last_product_slug || ""));
+  if (!slug) return null;
+
+  const current = await getCatalogProduct(slug).catch(() => null);
+  if (!current) return null;
+
+  const syntheticQuery = `${query} ${current.name} ${current.brand || ""} ${current.category_name || ""}`.trim();
+  const response = await resolveProductsResponse(syntheticQuery, {
+    ...memory,
+    preferred_category: current.category_path || memory?.preferred_category || null,
+  });
+
+  const patchedAnswer = `Tomando como referencia el último producto que vimos (${current.name}), te propongo esto:\n\n${response.answer}`;
+  return {
+    ...response,
+    handled: true,
+    answer: patchedAnswer,
+    memory_updates: {
+      ...(response.memory_updates ?? {}),
+      last_product_slug: current.slug,
+      last_product_name: current.name,
+      last_product_sku: current.sku || undefined,
+      last_query: syntheticQuery,
     },
   };
 }
@@ -607,6 +1050,12 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as AskRequest | null;
   const query = String(body?.query || "").trim();
   const normalized = normalize(query);
+  let nluDebug: KoraNluResult | null = null;
+  try {
+    nluDebug = extractKoraEntities(query);
+  } catch {
+    nluDebug = null;
+  }
   const emotion = detectEmotion(normalized);
   const tone = detectTonePreference(normalized, body?.memory?.tone_mode === "professional" ? "professional" : "friendly");
   const goal = detectCustomerGoal(normalized, body?.memory?.customer_goal ?? null);
@@ -627,7 +1076,7 @@ export async function POST(request: Request) {
         ],
         suggestions: buildBaseSuggestions(),
         },
-        { emotion, tone, goal, companionMode }
+        { emotion, tone, goal, companionMode, nluDebug }
       ),
       { status: 200 }
     );
@@ -635,11 +1084,28 @@ export async function POST(request: Request) {
 
   const intent = detectIntent(normalized);
 
+  if (isCapabilityHelpIntent(normalized)) {
+    return NextResponse.json<AskResponse>(
+      finalizeResponse(
+        {
+          handled: true,
+          intent: "menu",
+          answer:
+            "Puedo ayudarte a encontrar productos, comparar opciones, recomendarte algo según tu presupuesto, explicarte pagos, envíos o garantías. También puedo pasarte con un asesor si prefieres atención por WhatsApp.",
+          actions: buildBaseCommercialActions(),
+          suggestions: buildBaseSuggestions(),
+        },
+        { emotion, tone, goal, companionMode, nluDebug }
+      ),
+      { status: 200 }
+    );
+  }
+
   if (greetingOnly) {
     const productWelcome = await resolveProductPageWelcome(body?.path, body?.context);
     if (productWelcome) {
       return NextResponse.json<AskResponse>(
-        finalizeResponse(productWelcome, { emotion, tone, goal, companionMode }),
+        finalizeResponse(productWelcome, { emotion, tone, goal, companionMode, nluDebug }),
         { status: 200 }
       );
     }
@@ -689,10 +1155,64 @@ export async function POST(request: Request) {
     );
   }
 
+  if (nluDebug) {
+    const recommendation = await resolveKoraCatalogRecommendation({
+      query,
+      nlu: nluDebug,
+      memory: {
+        preferred_category: body?.memory?.preferred_category,
+        budget_cop: body?.memory?.budget_cop,
+        last_query: body?.memory?.last_query,
+        last_recommended_products: body?.memory?.last_recommended_products,
+        last_recommendation_query: body?.memory?.last_recommendation_query,
+        last_recommendation_category: body?.memory?.last_recommendation_category,
+        last_recommendation_attributes: body?.memory?.last_recommendation_attributes,
+        last_usage_context: body?.memory?.last_usage_context,
+        last_recommendation_type: body?.memory?.last_recommendation_type,
+      },
+    });
+    if (recommendation) {
+      return NextResponse.json<AskResponse>(
+        finalizeResponse(recommendation, { emotion, tone, goal, companionMode, nluDebug }),
+        { status: 200 }
+      );
+    }
+  }
+
+  if (nluDebug) {
+    const routed = buildNluRoutedResponse(nluDebug, {
+      preferred_category: body?.memory?.preferred_category,
+      last_product_name: body?.memory?.last_product_name,
+      last_product_slug: body?.memory?.last_product_slug,
+    });
+    if (routed) {
+      return NextResponse.json<AskResponse>(
+        finalizeResponse(routed, { emotion, tone, goal, companionMode, nluDebug }),
+        { status: 200 }
+      );
+    }
+  }
+
+  const supportFollowup = resolveSupportContextFollowup(query, intent, nluDebug, body?.memory);
+  if (supportFollowup) {
+    return NextResponse.json<AskResponse>(
+      finalizeResponse(supportFollowup, { emotion, tone, goal, companionMode, nluDebug }),
+      { status: 200 }
+    );
+  }
+
   const contextualProductReply = await resolveProductPageAssistantResponse(query, body?.path, body?.context);
   if (contextualProductReply) {
     return NextResponse.json<AskResponse>(
-      finalizeResponse(contextualProductReply, { emotion, tone, goal, companionMode }),
+      finalizeResponse(contextualProductReply, { emotion, tone, goal, companionMode, nluDebug }),
+      { status: 200 }
+    );
+  }
+
+  const memoryFollowupReply = await resolveMemoryProductFollowup(query, body?.memory);
+  if (memoryFollowupReply) {
+    return NextResponse.json<AskResponse>(
+      finalizeResponse(memoryFollowupReply, { emotion, tone, goal, companionMode, nluDebug }),
       { status: 200 }
     );
   }
@@ -713,7 +1233,7 @@ export async function POST(request: Request) {
         ],
         suggestions: buildBaseSuggestions(),
         },
-        { emotion, tone, goal, companionMode }
+        { emotion, tone, goal, companionMode, nluDebug }
       ),
       { status: 200 }
     );
@@ -722,7 +1242,7 @@ export async function POST(request: Request) {
   if (intent === "products") {
     const response = await resolveProductsResponse(query, body?.memory);
     return NextResponse.json<AskResponse>(
-      finalizeResponse(response, { emotion, tone, goal, companionMode }),
+      finalizeResponse(response, { emotion, tone, goal, companionMode, nluDebug }),
       { status: 200 }
     );
   }
@@ -740,7 +1260,7 @@ export async function POST(request: Request) {
         ],
         suggestions: ["¿Puedo pagar por cuotas?", "¿Aceptan Addi?", "¿Cómo pago un pedido web?"],
         },
-        { emotion, tone, goal, companionMode }
+        { emotion, tone, goal, companionMode, nluDebug }
       ),
       { status: 200 }
     );
@@ -759,7 +1279,7 @@ export async function POST(request: Request) {
         ],
         suggestions: ["¿Envían a mi ciudad?", "¿Cuánto tarda el envío?", "¿Puedo recoger hoy en tienda?"],
         },
-        { emotion, tone, goal, companionMode }
+        { emotion, tone, goal, companionMode, nluDebug }
       ),
       { status: 200 }
     );
@@ -778,7 +1298,7 @@ export async function POST(request: Request) {
         ],
         suggestions: ["¿Cómo tramito garantía?", "¿Puedo hacer cambio?", "¿Qué cubre la garantía?"],
         },
-        { emotion, tone, goal, companionMode }
+        { emotion, tone, goal, companionMode, nluDebug }
       ),
       { status: 200 }
     );
@@ -798,7 +1318,7 @@ export async function POST(request: Request) {
         ],
         suggestions: ["No encuentro mi pedido", "¿Cómo veo el estado del pago?", "Quiero soporte de una orden"],
         },
-        { emotion, tone, goal, companionMode }
+        { emotion, tone, goal, companionMode, nluDebug }
       ),
       { status: 200 }
     );
@@ -817,7 +1337,7 @@ export async function POST(request: Request) {
         ],
         suggestions: ["Quiero ayuda con una compra", "Necesito cotización", "Tengo dudas de garantía"],
         },
-        { emotion, tone, goal, companionMode: true }
+        { emotion, tone, goal, companionMode: true, nluDebug }
       ),
       { status: 200 }
     );
@@ -828,14 +1348,17 @@ export async function POST(request: Request) {
       {
       handled: false,
       intent: "unknown",
-      answer: "Puedo ayudarte con productos, pagos, envíos, garantías o estado de pedidos.",
+      answer: "No estoy segura de qué producto buscas. ¿Quieres que te ayude con sonido, instrumentos, cámaras, cables o formas de pago?",
       actions: [
-        { id: "unknown-products", label: "Ver catálogo", type: "command", value: "products" },
-        { id: "unknown-advisor", label: "Hablar por WhatsApp", icon: "📞", type: "command", value: "advisor" },
+        { id: "unknown-sound", label: "Cabinas y sonido", type: "prompt", value: "Quiero ver cabinas y sonido" },
+        { id: "unknown-instruments", label: "Instrumentos musicales", type: "prompt", value: "Quiero ver instrumentos musicales" },
+        { id: "unknown-security", label: "Cámaras de seguridad", type: "prompt", value: "Quiero ver cámaras de seguridad" },
+        { id: "unknown-payments", label: "Formas de pago", type: "command", value: "payments" },
+        { id: "unknown-advisor", label: "Hablar con asesor", icon: "📞", type: "command", value: "advisor" },
       ],
       suggestions: buildBaseSuggestions(),
       },
-      { emotion, tone, goal, companionMode }
+      { emotion, tone, goal, companionMode, nluDebug }
     ),
     { status: 200 }
   );
