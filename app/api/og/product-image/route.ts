@@ -23,6 +23,7 @@ async function fetchImageAsResponse(imageUrl: string): Promise<Response | null> 
       status: 200,
       headers: {
         "Content-Type": contentType,
+        "Content-Length": String(bytes.byteLength),
         "Cache-Control": "public, max-age=300, s-maxage=300, stale-while-revalidate=86400",
       },
     });
@@ -39,7 +40,7 @@ export async function GET(request: Request) {
   }
 
   const product = await getCatalogProduct(slug).catch(() => null);
-  const imageUrl = (product?.image_url || product?.image_thumb_url || "").trim();
+  const imageUrl = (product?.image_thumb_url || product?.image_url || "").trim();
 
   if (!imageUrl) {
     return NextResponse.redirect(resolveFallbackLogoUrl(), 302);

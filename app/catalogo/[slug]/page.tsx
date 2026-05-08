@@ -64,6 +64,9 @@ export async function generateMetadata({ params, searchParams }: CatalogProductD
     ? [
         {
           url: previewImageUrl,
+          secureUrl: previewImageUrl,
+          width: 1200,
+          height: 630,
           alt: product.name,
         },
       ]
