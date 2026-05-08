@@ -45,8 +45,12 @@ export default function ProductPurchaseCta({
   const productPath = `/catalogo/${productSlug}`;
 
   function resolveShareUrl() {
-    if (typeof window === "undefined") return productPath;
-    return `${window.location.origin}${productPath}`;
+    if (typeof window === "undefined") return `${productPath}?src=share`;
+    const url = new URL(productPath, window.location.origin);
+    // WhatsApp cachea previews por URL; este parámetro fuerza refresco de metadata.
+    url.searchParams.set("src", "share");
+    url.searchParams.set("v", String(Date.now()));
+    return url.toString();
   }
 
   function notifyShare(messageText: string) {
