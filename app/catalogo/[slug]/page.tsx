@@ -24,6 +24,7 @@ export const dynamic = "force-dynamic";
 
 type CatalogProductDetailPageProps = {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 function resolveAbsoluteUrl(url: string, siteUrl: string): string {
@@ -34,22 +35,45 @@ function resolveAbsoluteUrl(url: string, siteUrl: string): string {
   return `${siteUrl}/${trimmed}`;
 }
 
-export async function generateMetadata({ params }: CatalogProductDetailPageProps): Promise<Metadata> {
+function pickSearchParam(
+  searchParams: Record<string, string | string[] | undefined>,
+  key: string
+): string {
+  const raw = searchParams[key];
+  if (Array.isArray(raw)) return String(raw[0] || "").trim();
+  return String(raw || "").trim();
+}
+
+export async function generateMetadata({ params, searchParams }: CatalogProductDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
+  const query = (await searchParams) || {};
   const product = await getCatalogProduct(slug);
   if (!product) {
     return {};
   }
 
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://kensarelectronic.com").replace(/\/+$/, "");
-  const productUrl = `${siteUrl}/catalogo/${product.slug}`;
+  const baseProductUrl = `${siteUrl}/catalogo/${product.slug}`;
+  const shareSource = pickSearchParam(query, "src");
+  const shareVersion = pickSearchParam(query, "v");
+  const metadataUrl = new URL(baseProductUrl);
+  if (shareSource) metadataUrl.searchParams.set("src", shareSource);
+  if (shareVersion) metadataUrl.searchParams.set("v", shareVersion);
+  const productUrl = metadataUrl.toString();
   const description = (product.short_description || product.long_description || "").trim();
   const fallbackDescription = "Producto disponible en Kensar Electronic.";
-  const previewImage = resolveAbsoluteUrl(product.image_url || product.image_thumb_url || "", siteUrl);
-  const imageSet = previewImage
+  const previewImageBase = resolveAbsoluteUrl(product.image_url || product.image_thumb_url || "", siteUrl);
+  const previewImageUrl = previewImageBase
+    ? (() => {
+        const url = new URL(previewImageBase);
+        if (shareVersion) url.searchParams.set("v", shareVersion);
+        return url.toString();
+      })()
+    : "";
+  const imageSet = previewImageUrl
     ? [
         {
-          url: previewImage,
+          url: previewImageUrl,
           alt: product.name,
         },
       ]
@@ -59,7 +83,7 @@ export async function generateMetadata({ params }: CatalogProductDetailPageProps
     title: `${product.name} | Kensar Electronic`,
     description: description || fallbackDescription,
     alternates: {
-      canonical: productUrl,
+      canonical: baseProductUrl,
     },
     openGraph: {
       title: `${product.name} | Kensar Electronic`,
@@ -72,7 +96,7 @@ export async function generateMetadata({ params }: CatalogProductDetailPageProps
       card: "summary_large_image",
       title: `${product.name} | Kensar Electronic`,
       description: description || fallbackDescription,
-      images: previewImage ? [previewImage] : undefined,
+      images: previewImageUrl ? [previewImageUrl] : undefined,
     },
   };
 }
