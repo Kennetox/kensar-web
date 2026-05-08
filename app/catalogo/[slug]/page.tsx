@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import CatalogProductCard from "@/app/catalogo/CatalogProductCard";
 import ProductBackToCatalogLink from "@/app/catalogo/ProductBackToCatalogLink";
@@ -24,6 +25,57 @@ export const dynamic = "force-dynamic";
 type CatalogProductDetailPageProps = {
   params: Promise<{ slug: string }>;
 };
+
+function resolveAbsoluteUrl(url: string, siteUrl: string): string {
+  const trimmed = (url || "").trim();
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (trimmed.startsWith("/")) return `${siteUrl}${trimmed}`;
+  return `${siteUrl}/${trimmed}`;
+}
+
+export async function generateMetadata({ params }: CatalogProductDetailPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const product = await getCatalogProduct(slug);
+  if (!product) {
+    return {};
+  }
+
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://kensarelectronic.com").replace(/\/+$/, "");
+  const productUrl = `${siteUrl}/catalogo/${product.slug}`;
+  const description = (product.short_description || product.long_description || "").trim();
+  const fallbackDescription = "Producto disponible en Kensar Electronic.";
+  const previewImage = resolveAbsoluteUrl(product.image_url || product.image_thumb_url || "", siteUrl);
+  const imageSet = previewImage
+    ? [
+        {
+          url: previewImage,
+          alt: product.name,
+        },
+      ]
+    : undefined;
+
+  return {
+    title: `${product.name} | Kensar Electronic`,
+    description: description || fallbackDescription,
+    alternates: {
+      canonical: productUrl,
+    },
+    openGraph: {
+      title: `${product.name} | Kensar Electronic`,
+      description: description || fallbackDescription,
+      url: productUrl,
+      type: "website",
+      images: imageSet,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${product.name} | Kensar Electronic`,
+      description: description || fallbackDescription,
+      images: previewImage ? [previewImage] : undefined,
+    },
+  };
+}
 
 async function getRelatedProducts(
   currentProductId: number,
