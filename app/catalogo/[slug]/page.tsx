@@ -27,14 +27,6 @@ type CatalogProductDetailPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-function resolveAbsoluteUrl(url: string, siteUrl: string): string {
-  const trimmed = (url || "").trim();
-  if (!trimmed) return "";
-  if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  if (trimmed.startsWith("/")) return `${siteUrl}${trimmed}`;
-  return `${siteUrl}/${trimmed}`;
-}
-
 function pickSearchParam(
   searchParams: Record<string, string | string[] | undefined>,
   key: string
@@ -62,14 +54,12 @@ export async function generateMetadata({ params, searchParams }: CatalogProductD
   const productUrl = metadataUrl.toString();
   const description = (product.short_description || product.long_description || "").trim();
   const fallbackDescription = "Producto disponible en Kensar Electronic.";
-  const previewImageBase = resolveAbsoluteUrl(product.image_url || product.image_thumb_url || "", siteUrl);
-  const previewImageUrl = previewImageBase
-    ? (() => {
-        const url = new URL(previewImageBase);
-        if (shareVersion) url.searchParams.set("v", shareVersion);
-        return url.toString();
-      })()
-    : "";
+  const previewImageUrl = (() => {
+    const url = new URL("/api/og/product-image", siteUrl);
+    url.searchParams.set("slug", product.slug);
+    if (shareVersion) url.searchParams.set("v", shareVersion);
+    return url.toString();
+  })();
   const imageSet = previewImageUrl
     ? [
         {
