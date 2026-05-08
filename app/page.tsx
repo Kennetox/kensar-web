@@ -4,8 +4,10 @@ import CatalogProductCard from "@/app/catalogo/CatalogProductCard";
 import CommerceSlider from "@/app/components/CommerceSlider";
 import HomeProductCarousel from "@/app/components/HomeProductCarousel";
 import HomePersonalizaHighlight from "@/app/components/HomePersonalizaHighlight";
+import KoraPageContextBridge from "@/app/components/KoraPageContextBridge";
 import Reveal from "@/app/components/Reveal";
 import { buildCatalogCategoryHref } from "@/app/lib/catalogRoutes";
+import { buildWhatsAppPrefill } from "@/app/lib/kora/whatsapp-handoff";
 import {
   getCatalogCategories,
   getCatalogBestSellers,
@@ -419,12 +421,20 @@ export default async function HomePage() {
     {
       id: "whatsapp",
       label: "WhatsApp",
-      href: "https://wa.me/573185657508?text=Hola%2C%20quiero%20informaci%C3%B3n%20sobre%20productos%20disponibles%20en%20la%20tienda%20web%20de%20Kensar.",
+      href: buildWhatsAppPrefill({
+        origin: "unknown",
+        need: "contacto_general",
+        intent: "general_contact",
+        currentPath: "/",
+        currentUrl: "https://kensarelectronic.com/",
+        latestInput: "Hola, quiero información sobre productos disponibles en la tienda web de Kensar.",
+      }).href,
     },
   ];
 
   return (
     <div id="inicio" className="commerce-home home-anchor-section">
+      <KoraPageContextBridge pageContext={{ pageType: "home" }} />
       <CommerceSlider slides={sliderSlides} categories={featuredCategories} intervalMs={8000} />
       <div className="commerce-categories-divider" aria-hidden="true" />
 

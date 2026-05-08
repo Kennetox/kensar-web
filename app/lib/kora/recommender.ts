@@ -468,7 +468,7 @@ export async function resolveKoraCatalogRecommendation(input: {
       answer: "No encontré opciones claras con esa búsqueda, pero puedo ayudarte a revisar el catálogo o pasarte con un asesor.",
       actions: [
         { id: "rec-fallback-catalog", label: "Ver catálogo", type: "link", value: "/catalogo" },
-        { id: "rec-fallback-advisor", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor", icon: "📞" },
+        { id: "rec-fallback-advisor", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor_general", icon: "📞" },
         { id: "rec-fallback-retry", label: "Intentar otra búsqueda", type: "prompt", value: "Quiero buscar otra opción" },
       ],
       suggestions: ["Quiero algo económico", "Muéstrame cabinas", "Muéstrame guitarras"],
@@ -505,7 +505,7 @@ export async function resolveKoraCatalogRecommendation(input: {
   }));
   actions.push(
     { id: "rec-open-catalog", label: "Ver catálogo completo", type: "link", value: "/catalogo" },
-    { id: "rec-open-advisor", label: "Hablar con asesor", type: "whatsapp", value: "advisor", icon: "📞" }
+    { id: "rec-open-advisor", label: "Hablar con asesor", type: "whatsapp", value: "asesoria_eleccion", icon: "📞" }
   );
 
   const lead = buildIntentLead(input.nlu, normalizedQuery);

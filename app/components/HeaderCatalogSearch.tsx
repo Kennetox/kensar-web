@@ -184,7 +184,7 @@ export default function HeaderCatalogSearch() {
               className="header-search-view-all"
               onClick={() => goToCatalogSearch(query)}
             >
-              Mostrar todos los resultados de "{query.trim()}"
+              Mostrar todos los resultados de &quot;{query.trim()}&quot;
             </button>
           ) : null}
         </div>

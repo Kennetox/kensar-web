@@ -35,12 +35,55 @@ export default function ProductPurchaseCta({
   const [adding, setAdding] = useState(false);
   const [buyingNow, setBuyingNow] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [shareMessage, setShareMessage] = useState<string | null>(null);
   const quantityOptions = useMemo(() => Array.from({ length: 3 }, (_, index) => index + 1), []);
   const stockLabel = stockStatus === "out_of_stock" ? "Sin stock" : "Stock disponible";
   const canPurchase = stockStatus !== "out_of_stock";
   const query = searchParams.toString();
   const returnTo = `${pathname}${query ? `?${query}` : ""}`;
   const checkoutHref = `/pago?returnTo=${encodeURIComponent(returnTo)}`;
+  const productPath = `/catalogo/${productSlug}`;
+
+  function resolveShareUrl() {
+    if (typeof window === "undefined") return productPath;
+    return `${window.location.origin}${productPath}`;
+  }
+
+  function notifyShare(messageText: string) {
+    setShareMessage(messageText);
+    window.setTimeout(() => setShareMessage(null), 1800);
+  }
+
+  async function handleShareProduct() {
+    const shareUrl = resolveShareUrl();
+    const shareData = {
+      title: `${productName} | Kensar Electronic`,
+      text: `Mira este producto en Kensar: ${productName}`,
+      url: shareUrl,
+    };
+
+    try {
+      if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+        await navigator.share(shareData);
+        return;
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        return;
+      }
+    }
+
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        notifyShare("Enlace copiado.");
+        return;
+      }
+      notifyShare("No se pudo compartir. Copia el enlace desde el navegador.");
+    } catch {
+      notifyShare("No se pudo copiar el enlace.");
+    }
+  }
 
   async function handleAddToCart() {
     try {
@@ -132,6 +175,24 @@ export default function ProductPurchaseCta({
       </div>
 
       <ProductPaymentMethods />
+      <section className="product-share-card" aria-label="Compartir producto">
+        <button type="button" className="product-share-action" onClick={() => void handleShareProduct()}>
+          <span className="product-share-action-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M17.5 8a2.5 2.5 0 1 0-2.2-3.7L8.8 8.1a2.5 2.5 0 1 0 0 7.8l6.5 3.8A2.5 2.5 0 1 0 16.5 18l-6.4-3.7a2.5 2.5 0 0 0 0-4.6l6.4-3.7A2.5 2.5 0 0 0 17.5 8Z" />
+            </svg>
+          </span>
+          <span className="product-share-action-copy">
+            <strong>Compartir producto</strong>
+            <small>Envía este producto por tus apps o copia el enlace.</small>
+          </span>
+        </button>
+        {shareMessage ? (
+          <p className="product-share-feedback" aria-live="polite">
+            {shareMessage}
+          </p>
+        ) : null}
+      </section>
     </>
   );
 }

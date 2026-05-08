@@ -4556,40 +4556,77 @@ body .main-wrapper::before {
   line-height: 1.35;
 }
 
-.product-share-row {
-  margin-top: 2px;
-  display: flex;
-  align-items: center;
+.product-share-card {
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(148, 163, 184, 0.22);
+  display: grid;
+  gap: 8px;
+}
+
+.product-share-action {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.34);
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 10px 11px;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
   gap: 10px;
-  color: #1f2937;
-  font-size: 1rem;
-  font-weight: 700;
-}
-
-.product-share-row span {
-  font-size: 1.25rem;
-  letter-spacing: 0;
-}
-
-.product-share-row div {
-  display: inline-flex;
   align-items: center;
-  gap: 16px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
-.product-share-row a {
-  color: #111827;
-  text-decoration: none !important;
-  font-size: 0.9rem;
-  font-weight: 700;
-  line-height: 1;
-  width: 24px;
-  height: 24px;
+.product-share-action:hover {
+  border-color: rgba(37, 99, 235, 0.45);
+  background: #f8fafc;
+}
+
+.product-share-action-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
-  background: #f1f5f9;
+}
+
+.product-share-action-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.product-share-action-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+}
+
+.product-share-action-copy strong {
+  color: #0f172a;
+  font-size: 0.84rem;
+  line-height: 1.2;
+}
+
+.product-share-action-copy small {
+  color: #64748b;
+  font-size: 0.72rem;
+  line-height: 1.25;
+}
+
+.product-share-feedback {
+  margin: 0;
+  color: #1d4ed8;
+  font-size: 0.72rem;
+  font-weight: 600;
 }
 
 .product-rich-description {

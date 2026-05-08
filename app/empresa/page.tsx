@@ -1,6 +1,16 @@
 import Link from "next/link";
+import { buildWhatsAppPrefill } from "@/app/lib/kora/whatsapp-handoff";
 
 export default function EmpresaPage() {
+  const whatsappHref = buildWhatsAppPrefill({
+    origin: "unknown",
+    need: "contacto_general",
+    intent: "general_contact",
+    currentPath: "/empresa",
+    currentUrl: "https://kensarelectronic.com/empresa",
+    latestInput: "Hola, quiero asesoría y cotización.",
+  }).href;
+
   return (
     <section className="empresa-legal-shell">
       <article className="legal-page-card empresa-legal-card">
@@ -93,7 +103,7 @@ export default function EmpresaPage() {
             </p>
           </div>
           <div className="empresa-legal-actions">
-            <Link href="https://wa.me/573185657508" target="_blank" rel="noreferrer" className="account-primary-btn">
+            <Link href={whatsappHref} target="_blank" rel="noreferrer" className="account-primary-btn">
               Escribir por WhatsApp
             </Link>
           </div>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import CatalogProductCard from "@/app/catalogo/CatalogProductCard";
 import CatalogFiltersSidebar from "@/app/catalogo/CatalogFiltersSidebar";
+import KoraPageContextBridge from "@/app/components/KoraPageContextBridge";
 import {
   getCatalogCategories,
   getCatalogProducts,
@@ -365,6 +366,17 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
         hasPagination ? "catalog-page-with-pagination" : "catalog-page-no-pagination"
       }`}
     >
+      <KoraPageContextBridge
+        pageContext={
+          category
+            ? {
+                pageType: "category",
+                categorySlug: category,
+                categoryName: selectedCategoryName || category,
+              }
+            : { pageType: "unknown" }
+        }
+      />
       <section className="catalog-context-strip" aria-label="Contexto del catálogo">
         <div className="catalog-context-top">
           <nav className="catalog-context-breadcrumbs" aria-label="Breadcrumb">

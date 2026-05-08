@@ -19,6 +19,7 @@ import TopbarScrollBehavior from "./components/TopbarScrollBehavior";
 import CheckoutHeaderMode from "./components/CheckoutHeaderMode";
 import RouteScrollReset from "./components/RouteScrollReset";
 import { getCatalogCategories, getCatalogProducts } from "@/app/lib/metrikCatalog";
+import { buildWhatsAppPrefill } from "@/app/lib/kora/whatsapp-handoff";
 import "./globals.css";
 
 const inter = Inter({
@@ -140,6 +141,14 @@ async function loadHeaderBrands(): Promise<HeaderBrand[]> {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const [headerCategories, headerBrands] = await Promise.all([loadHeaderCategories(), loadHeaderBrands()]);
+  const directWhatsAppHref = buildWhatsAppPrefill({
+    origin: "unknown",
+    need: "contacto_general",
+    intent: "general_contact",
+    currentPath: "/",
+    currentUrl: "https://kensarelectronic.com/",
+    latestInput: "Hola, quiero hablar con un asesor comercial.",
+  }).href;
 
   return (
     <html lang="es">
@@ -260,7 +269,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <section className="footer-column">
                 <p className="footer-label">Contacto</p>
                 <a href="tel:+573185657508">(+57) 318 565 7508</a>
-                <a href="https://wa.me/573185657508" target="_blank" rel="noreferrer">
+                <a href={directWhatsAppHref} target="_blank" rel="noreferrer">
                   WhatsApp directo
                 </a>
                 <a href="mailto:kensarelec@gmail.com">kensarelec@gmail.com</a>
@@ -296,7 +305,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <summary>Contacto y horario</summary>
                 <div className="footer-mobile-content">
                   <a href="tel:+573185657508">(+57) 318 565 7508</a>
-                  <a href="https://wa.me/573185657508" target="_blank" rel="noreferrer">
+                  <a href={directWhatsAppHref} target="_blank" rel="noreferrer">
                     WhatsApp directo
                   </a>
                   <a href="mailto:kensarelec@gmail.com">kensarelec@gmail.com</a>

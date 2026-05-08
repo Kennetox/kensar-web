@@ -470,7 +470,7 @@ function ensureCompanionActions(actions: ChatActionOut[], companionMode: boolean
     return sorted;
   }
   return [
-    { id: "companion-advisor", label: "Hablar por WhatsApp ahora", icon: "📞", type: "whatsapp", value: "advisor" },
+    { id: "companion-advisor", label: "Hablar por WhatsApp ahora", icon: "📞", type: "whatsapp", value: "advisor_general" },
     ...actions,
   ];
 }
@@ -692,7 +692,7 @@ function resolveUnifiedContextFollowup(
       actions: [
         { id: "ctx-hours-contact", label: "Contacto", type: "link", value: kb.key_pages.contact },
         { id: "ctx-hours-location", label: "Ubicación", type: "prompt", value: "Dónde están ubicados" },
-        { id: "ctx-hours-whatsapp", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor", icon: "📞" },
+        { id: "ctx-hours-whatsapp", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor_general", icon: "📞" },
       ],
       suggestions: ["¿Abren hoy?", "¿Abren domingos?", "¿Dónde están ubicados?"],
       memory_updates: { last_business_topic: "hours", last_conversation_topic: "hours", last_answer_domain: "business" },
@@ -705,7 +705,7 @@ function resolveUnifiedContextFollowup(
       intent: "business_contact",
       answer: `Puedes escribirnos por WhatsApp al +${kb.whatsapp} o al correo ${kb.email}.`,
       actions: [
-        { id: "ctx-contact-whatsapp", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor", icon: "📞" },
+        { id: "ctx-contact-whatsapp", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor_general", icon: "📞" },
         { id: "ctx-contact-page", label: "Ver contacto", type: "link", value: kb.key_pages.contact },
         { id: "ctx-contact-maps", label: "Ver en Google Maps", type: "link", value: kb.maps_url },
       ],
@@ -722,7 +722,7 @@ function resolveUnifiedContextFollowup(
       actions: [
         { id: "ctx-location-maps", label: "Ver en Google Maps", type: "link", value: kb.maps_url },
         { id: "ctx-location-contact", label: "Contacto", type: "prompt", value: "Contacto" },
-        { id: "ctx-location-whatsapp", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor", icon: "📞" },
+        { id: "ctx-location-whatsapp", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor_general", icon: "📞" },
       ],
       suggestions: ["¿Tienen tienda física?", "¿Cómo llego?", "¿Qué horario manejan?"],
       memory_updates: { last_business_topic: "location", last_conversation_topic: "location", last_answer_domain: "business" },
@@ -737,7 +737,7 @@ function resolveUnifiedContextFollowup(
         answer:
           "Sí, hacemos envíos a diferentes ciudades de Colombia. Si quieres, dime tu ciudad y te orientamos mejor sobre cobertura y tiempos.",
         actions: [
-          { id: "shipping-followup-advisor", label: "Confirmar cobertura por WhatsApp", icon: "📞", type: "whatsapp", value: "advisor" },
+          { id: "shipping-followup-advisor", label: "Confirmar cobertura por WhatsApp", icon: "📞", type: "whatsapp", value: "envio" },
           { id: "shipping-followup-contact", label: "Ir a contacto", type: "link", value: "/contacto" },
         ],
         suggestions: ["Estoy en Medellín", "¿Cuánto tarda?", "¿Tiene costo?"],
@@ -751,7 +751,7 @@ function resolveUnifiedContextFollowup(
         answer:
           "El tiempo depende de la ciudad y disponibilidad del producto, pero normalmente puede variar según el destino y la transportadora.",
         actions: [
-          { id: "shipping-time-advisor", label: "Validar tiempo por WhatsApp", icon: "📞", type: "whatsapp", value: "advisor" },
+          { id: "shipping-time-advisor", label: "Validar tiempo por WhatsApp", icon: "📞", type: "whatsapp", value: "envio" },
         ],
         suggestions: ["¿Envían a mi ciudad?", "¿Tiene costo?", "¿Puedo recoger en tienda?"],
         memory_updates: { last_support_topic: "shipping", last_non_product_intent: "shipping", last_conversation_topic: "shipping", last_answer_domain: "support" },
@@ -764,7 +764,7 @@ function resolveUnifiedContextFollowup(
         answer:
           "El valor del envío depende de la ciudad, tamaño del producto y transportadora.",
         actions: [
-          { id: "shipping-cost-advisor", label: "Cotizar envío por WhatsApp", icon: "📞", type: "whatsapp", value: "advisor" },
+          { id: "shipping-cost-advisor", label: "Cotizar envío por WhatsApp", icon: "📞", type: "whatsapp", value: "envio" },
         ],
         suggestions: ["Estoy en Bogotá", "¿Cuánto tarda?", "¿Puedo recoger en tienda?"],
         memory_updates: { last_support_topic: "shipping", last_non_product_intent: "shipping", last_conversation_topic: "shipping", last_answer_domain: "support" },
@@ -780,7 +780,7 @@ function resolveUnifiedContextFollowup(
         "Sí, podemos orientarte con transferencias, cuotas, Nequi y otras formas de pago según el pedido. Si quieres, te indico la mejor opción para tu compra.",
       actions: [
         { id: "payments-followup-page", label: "Ver opciones de pago", type: "link", value: "/pago" },
-        { id: "payments-followup-advisor", label: "Confirmar por WhatsApp", icon: "📞", type: "whatsapp", value: "advisor" },
+        { id: "payments-followup-advisor", label: "Confirmar por WhatsApp", icon: "📞", type: "whatsapp", value: "cotizacion" },
       ],
       suggestions: ["¿Reciben transferencia?", "¿Manejan cuotas?", "¿Puedo pagar contra entrega?"],
       memory_updates: { last_support_topic: "payments", last_non_product_intent: "payments", last_conversation_topic: "payments", last_answer_domain: "support" },
@@ -795,7 +795,7 @@ function resolveUnifiedContextFollowup(
         "En garantía te ayudamos con cobertura, tiempos y proceso de reclamo. Si me compartes el producto o SKU, te indico el paso exacto.",
       actions: [
         { id: "warranty-followup-legal", label: "Ver políticas", type: "link", value: "/legal/cambios-devoluciones-garantias" },
-        { id: "warranty-followup-advisor", label: "Soporte por WhatsApp", icon: "📞", type: "whatsapp", value: "advisor" },
+        { id: "warranty-followup-advisor", label: "Soporte por WhatsApp", icon: "📞", type: "whatsapp", value: "garantia" },
       ],
       suggestions: ["¿Qué cubre la garantía?", "¿Cuánto tiempo cubre?", "¿Cómo reclamo?"],
       memory_updates: { last_support_topic: "warranty", last_non_product_intent: "warranty", last_conversation_topic: "warranty", last_answer_domain: "support" },
@@ -809,7 +809,7 @@ function resolveUnifiedContextFollowup(
       answer: "Sí, te ayudamos con cambios y devoluciones según la política vigente. Si me dices el caso, te indico el paso exacto.",
       actions: [
         { id: "ctx-returns-policy", label: "Ver política de cambios/devoluciones", type: "link", value: kb.policies.returns },
-        { id: "ctx-returns-whatsapp", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor", icon: "📞" },
+        { id: "ctx-returns-whatsapp", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor_general", icon: "📞" },
       ],
       suggestions: ["¿Puedo cambiarlo?", "¿Me devuelven el dinero?", "¿Cuánto tiempo tengo?"],
       memory_updates: { last_support_topic: "returns", last_non_product_intent: "warranty", last_conversation_topic: "returns", last_answer_domain: "support" },
@@ -822,7 +822,7 @@ function resolveUnifiedContextFollowup(
       intent: "advisor",
       answer: "Claro, te conecto con un asesor para resolverlo rápido por WhatsApp.",
       actions: [
-        { id: "advisor-followup-open", label: "Abrir WhatsApp", icon: "📞", type: "whatsapp", value: "advisor" },
+        { id: "advisor-followup-open", label: "Abrir WhatsApp", icon: "📞", type: "whatsapp", value: "advisor_general" },
         { id: "advisor-followup-menu", label: "Volver al menú", type: "command", value: "menu" },
       ],
       suggestions: ["Necesito cotización", "Tengo una duda de pago", "Quiero soporte de garantía"],
@@ -911,7 +911,7 @@ function resolveBusinessKnowledgeResponse(nlu: KoraNluResult | null, query: stri
       answer: `Estamos ubicados en ${kb.city}, en la ${kb.address}.`,
       actions: [
         { id: "biz-maps", label: "Ver en Google Maps", type: "link", value: kb.maps_url },
-        { id: "biz-whatsapp-location", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor", icon: "📞" },
+        { id: "biz-whatsapp-location", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor_general", icon: "📞" },
         { id: "biz-hours", label: "Ver horarios", type: "prompt", value: "Qué horario manejan" },
       ],
       suggestions: ["¿Tienen tienda física?", "¿Qué horario manejan?", "¿Abren domingos?"],
@@ -925,7 +925,7 @@ function resolveBusinessKnowledgeResponse(nlu: KoraNluResult | null, query: stri
       answer: `Nuestros horarios son:\n${kb.schedules.weekdays}\n${kb.schedules.saturday}\n${kb.schedules.sunday}`,
       actions: [
         { id: "biz-contact-hours", label: "Contacto", type: "link", value: kb.key_pages.contact },
-        { id: "biz-whatsapp-hours", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor", icon: "📞" },
+        { id: "biz-whatsapp-hours", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor_general", icon: "📞" },
       ],
       suggestions: ["¿Abren hoy?", "¿Dónde están ubicados?", "¿Tienen tienda física?"],
     };
@@ -937,7 +937,7 @@ function resolveBusinessKnowledgeResponse(nlu: KoraNluResult | null, query: stri
       intent,
       answer: `Puedes escribirnos por WhatsApp al +${kb.whatsapp} o al correo ${kb.email}.`,
       actions: [
-        { id: "biz-contact-whatsapp", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor", icon: "📞" },
+        { id: "biz-contact-whatsapp", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor_general", icon: "📞" },
         { id: "biz-contact-page", label: "Ver contacto", type: "link", value: kb.key_pages.contact },
       ],
       suggestions: ["¿Dónde están ubicados?", "¿Qué horario manejan?", "¿Hacen soporte técnico?"],
@@ -950,7 +950,7 @@ function resolveBusinessKnowledgeResponse(nlu: KoraNluResult | null, query: stri
       intent,
       answer: `${kb.support.technical_support} ${kb.support.repair_services}`,
       actions: [
-        { id: "biz-support-whatsapp", label: "Contactar soporte por WhatsApp", type: "whatsapp", value: "advisor", icon: "📞" },
+        { id: "biz-support-whatsapp", label: "Contactar soporte por WhatsApp", type: "whatsapp", value: "servicio_tecnico", icon: "📞" },
         { id: "biz-support-warranty", label: "Política de garantía", type: "link", value: kb.policies.warranty },
       ],
       suggestions: ["¿Cómo funciona la garantía?", "¿Cómo reclamo?", "¿Dónde los contacto?"],
@@ -964,7 +964,7 @@ function resolveBusinessKnowledgeResponse(nlu: KoraNluResult | null, query: stri
       answer: "La política de devoluciones y cambios está disponible en nuestro sitio. Si quieres, te guiamos según tu caso y producto.",
       actions: [
         { id: "biz-returns-policy", label: "Ver política de cambios/devoluciones", type: "link", value: kb.policies.returns },
-        { id: "biz-returns-whatsapp", label: "Hablar con asesor", type: "whatsapp", value: "advisor", icon: "📞" },
+        { id: "biz-returns-whatsapp", label: "Hablar con asesor", type: "whatsapp", value: "advisor_general", icon: "📞" },
       ],
       suggestions: ["¿Cómo funciona la garantía?", "¿Hacen soporte técnico?", "¿Dónde están ubicados?"],
     };
@@ -977,7 +977,7 @@ function resolveBusinessKnowledgeResponse(nlu: KoraNluResult | null, query: stri
       answer: "La política de envíos depende de ciudad, disponibilidad y tipo de producto. Te guiamos con el caso exacto por contacto o WhatsApp.",
       actions: [
         { id: "biz-shipping-policy", label: "Ver contacto", type: "link", value: kb.policies.shipping },
-        { id: "biz-shipping-whatsapp", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor", icon: "📞" },
+        { id: "biz-shipping-whatsapp", label: "Hablar por WhatsApp", type: "whatsapp", value: "envio", icon: "📞" },
       ],
       suggestions: ["¿Envían a mi ciudad?", "¿Cuánto tarda?", "¿Tiene costo?"],
     };
@@ -990,7 +990,7 @@ function resolveBusinessKnowledgeResponse(nlu: KoraNluResult | null, query: stri
       answer: "La política de garantía está publicada en nuestro sitio. Si me compartes el producto o SKU, te orientamos paso a paso.",
       actions: [
         { id: "biz-warranty-policy", label: "Ver política de garantía", type: "link", value: kb.policies.warranty },
-        { id: "biz-warranty-whatsapp", label: "Soporte por WhatsApp", type: "whatsapp", value: "advisor", icon: "📞" },
+        { id: "biz-warranty-whatsapp", label: "Soporte por WhatsApp", type: "whatsapp", value: "garantia", icon: "📞" },
       ],
       suggestions: ["¿Qué cubre la garantía?", "¿Cómo reclamo?", "¿Hacen soporte técnico?"],
     };
@@ -1003,7 +1003,7 @@ function resolveBusinessKnowledgeResponse(nlu: KoraNluResult | null, query: stri
     actions: [
       { id: "biz-info-catalog", label: "Ver catálogo", type: "link", value: kb.key_pages.catalog },
       { id: "biz-info-contact", label: "Ver contacto", type: "link", value: kb.key_pages.contact },
-      { id: "biz-info-whatsapp", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor", icon: "📞" },
+      { id: "biz-info-whatsapp", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor_general", icon: "📞" },
     ],
     suggestions: ["¿Dónde están ubicados?", "¿Qué horario manejan?", "¿Hacen soporte técnico?"],
   };
@@ -1240,7 +1240,7 @@ async function resolveProductsResponse(
       answer: "No pude consultar el catálogo en este momento. Intenta de nuevo o abre WhatsApp.",
       actions: [
         { id: "kora-catalog-fallback", label: "Ir al catálogo", type: "link", value: "/catalogo" },
-        { id: "kora-advisor-fallback", label: "Hablar por WhatsApp", icon: "📞", type: "whatsapp", value: "advisor" },
+        { id: "kora-advisor-fallback", label: "Hablar por WhatsApp", icon: "📞", type: "whatsapp", value: "advisor_general" },
       ],
       suggestions: buildBaseSuggestions(),
       emotion: "neutral",
@@ -1288,7 +1288,7 @@ async function resolveProductsResponse(
       answer: `No encontré resultados${budgetText} con esa búsqueda. Prueba con otra categoría o rango.`,
       actions: [
         { id: "kora-catalog-empty", label: "Ver catálogo completo", type: "link", value: "/catalogo" },
-        { id: "kora-advisor-empty", label: "Hablar por WhatsApp", icon: "📞", type: "whatsapp", value: "advisor" },
+        { id: "kora-advisor-empty", label: "Hablar por WhatsApp", icon: "📞", type: "whatsapp", value: "advisor_general" },
       ],
       suggestions: [
         "Mostrar audio profesional",
@@ -1411,7 +1411,7 @@ async function resolveProductPageAssistantResponse(
     label: "Conectar asesor por WhatsApp",
     icon: "📞",
     type: "whatsapp",
-    value: "advisor",
+    value: "asesoria_eleccion",
   });
 
   let comparedList = similar;
@@ -1505,7 +1505,7 @@ async function resolveProductPageWelcome(
     { id: "product-welcome-cheaper", label: "Ver una opción más económica", type: "prompt", value: "Dame una opción más económica" },
     { id: "product-welcome-premium", label: "Ver una de mayor potencia", type: "prompt", value: "Muéstrame una de más potencia" },
     { id: "product-welcome-opinion", label: "¿Qué opinas de este producto?", type: "prompt", value: "¿Qué opinas de este producto?" },
-    { id: "product-welcome-whatsapp", label: "Conectar asesor por WhatsApp", icon: "📞", type: "whatsapp", value: "advisor" }
+    { id: "product-welcome-whatsapp", label: "Conectar asesor por WhatsApp", icon: "📞", type: "whatsapp", value: "asesoria_eleccion" }
   );
 
   return {
@@ -1885,7 +1885,7 @@ export async function POST(request: Request) {
         answer: "Manejamos pagos en línea y opciones de financiación. Si quieres, te guío según tu presupuesto.",
         actions: [
           { id: "payments-go-checkout", label: "Ver opciones de pago", type: "link", value: "/pago" },
-          { id: "payments-advisor", label: "Hablar por WhatsApp", icon: "📞", type: "whatsapp", value: "advisor" },
+          { id: "payments-advisor", label: "Hablar por WhatsApp", icon: "📞", type: "whatsapp", value: "cotizacion" },
         ],
         suggestions: ["¿Puedo pagar por cuotas?", "¿Aceptan Addi?", "¿Cómo pago un pedido web?"],
         },
@@ -1904,7 +1904,7 @@ export async function POST(request: Request) {
         answer: "Hacemos envíos y también recogida en tienda. El tiempo final depende de tu ciudad.",
         actions: [
           { id: "shipping-contact", label: "Ir a contacto", type: "link", value: "/contacto" },
-          { id: "shipping-advisor", label: "Confirmar envío por WhatsApp", icon: "📞", type: "whatsapp", value: "advisor" },
+          { id: "shipping-advisor", label: "Confirmar envío por WhatsApp", icon: "📞", type: "whatsapp", value: "envio" },
         ],
         suggestions: ["¿Envían a mi ciudad?", "¿Cuánto tarda el envío?", "¿Puedo recoger hoy en tienda?"],
         },
@@ -1923,7 +1923,7 @@ export async function POST(request: Request) {
         answer: "Todos los productos tienen garantía. Si me dices el producto o SKU, te indico el paso más rápido.",
         actions: [
           { id: "warranty-legal", label: "Ver políticas", type: "link", value: "/legal/cambios-devoluciones-garantias" },
-          { id: "warranty-advisor", label: "Soporte por WhatsApp", icon: "📞", type: "whatsapp", value: "advisor" },
+          { id: "warranty-advisor", label: "Soporte por WhatsApp", icon: "📞", type: "whatsapp", value: "garantia" },
         ],
         suggestions: ["¿Cómo tramito garantía?", "¿Puedo hacer cambio?", "¿Qué cubre la garantía?"],
         },
@@ -1943,7 +1943,7 @@ export async function POST(request: Request) {
         actions: [
           { id: "orders-my", label: "Ir a Mis pedidos", type: "link", value: "/mis-pedidos" },
           { id: "orders-account", label: "Ir a Mi cuenta", type: "link", value: "/cuenta" },
-          { id: "orders-advisor", label: "Ayuda por WhatsApp", icon: "📞", type: "whatsapp", value: "advisor" },
+          { id: "orders-advisor", label: "Ayuda por WhatsApp", icon: "📞", type: "whatsapp", value: "advisor_general" },
         ],
         suggestions: ["No encuentro mi pedido", "¿Cómo veo el estado del pago?", "Quiero soporte de una orden"],
         },
@@ -1961,7 +1961,7 @@ export async function POST(request: Request) {
         intent,
         answer: "Te conecto con un asesor para resolverlo contigo en tiempo real.",
         actions: [
-          { id: "advisor-open", label: "Abrir WhatsApp", icon: "📞", type: "whatsapp", value: "advisor" },
+          { id: "advisor-open", label: "Abrir WhatsApp", icon: "📞", type: "whatsapp", value: "advisor_general" },
           { id: "advisor-menu", label: "Volver al menú", type: "command", value: "menu" },
         ],
         suggestions: ["Quiero ayuda con una compra", "Necesito cotización", "Tengo dudas de garantía"],

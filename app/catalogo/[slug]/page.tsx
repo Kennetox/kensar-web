@@ -7,7 +7,9 @@ import ProductPurchaseCta from "@/app/catalogo/ProductPurchaseCta";
 import ProductKoraAssistLink from "@/app/catalogo/ProductKoraAssistLink";
 import ProductViewTracker from "@/app/catalogo/ProductViewTracker";
 import ProductHorizontalDragScroll from "@/app/catalogo/ProductHorizontalDragScroll";
+import KoraPageContextBridge from "@/app/components/KoraPageContextBridge";
 import { buildCatalogCategoryHref } from "@/app/lib/catalogRoutes";
+import { buildWhatsAppPrefill } from "@/app/lib/kora/whatsapp-handoff";
 import {
   formatCatalogPrice,
   getCatalogProduct,
@@ -60,13 +62,6 @@ function getDetailDiscountBadgeText(product: WebCatalogProductDetail): string | 
   return percent > 0 ? `Descuento ${percent}%` : null;
 }
 
-function buildWhatsAppHref(message: string) {
-  const raw = process.env.NEXT_PUBLIC_KENSAR_WHATSAPP?.trim() || "+57 318 565 7508";
-  const digits = raw.replace(/[^\d]/g, "");
-  const base = digits ? `https://wa.me/${digits}` : "https://wa.me/573185657508";
-  return `${base}?text=${encodeURIComponent(message)}`;
-}
-
 export default async function CatalogProductDetailPage({
   params,
 }: CatalogProductDetailPageProps) {
@@ -85,12 +80,44 @@ export default async function CatalogProductDetailPage({
   const fallbackCatalogHref = product.category_path
     ? buildCatalogCategoryHref({ categoryPath: product.category_path })
     : "/";
-  const shippingWhatsAppHref = buildWhatsAppHref(
-    `Hola, quiero saber el costo de envío de ${product.name} a [mi ciudad].`
-  );
+  const shippingWhatsAppHref = buildWhatsAppPrefill({
+    origin: "product_page_whatsapp",
+    need: "envio",
+    intent: "shipping_question",
+    currentPath: `/catalogo/${product.slug}`,
+    currentUrl: `https://kensarelectronic.com/catalogo/${product.slug}`,
+    productName: product.name,
+    productSlug: product.slug,
+    productSku: product.sku || undefined,
+    productPrice: typeof product.price === "number" ? product.price : undefined,
+    categoryName: product.category_name || undefined,
+    categorySlug: product.category_path || undefined,
+    latestInput: `Quiero saber el costo de envío de ${product.name} a [mi ciudad].`,
+  }).href;
 
   return (
     <main className="site-shell internal-page section-space product-page-shell product-detail-page">
+      <KoraPageContextBridge
+        pageContext={{
+          pageType: "product",
+          categorySlug: product.category_path || undefined,
+          categoryName: product.category_name || undefined,
+          productId: product.id,
+          productName: product.name,
+          productPrice: typeof product.price === "number" ? product.price : undefined,
+          productBrand: product.brand || undefined,
+          productCategory: product.category_name || product.category_path || undefined,
+          productDescription: (product.long_description || product.short_description || "").trim() || undefined,
+          productAttributes: {
+            product_slug: product.slug,
+            product_sku: product.sku || null,
+            stock_status: product.stock_status,
+            price_mode: product.price_mode,
+            featured: product.featured,
+            has_warranty: Boolean(product.warranty_text?.trim()),
+          },
+        }}
+      />
       <section className="catalog-breadcrumbs">
         <ProductBackToCatalogLink fallbackHref={fallbackCatalogHref} />
         <span>Catálogo</span>

@@ -1,19 +1,16 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { getOrCreateHandoffSessionId, readStoredPageContext, resolveCurrentUrlFromWindow } from "@/app/lib/kora/handoff-client";
+import { buildWhatsAppPrefill } from "@/app/lib/kora/whatsapp-handoff";
 
-const WHATSAPP_PHONE = "573185657508";
-const WHATSAPP_MESSAGE =
-  "Hola, quiero información sobre productos disponibles en la tienda web de Kensar.";
 const LINE_ONE = "¿Necesitas ayuda?";
 const LINE_TWO = "Escríbenos por WhatsApp";
 const TYPE_SPEED_MS = 44;
 const LINE_BREAK_MS = 420;
 const VISIBLE_AFTER_TYPING_MS = 2400;
 const INITIAL_DELAY_MS = 1300;
-
 function resolveLoopIdleMs(pathname: string): number {
   if (pathname === "/catalogo" || pathname.startsWith("/catalogo/")) {
     return 60000;
@@ -23,7 +20,6 @@ function resolveLoopIdleMs(pathname: string): number {
 
 export default function FloatingWhatsAppButton() {
   const pathname = usePathname();
-  const href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`;
   const [visible, setVisible] = useState(false);
   const [lineOne, setLineOne] = useState("");
   const [lineTwo, setLineTwo] = useState("");
@@ -109,6 +105,59 @@ export default function FloatingWhatsAppButton() {
   const showLineOneCursor = visible && lineOne.length < LINE_ONE.length;
   const showLineTwoCursor = visible && lineOne.length === LINE_ONE.length && lineTwo.length < LINE_TWO.length;
 
+  function openWhatsApp() {
+    const isCategoryPage = pathname === "/catalogo" || pathname.startsWith("/catalogo/categoria/");
+    const isProductPage =
+      pathname.startsWith("/catalogo/") &&
+      !pathname.startsWith("/catalogo/categoria/") &&
+      pathname !== "/catalogo";
+    const productSlug = isProductPage ? pathname.replace(/^\/catalogo\//, "").split("/")[0] || null : null;
+    const categorySlug = isCategoryPage ? pathname.replace(/^\/catalogo\/categoria\//, "").split("/")[0] || null : null;
+    const pageContext = readStoredPageContext(pathname);
+    const prefill = buildWhatsAppPrefill({
+      origin: "floating_whatsapp",
+      need: "contacto_general",
+      intent: "general_contact",
+      currentPath: pathname,
+      currentUrl: resolveCurrentUrlFromWindow(pathname),
+      productSlug: productSlug || undefined,
+      categorySlug: categorySlug || undefined,
+      pageContext,
+      sessionId: getOrCreateHandoffSessionId(),
+    });
+    const body = JSON.stringify({
+      event_type: "handoff_initiated",
+      event_name: "handoff_initiated",
+      sessionId: prefill.metadata.session_id,
+      timestamp: prefill.metadata.timestamp,
+      handoff_origin: prefill.metadata.handoff_origin,
+      handoff_need: prefill.metadata.handoff_need,
+      handoff_intent_detected: prefill.metadata.handoff_intent_detected,
+      handoff_product_slug: prefill.metadata.handoff_product_slug,
+      handoff_product_sku: prefill.metadata.handoff_product_sku,
+      handoff_category: prefill.metadata.handoff_category,
+      handoff_product_price: prefill.metadata.handoff_product_price,
+      handoff_message_length: prefill.metadata.handoff_message_length,
+      handoff_has_memory_context: prefill.metadata.handoff_has_memory_context,
+      clickedWhatsApp: true,
+      routePath: prefill.metadata.path,
+      userMessage: null,
+      conversationMessageCount: null,
+    });
+    if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+      const blob = new Blob([body], { type: "application/json" });
+      navigator.sendBeacon("/api/kora/telemetry", blob);
+    } else {
+      void fetch("/api/kora/telemetry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+        keepalive: true,
+      }).catch(() => undefined);
+    }
+    window.open(prefill.href, "_blank", "noopener,noreferrer");
+  }
+
   return (
     <>
       <div className={`floating-whatsapp-typing${visible ? " is-visible" : ""}`} aria-hidden="true">
@@ -122,11 +171,10 @@ export default function FloatingWhatsAppButton() {
         </p>
       </div>
 
-      <Link
-        href={href}
-        target="_blank"
-        rel="noreferrer"
+      <button
+        type="button"
         className={`floating-whatsapp-btn${notifyPulse ? " is-notify-pulse" : ""}`}
+        onClick={openWhatsApp}
         aria-label="Abrir WhatsApp de Kensar"
         title="Escribir por WhatsApp"
       >
@@ -136,7 +184,7 @@ export default function FloatingWhatsAppButton() {
             fill="currentColor"
           />
         </svg>
-      </Link>
+      </button>
     </>
   );
 }

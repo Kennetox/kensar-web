@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { getManualPaymentInstructions } from "@/app/lib/paymentInstructions";
+import { buildWhatsAppPrefill } from "@/app/lib/kora/whatsapp-handoff";
 import {
   fetchWebOrder,
   submitManualPaymentForOrder,
@@ -82,6 +83,19 @@ export default function WebOrderDetailPage() {
 
   const orderId = Number(params.orderId);
   const paymentInfo = useMemo(() => getManualPaymentInstructions(), []);
+  const paymentConfirmWhatsappHref = useMemo(
+    () =>
+      buildWhatsAppPrefill({
+        phone: paymentInfo.whatsapp,
+        origin: "unknown",
+        need: "contacto_general",
+        intent: "general_contact",
+        currentPath: `/ordenes/${orderId}`,
+        currentUrl: `https://kensarelectronic.com/ordenes/${orderId}`,
+        latestInput: `Hola, necesito confirmar el pago de la orden ${order?.document_number || order?.id || orderId}.`,
+      }).href,
+    [order?.document_number, order?.id, orderId, paymentInfo.whatsapp]
+  );
   const shouldFetchOrder =
     Number.isFinite(orderId) && orderId > 0 && authenticated && !customerLoading;
   const loading = customerLoading || (shouldFetchOrder && order == null && error == null);
@@ -315,9 +329,7 @@ export default function WebOrderDetailPage() {
               </p>
               <div className="account-action-row">
                 <Link
-                  href={`https://wa.me/${paymentInfo.whatsapp.replace(/[^\d]/g, "")}?text=${encodeURIComponent(
-                    `Hola, necesito confirmar el pago de la orden ${order.document_number || order.id}.`
-                  )}`}
+                  href={paymentConfirmWhatsappHref}
                   target="_blank"
                   rel="noreferrer"
                   className="account-secondary-btn"

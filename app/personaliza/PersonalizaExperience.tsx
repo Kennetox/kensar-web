@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./personaliza.module.css";
 import ModelPreview3D, { type ModelPreview3DHandle, type PaintConfig } from "./ModelPreview3D";
 import { useWebCart } from "@/app/components/WebCartProvider";
+import { buildWhatsAppPrefill } from "@/app/lib/kora/whatsapp-handoff";
 import {
   CUSTOM_TEXT_MAX_LENGTH,
   DEFAULT_PERSONALIZATION,
@@ -78,7 +79,6 @@ type CheckoutItemLookup = {
   compare_price: number | null;
 };
 
-const WHATSAPP_NUMBER = "573185657508";
 const TEXT_FONT_OPTIONS: TextFontOption[] = [
   { id: "vintage-regular", label: "Vintage", family: "\"Vintage\", serif", weight: 400 },
   { id: "arial-bold", label: "Arial Bold", family: "Arial, sans-serif", weight: 700 },
@@ -749,7 +749,15 @@ export default function PersonalizaExperience() {
   );
 
   const whatsappHref = useMemo(
-    () => `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(liveSummary)}`,
+    () =>
+      buildWhatsAppPrefill({
+        origin: "unknown",
+        need: "cotizacion",
+        intent: "quotation_request",
+        currentPath: "/personaliza",
+        currentUrl: typeof window !== "undefined" ? window.location.href : "https://kensarelectronic.com/personaliza",
+        latestInput: liveSummary,
+      }).href,
     [liveSummary]
   );
 

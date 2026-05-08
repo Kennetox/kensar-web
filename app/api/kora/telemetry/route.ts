@@ -4,6 +4,7 @@ import path from "node:path";
 
 type TelemetryBody = {
   event_type?: string;
+  event_name?: string;
   sessionId?: string;
   timestamp?: string;
   userMessage?: string | null;
@@ -23,6 +24,15 @@ type TelemetryBody = {
   actionType?: string | null;
   actionId?: string | null;
   actionValue?: string | null;
+  handoff_origin?: string | null;
+  handoff_need?: string | null;
+  handoff_intent_detected?: string | null;
+  handoff_product_slug?: string | null;
+  handoff_product_sku?: string | null;
+  handoff_category?: string | null;
+  handoff_product_price?: number | null;
+  handoff_message_length?: number | null;
+  handoff_has_memory_context?: boolean | null;
 };
 
 function text(value: unknown, max = 280) {
@@ -82,6 +92,7 @@ export async function POST(request: Request) {
 
     const record = {
       event_type: eventType,
+      event_name: body.event_name ? text(body.event_name, 80) : null,
       session_id: sessionId,
       timestamp,
       user_message: body.userMessage ? text(body.userMessage, 300) : null,
@@ -101,6 +112,15 @@ export async function POST(request: Request) {
       action_type: body.actionType ? text(body.actionType, 60) : null,
       action_id: body.actionId ? text(body.actionId, 120) : null,
       action_value: body.actionValue ? text(body.actionValue, 200) : null,
+      handoff_origin: body.handoff_origin ? text(body.handoff_origin, 60) : null,
+      handoff_need: body.handoff_need ? text(body.handoff_need, 60) : null,
+      handoff_intent_detected: body.handoff_intent_detected ? text(body.handoff_intent_detected, 80) : null,
+      handoff_product_slug: body.handoff_product_slug ? text(body.handoff_product_slug, 140) : null,
+      handoff_product_sku: body.handoff_product_sku ? text(body.handoff_product_sku, 120) : null,
+      handoff_category: body.handoff_category ? text(body.handoff_category, 120) : null,
+      handoff_product_price: numOrNull(body.handoff_product_price),
+      handoff_message_length: numOrNull(body.handoff_message_length),
+      handoff_has_memory_context: boolOrNull(body.handoff_has_memory_context),
     };
 
     const dir = path.join("/tmp", "kensar-kora-telemetry");

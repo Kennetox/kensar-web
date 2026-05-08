@@ -57,6 +57,9 @@ function detectGuidanceIntent(text: string): KoraGuidanceIntent {
   if (/(^|\s)(este me sirve|este es bueno|que tiene de bueno|por que vale mas|por que comprar este|me conviene|sirve para fiesta|sirve para negocio|sirve para iglesia|que mas necesito con esto)(\s|$)/.test(text)) {
     return "product_advice";
   }
+  if (/(^|\s)(que caracteristicas tiene|que caracteristicas trae|que especificaciones tiene|ficha tecnica|ficha tecnica del producto|que trae este producto|cuales son sus caracteristicas|cuales caracteristicas tiene|cuales son las caracteristicas)(\s|$)/.test(text)) {
+    return "product_advice";
+  }
   if (/(^|\s)(esta caro|por que tan caro|hay uno mas barato|vale la pena|no entiendo la diferencia|cual es mejor)(\s|$)/.test(text)) {
     return "objection_handling";
   }
@@ -128,6 +131,10 @@ function buildProductAdviceFromPageContext(pageContext: KoraPageContext, message
 
   if (/\b(que tiene de bueno|por que comprar|me conviene|vale la pena)\b/.test(text)) {
     return `${productName}${productBrand} puede ser buena opción si buscas algo de ${productCategory} alineado con un uso concreto. Lo importante es validar si lo quieres para casa, negocio, iglesia, fiesta o karaoke para confirmar que sí te conviene. ${transparencyLine}`;
+  }
+
+  if (/\b(caracteristicas|caracteristica|especificaciones|ficha tecnica|ficha)\b/.test(text)) {
+    return `Te ayudo. Sobre ${productName}${productBrand}, te puedo explicar sus características clave según la información disponible en la ficha y cómo eso te beneficia según tu uso. ${transparencyLine}`;
   }
 
   if (/\b(que mas necesito con esto|completar|instalacion)\b/.test(text)) {

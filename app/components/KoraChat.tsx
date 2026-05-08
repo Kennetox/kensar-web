@@ -4,6 +4,10 @@ import { FormEvent, useEffect, useRef, useState, useSyncExternalStore } from "re
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { useWebCart } from "@/app/components/WebCartProvider";
+import { buildKoraContextualGreeting } from "@/app/lib/kora/contextual-greetings";
+import type { KoraPageContext } from "@/app/lib/kora/knowledge-types";
+import { buildWhatsAppPrefill } from "@/app/lib/kora/whatsapp-handoff";
+import { getOrCreateHandoffSessionId, readStoredPageContext, resolveCurrentUrlFromWindow } from "@/app/lib/kora/handoff-client";
 
 type ActionType = "command" | "link" | "whatsapp" | "prompt" | "add_to_cart";
 type CommandValue = "menu" | "products" | "payments" | "shipping" | "warranty" | "advisor";
@@ -14,6 +18,7 @@ type KoraEventName =
   | "message_submitted"
   | "intent_detected"
   | "whatsapp_opened"
+  | "handoff_initiated"
   | "conversation_reset";
 
 type ChatAction = {
@@ -221,27 +226,11 @@ type KoraAskResponse = {
   };
 };
 
-type KoraPageContext = {
-  pageType: "home" | "category" | "subcategory" | "product" | "unknown";
-  categorySlug?: string;
-  categoryName?: string;
-  subcategorySlug?: string;
-  subcategoryName?: string;
-  productId?: string | number;
-  productName?: string;
-  productPrice?: number;
-  productBrand?: string;
-  productCategory?: string;
-  productDescription?: string;
-  productAttributes?: Record<string, unknown>;
-};
-
 const SESSION_KEY = "kensar_kora_session_v1";
 const SESSION_OPEN_KEY = "kensar_kora_open_v1";
 const EVENTS_SESSION_KEY = "kensar_kora_events_v1";
 const MEMORY_SESSION_KEY = "kensar_kora_memory_v1";
-const TELEMETRY_SESSION_KEY = "kensar_kora_telemetry_session_v1";
-const WHATSAPP_PHONE = "573185657508";
+const GREETING_CONTEXTS_SESSION_KEY = "kensar_kora_greeting_contexts_v1";
 const RESPONSE_DELAYS = [520, 640, 760] as const;
 const KORA_NUDGE_TEXT = "Asistente 24/7";
 const KORA_AVATAR_SRC = "/branding/kora-avatar.png";
@@ -282,19 +271,15 @@ function normalizeMessage(value: string) {
 }
 
 function loadTelemetrySessionId() {
-  if (typeof window === "undefined") return `kora-${createId()}`;
-  const existing = window.sessionStorage.getItem(TELEMETRY_SESSION_KEY);
-  if (existing) return existing;
-  const next = `kora-${createId()}`;
-  window.sessionStorage.setItem(TELEMETRY_SESSION_KEY, next);
-  return next;
+  return getOrCreateHandoffSessionId();
 }
 
-function createWelcomeMessage(): ChatMessage {
+function createWelcomeMessage(pageContext?: KoraPageContext | null): ChatMessage {
+  const greeting = buildKoraContextualGreeting({ pageContext: pageContext || null });
   return {
     id: createId(),
     role: "bot",
-    text: "Hola, soy KORA, asistente de Kensar 👋\n¿En qué te ayudo hoy?",
+    text: greeting.message,
   };
 }
 
@@ -304,7 +289,7 @@ function createAdvisorMessage(): ChatMessage {
     role: "bot",
     text: "Te conecto con un asesor por WhatsApp para ayudarte de inmediato.",
     actions: [
-      { id: "open-advisor-whatsapp", label: "Abrir WhatsApp", icon: "📞", type: "whatsapp", value: "advisor" },
+      { id: "open-advisor-whatsapp", label: "Abrir WhatsApp", icon: "📞", type: "whatsapp", value: "advisor_general" },
       { id: "menu-from-advisor", label: "Volver al menú", type: "command", value: "menu" },
     ],
   };
@@ -401,14 +386,44 @@ function resolveCommandFromText(input: string): CommandValue | "unknown" {
   return "unknown";
 }
 
-function loadInitialMessages(): ChatMessage[] {
+function loadShownGreetingContexts(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.sessionStorage.getItem(GREETING_CONTEXTS_SESSION_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as string[];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((value) => typeof value === "string").slice(-30);
+  } catch {
+    return [];
+  }
+}
+
+function persistShownGreetingContexts(items: string[]) {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(GREETING_CONTEXTS_SESSION_KEY, JSON.stringify(items.slice(-30)));
+  } catch {
+    return;
+  }
+}
+
+function loadInitialMessages(pageContext?: KoraPageContext | null): ChatMessage[] {
+  const greeting = buildKoraContextualGreeting({ pageContext: pageContext || null });
+
+  const initialMessage = {
+    id: createId(),
+    role: "bot" as const,
+    text: greeting.message,
+  };
+
   if (typeof window === "undefined") {
-    return [createWelcomeMessage()];
+    return [initialMessage];
   }
 
   const rawMessages = window.sessionStorage.getItem(SESSION_KEY);
   if (!rawMessages) {
-    return [createWelcomeMessage()];
+    return [initialMessage];
   }
 
   try {
@@ -417,10 +432,10 @@ function loadInitialMessages(): ChatMessage[] {
       return parsed;
     }
   } catch {
-    return [createWelcomeMessage()];
+    return [initialMessage];
   }
 
-  return [createWelcomeMessage()];
+  return [initialMessage];
 }
 
 function loadInitialOpen(): boolean {
@@ -488,23 +503,6 @@ function trackKoraEvent(event: KoraEvent) {
     body,
     keepalive: true,
   });
-}
-
-function buildWhatsAppHrefWithContext(pathname: string, messages: ChatMessage[], latestInput: string) {
-  const recentUserMessages = messages
-    .filter((message) => message.role === "user")
-    .slice(-3)
-    .map((message) => `- ${message.text.replace(/\s+/g, " ").trim()}`);
-
-  const contextLines = recentUserMessages.length
-    ? `\n\nContexto de mi consulta:\n${recentUserMessages.join("\n")}`
-    : "";
-
-  const latestLine = latestInput ? `\n\nNecesito ayuda con: ${latestInput}` : "";
-  const routeLine = `\n\nRuta actual web: ${pathname}`;
-
-  const text = `Hola, vengo desde la web de Kensar y necesito ayuda.${latestLine}${contextLines}${routeLine}`;
-  return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(text)}`;
 }
 
 type KoraSessionMemory = {
@@ -644,6 +642,10 @@ function persistKoraMemory(memory: KoraSessionMemory) {
   }
 }
 
+function readPageContextFromSession(pathname: string): KoraPageContext | null {
+  return readStoredPageContext(pathname);
+}
+
 export default function KoraChat({ pageContext }: { pageContext?: KoraPageContext }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -653,7 +655,12 @@ export default function KoraChat({ pageContext }: { pageContext?: KoraPageContex
     () => false
   );
   const [isOpen, setIsOpen] = useState(loadInitialOpen);
-  const [messages, setMessages] = useState<ChatMessage[]>(loadInitialMessages);
+  const [effectivePageContext, setEffectivePageContext] = useState<KoraPageContext | null>(
+    () => pageContext || readPageContextFromSession(pathname)
+  );
+  const [messages, setMessages] = useState<ChatMessage[]>(() =>
+    loadInitialMessages(pageContext || readPageContextFromSession(pathname))
+  );
   const [isTyping, setIsTyping] = useState(false);
   const [draft, setDraft] = useState("");
   const [productActions, setProductActions] = useState<ChatAction[]>(FALLBACK_PRODUCT_ACTIONS);
@@ -672,6 +679,21 @@ export default function KoraChat({ pageContext }: { pageContext?: KoraPageContex
   const isCatalogRoute = pathname === "/catalogo" || pathname.startsWith("/catalogo/");
   const koraNudgeLoopMs = isCatalogRoute ? 45000 : 27000;
   const { addItem } = useWebCart();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    function onPageContextUpdate(event: Event) {
+      const detail = (event as CustomEvent<{ pathname?: string; pageContext?: KoraPageContext }>).detail;
+      if (!detail || detail.pathname !== pathname) return;
+      if (detail.pageContext) {
+        setEffectivePageContext(detail.pageContext);
+      }
+    }
+    window.addEventListener("kensar:kora-page-context", onPageContextUpdate as EventListener);
+    return () => {
+      window.removeEventListener("kensar:kora-page-context", onPageContextUpdate as EventListener);
+    };
+  }, [pathname]);
 
   function sendTelemetryEvent(payload: Record<string, unknown>) {
     const body = JSON.stringify(payload);
@@ -828,6 +850,29 @@ export default function KoraChat({ pageContext }: { pageContext?: KoraPageContex
   function openChat(source: string) {
     setIsOpen(true);
     emitEvent("chat_opened", { source });
+    const greeting = buildKoraContextualGreeting({ pageContext: effectivePageContext || null });
+    const shown = loadShownGreetingContexts();
+    if (!shown.includes(greeting.contextKey)) {
+      setMessages((current) => {
+        if (!current.length) return [{ id: createId(), role: "bot", text: greeting.message }];
+        const next = [...current];
+        if (next[0]?.role === "bot") {
+          next[0] = { ...next[0], text: greeting.message };
+          return next;
+        }
+        return [{ id: createId(), role: "bot", text: greeting.message }, ...next];
+      });
+      persistShownGreetingContexts([...shown, greeting.contextKey]);
+      sendTelemetryEvent({
+        event_type: "contextual_greeting_shown",
+        sessionId: telemetrySessionIdRef.current,
+        timestamp: new Date().toISOString(),
+        greetingType: greeting.greetingType,
+        contextKey: greeting.contextKey,
+        pageContext: effectivePageContext || null,
+        routePath: pathname,
+      });
+    }
   }
 
   function closeChat(source: string) {
@@ -862,7 +907,7 @@ export default function KoraChat({ pageContext }: { pageContext?: KoraPageContex
           query,
           path: pathname,
           context: currentProductSlug ? { currentProductSlug } : undefined,
-          pageContext,
+          pageContext: effectivePageContext || undefined,
           memory,
         }),
       });
@@ -936,7 +981,7 @@ function sanitizeApiActions(actions: ChatAction[] | undefined): ChatAction[] {
             [],
           resolverUsed: aiReply.telemetry_meta?.resolver_used || "fallback",
           responseType: aiReply.telemetry_meta?.response_type || (aiReply.handled ? "recommendation" : "fallback"),
-          pageContext: pageContext || null,
+          pageContext: effectivePageContext || null,
           productIdsShown,
           clickedProductId: null,
           clickedWhatsApp: null,
@@ -1130,24 +1175,71 @@ function sanitizeApiActions(actions: ChatAction[] | undefined): ChatAction[] {
       setIsTyping(false);
       timeoutRef.current = null;
       if (command === "advisor") {
-        openWhatsAppWithContext(input);
+        openWhatsAppWithContext(input, {
+          id: "fallback-advisor",
+          label: "Abrir WhatsApp",
+          type: "whatsapp",
+          value: "advisor_general",
+        });
       }
       runCommand(command);
     }, delay);
   }
 
-  function openWhatsAppWithContext(latestInput: string) {
-    const href = buildWhatsAppHrefWithContext(pathname, messages, latestInput);
-    window.open(href, "_blank", "noopener,noreferrer");
-    sendTelemetryEvent({
-      event_type: "interaction_click",
+  function openWhatsAppWithContext(latestInput: string, action?: ChatAction) {
+    const recentUserLines = messages
+      .filter((message) => message.role === "user")
+      .slice(-2)
+      .map((message) => message.text.replace(/\s+/g, " ").trim())
+      .filter(Boolean)
+      .join(" | ");
+    const prefill = buildWhatsAppPrefill({
+      origin: "kora_chat",
+      actionValue: action?.value || "advisor_general",
+      latestInput,
+      userMessage: recentUserLines || undefined,
+      currentPath: pathname,
+      currentUrl: resolveCurrentUrlFromWindow(pathname),
+      pageContext: effectivePageContext || null,
+      memoryContext: memory,
+      intent: memory.last_intent || "unknown",
+      productName: action?.payload?.product_name || memory.last_product_name || undefined,
+      productSlug: action?.payload?.product_slug || memory.last_product_slug || undefined,
+      productSku: action?.payload?.product_sku || memory.last_product_sku || undefined,
+      categorySlug: memory.last_recommendation_category || memory.preferred_category || undefined,
       sessionId: telemetrySessionIdRef.current,
-      timestamp: new Date().toISOString(),
+    });
+
+    window.open(prefill.href, "_blank", "noopener,noreferrer");
+    sendTelemetryEvent({
+      event_type: "handoff_initiated",
+      sessionId: prefill.metadata.session_id,
+      timestamp: prefill.metadata.timestamp,
+      event_name: "handoff_initiated",
+      handoff_origin: prefill.metadata.handoff_origin,
+      handoff_need: prefill.metadata.handoff_need,
+      handoff_intent_detected: prefill.metadata.handoff_intent_detected,
+      handoff_product_slug: prefill.metadata.handoff_product_slug,
+      handoff_product_sku: prefill.metadata.handoff_product_sku,
+      handoff_category: prefill.metadata.handoff_category,
+      handoff_product_price: prefill.metadata.handoff_product_price,
+      handoff_message_length: prefill.metadata.handoff_message_length,
+      handoff_has_memory_context: prefill.metadata.handoff_has_memory_context,
       clickedProductId: null,
       clickedWhatsApp: true,
-      routePath: pathname,
+      routePath: prefill.metadata.path,
       userMessage: latestInput || null,
       conversationMessageCount: messages.length,
+    });
+    emitEvent("handoff_initiated", {
+      origin: prefill.metadata.handoff_origin,
+      need: prefill.metadata.handoff_need,
+      handoff_intent: prefill.metadata.handoff_intent_detected,
+      product_slug: prefill.metadata.handoff_product_slug,
+      product_sku: prefill.metadata.handoff_product_sku,
+      category: prefill.metadata.handoff_category,
+      message_length: prefill.metadata.handoff_message_length,
+      has_memory_context: prefill.metadata.handoff_has_memory_context,
     });
     emitEvent("whatsapp_opened", { latest_input: latestInput || null });
   }
@@ -1244,7 +1336,7 @@ function sanitizeApiActions(actions: ChatAction[] | undefined): ChatAction[] {
     });
 
     if (action.type === "whatsapp") {
-      openWhatsAppWithContext(action.label);
+      openWhatsAppWithContext(action.label, action);
       runCommand("menu");
       return;
     }
@@ -1265,7 +1357,12 @@ function sanitizeApiActions(actions: ChatAction[] | undefined): ChatAction[] {
     }
     setIsTyping(false);
     setDraft("");
-    setMessages([createWelcomeMessage()]);
+    const greeting = buildKoraContextualGreeting({ pageContext: effectivePageContext || null });
+    const shown = loadShownGreetingContexts();
+    if (!shown.includes(greeting.contextKey)) {
+      persistShownGreetingContexts([...shown, greeting.contextKey]);
+    }
+    setMessages([{ id: createId(), role: "bot", text: greeting.message }]);
     setMemory({});
     if (typeof window !== "undefined") {
       window.sessionStorage.removeItem(MEMORY_SESSION_KEY);

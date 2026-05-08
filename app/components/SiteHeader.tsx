@@ -1,8 +1,18 @@
 import Image from "next/image";
 import Link from "next/link";
 import { navigation } from "@/app/components/siteData";
+import { buildWhatsAppPrefill } from "@/app/lib/kora/whatsapp-handoff";
 
 export default function SiteHeader() {
+  const whatsappHref = buildWhatsAppPrefill({
+    origin: "unknown",
+    need: "contacto_general",
+    intent: "general_contact",
+    currentPath: "/",
+    currentUrl: "https://kensarelectronic.com/",
+    latestInput: "Hola, quiero asesoría comercial.",
+  }).href;
+
   return (
     <header className="site-shell header-shell">
       <Link href="/" className="brand-lockup brand-lockup-link" aria-label="Ir al inicio de Kensar">
@@ -27,7 +37,7 @@ export default function SiteHeader() {
       </nav>
 
       <div className="header-actions">
-        <a href="https://wa.me/573000000000" className="button button-primary">
+        <a href={whatsappHref} className="button button-primary">
           WhatsApp
         </a>
       </div>

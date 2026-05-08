@@ -71,7 +71,7 @@ export function buildNluRoutedResponse(nlu: KoraNluResult, memory?: RouterMemory
         `Claro. Te ayudo con opciones más económicas${memory?.last_product_name ? ` tomando como referencia ${memory.last_product_name}` : ""}.`,
         [
           { id: "nlu-cheaper-context", label: "Ver opciones económicas", type: "command", value: "products" },
-          { id: "nlu-cheaper-whatsapp", label: "Hablar con asesor", type: "whatsapp", value: "advisor", icon: "📞" },
+          { id: "nlu-cheaper-whatsapp", label: "Hablar con asesor", type: "whatsapp", value: "asesoria_eleccion", icon: "📞" },
         ],
         ["Muéstrame una opción similar", "Quiero algo para empezar"],
         Math.max(0.76, nlu.confidence)
@@ -99,7 +99,7 @@ export function buildNluRoutedResponse(nlu: KoraNluResult, memory?: RouterMemory
         { id: "nlu-guitar-view", label: "Ver guitarras", type: "link", value: "/catalogo/categoria/instrumentos" },
         { id: "nlu-guitar-start", label: "Guitarra para empezar", type: "prompt", value: "Quiero una guitarra para empezar" },
         { id: "nlu-guitar-cheap", label: "Opciones económicas", type: "prompt", value: "Muéstrame guitarras económicas" },
-        { id: "nlu-guitar-advisor", label: "Hablar con asesor", type: "whatsapp", value: "advisor", icon: "📞" },
+        { id: "nlu-guitar-advisor", label: "Hablar con asesor", type: "whatsapp", value: "asesoria_eleccion", icon: "📞" },
       ],
       ["Quiero guitarra acústica", "Quiero guitarra eléctrica"],
       Math.max(0.8, nlu.confidence)
@@ -114,7 +114,7 @@ export function buildNluRoutedResponse(nlu: KoraNluResult, memory?: RouterMemory
         { id: "nlu-cheap-cabinas", label: "Ver cabinas económicas", type: "prompt", value: "Muéstrame cabinas económicas" },
         { id: "nlu-cheap-party", label: "Para fiesta", type: "prompt", value: "Necesito cabina para fiesta" },
         { id: "nlu-cheap-business", label: "Para negocio", type: "prompt", value: "Necesito cabina para negocio" },
-        { id: "nlu-cheap-advisor", label: "Hablar con asesor", type: "whatsapp", value: "advisor", icon: "📞" },
+        { id: "nlu-cheap-advisor", label: "Hablar con asesor", type: "whatsapp", value: "asesoria_eleccion", icon: "📞" },
       ],
       ["Para iglesia", "Para casa"],
       Math.max(0.8, nlu.confidence)
@@ -129,7 +129,7 @@ export function buildNluRoutedResponse(nlu: KoraNluResult, memory?: RouterMemory
         { id: "nlu-power-cabinas", label: "Cabinas potentes", type: "prompt", value: "Quiero cabinas potentes" },
         { id: "nlu-power-home", label: "Parlantes para casa", type: "prompt", value: "Quiero parlantes potentes para casa" },
         { id: "nlu-power-car", label: "Car audio", type: "prompt", value: "Quiero car audio con buen bajo" },
-        { id: "nlu-power-advisor", label: "Hablar con asesor", type: "whatsapp", value: "advisor", icon: "📞" },
+        { id: "nlu-power-advisor", label: "Hablar con asesor", type: "whatsapp", value: "asesoria_eleccion", icon: "📞" },
       ],
       ["Sonido profesional", "Para fiesta"],
       Math.max(0.78, nlu.confidence)
@@ -155,7 +155,7 @@ export function buildNluRoutedResponse(nlu: KoraNluResult, memory?: RouterMemory
     return base(
       "shipping",
       "Claro. Te explico envíos: despachamos a diferentes ciudades y el tiempo depende de destino y disponibilidad.",
-      [{ id: "nlu-shipping-contact", label: "Confirmar envío por WhatsApp", type: "whatsapp", value: "advisor", icon: "📞" }],
+      [{ id: "nlu-shipping-contact", label: "Confirmar envío por WhatsApp", type: "whatsapp", value: "envio", icon: "📞" }],
       ["¿Envían a mi ciudad?", "¿Cuánto tarda?"],
       Math.max(0.78, nlu.confidence)
     );
@@ -185,7 +185,7 @@ export function buildNluRoutedResponse(nlu: KoraNluResult, memory?: RouterMemory
     return base(
       "advisor",
       "Perfecto, te conecto con un asesor para ayudarte en tiempo real.",
-      [{ id: "nlu-advisor-open", label: "Abrir WhatsApp", type: "whatsapp", value: "advisor", icon: "📞" }],
+      [{ id: "nlu-advisor-open", label: "Abrir WhatsApp", type: "whatsapp", value: "advisor_general", icon: "📞" }],
       ["Quiero cotización", "Necesito ayuda para elegir"],
       Math.max(0.82, nlu.confidence)
     );
@@ -193,4 +193,3 @@ export function buildNluRoutedResponse(nlu: KoraNluResult, memory?: RouterMemory
 
   return null;
 }
-
