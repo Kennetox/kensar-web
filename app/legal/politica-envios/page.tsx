@@ -11,7 +11,14 @@ export const metadata: Metadata = {
   },
 };
 
-const SHIPPING_SECTIONS = [
+type ShippingSection = {
+  title: string;
+  content?: string[];
+  bullets?: string[];
+  note?: string;
+};
+
+const SHIPPING_SECTIONS: ShippingSection[] = [
   {
     title: "1. Cobertura de envíos",
     content: [
@@ -89,7 +96,7 @@ const SHIPPING_SECTIONS = [
       "Nuestro equipo estará disponible para ayudarte durante el proceso de compra y entrega.",
     ],
   },
-] as const;
+];
 
 export default function PoliticaEnviosPage() {
   const whatsappHref = buildWhatsAppPrefill({
