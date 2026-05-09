@@ -54,7 +54,7 @@ export function getKoraBusinessKnowledge(): KoraBusinessKnowledge {
       "https://www.google.com/maps/search/?api=1&query=Cra+24+%2330-75+Palmira+Valle+del+Cauca",
     policies: {
       returns: "/legal/cambios-devoluciones-garantias",
-      shipping: "/contacto",
+      shipping: "/legal/politica-envios",
       warranty: "/legal/cambios-devoluciones-garantias",
     },
     key_pages: {

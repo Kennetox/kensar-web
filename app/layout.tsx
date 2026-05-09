@@ -320,6 +320,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   <Link href="/legal/privacidad">Política de privacidad</Link>
                   <Link href="/legal/terminos">Términos y condiciones</Link>
                   <Link href="/legal/cookies">Política de cookies</Link>
+                  <Link href="/legal/politica-envios">Política de envíos</Link>
                   <Link href="/legal/cambios-devoluciones-garantias#cambios-devoluciones">Cambios y devoluciones</Link>
                   <Link href="/legal/cambios-devoluciones-garantias#garantias">Garantías</Link>
                   <Link href="/legal/tratamiento-datos">Tratamiento de datos</Link>
@@ -333,7 +334,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <Link href="/legal/privacidad">Politica de privacidad</Link>
             <Link href="/legal/terminos">Terminos y condiciones</Link>
             <Link href="/legal/cookies">Politica de cookies</Link>
-            <span>Politica de envios</span>
+            <Link href="/legal/politica-envios">Politica de envios</Link>
             <Link href="/legal/cambios-devoluciones-garantias#cambios-devoluciones">Cambios y devoluciones</Link>
             <Link href="/legal/cambios-devoluciones-garantias#garantias">Garantias</Link>
             <Link href="/legal/tratamiento-datos">Tratamiento de datos</Link>
