@@ -14403,7 +14403,7 @@ body .main-wrapper::before {
   .catalog-filter-floating-trigger {
     position: fixed;
     left: 50%;
-    top: 92px;
+    top: calc(var(--topbar-current-height, 88px) + 10px);
     transform: translateX(-50%) translateY(-10px) scale(0.92);
     z-index: 35;
     height: 38px;
@@ -14423,6 +14423,7 @@ body .main-wrapper::before {
     -webkit-backdrop-filter: blur(6px);
     opacity: 0;
     animation: catalogFilterFloatingIn 220ms ease-out forwards;
+    transition: top 220ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .catalog-filter-floating-trigger.is-visible {
