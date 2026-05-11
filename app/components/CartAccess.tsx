@@ -26,6 +26,8 @@ function sanitizeReturnTo(value?: string | null): string {
   return candidate;
 }
 
+const CART_MAX_UNITS_PER_ITEM = 3;
+
 export default function CartAccess() {
   const router = useRouter();
   const pathname = usePathname();
@@ -171,7 +173,7 @@ export default function CartAccess() {
         await removeItem(productId);
         return;
       }
-      await updateItem(productId, quantity);
+      await updateItem(productId, Math.min(CART_MAX_UNITS_PER_ITEM, quantity));
     } finally {
       setBusy(false);
     }
@@ -322,7 +324,7 @@ export default function CartAccess() {
                                 <span>{item.quantity}</span>
                                 <button
                                   type="button"
-                                  disabled={busy}
+                                  disabled={busy || item.quantity >= CART_MAX_UNITS_PER_ITEM}
                                   onClick={() => void handleQuantity(item.product_id, item.quantity + 1)}
                                 >
                                   +

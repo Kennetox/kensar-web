@@ -7,6 +7,7 @@ import { useWebCart } from "@/app/components/WebCartProvider";
 import { useWebCustomer } from "@/app/components/WebCustomerProvider";
 
 const CART_NOTES_MAX_CHARS = 220;
+const CART_MAX_UNITS_PER_ITEM = 3;
 
 function formatMoney(value: number) {
   return new Intl.NumberFormat("es-CO", {
@@ -85,7 +86,7 @@ function CarritoPageContent() {
           setFeedback("Producto eliminado del carrito.");
           return;
         }
-        await updateItem(productId, quantity);
+        await updateItem(productId, Math.min(CART_MAX_UNITS_PER_ITEM, quantity));
       } catch (nextError) {
         setActionError(
           nextError instanceof Error ? nextError.message : "No se pudo actualizar la cantidad."
@@ -260,7 +261,7 @@ function CarritoPageContent() {
                         <button
                           type="button"
                           onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
-                          disabled={isPending}
+                          disabled={isPending || item.quantity >= CART_MAX_UNITS_PER_ITEM}
                         >
                           +
                         </button>

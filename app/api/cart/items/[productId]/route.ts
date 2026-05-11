@@ -11,6 +11,7 @@ import { normalizeCartPayload } from "@/app/api/cart/_lib/normalizeCartPayload";
 type RouteContext = {
   params: Promise<{ productId: string }>;
 };
+const CART_MAX_UNITS_PER_ITEM = 3;
 
 async function getToken() {
   const cookieStore = await cookies();
@@ -27,6 +28,16 @@ export async function PUT(request: Request, context: RouteContext) {
   }
 
   const payload = await request.json().catch(() => null);
+  if (!payload) {
+    return NextResponse.json({ detail: "Payload inválido" }, { status: 400 });
+  }
+  const quantity = Number(payload.quantity);
+  if (!Number.isFinite(quantity) || quantity < 1 || quantity > CART_MAX_UNITS_PER_ITEM) {
+    return NextResponse.json(
+      { detail: `La cantidad por producto debe estar entre 1 y ${CART_MAX_UNITS_PER_ITEM}.` },
+      { status: 400 }
+    );
+  }
   const { productId } = await context.params;
   const response = await fetchMetrikApi(`/web/cart/items/${productId}`, {
     method: "PUT",
@@ -34,7 +45,10 @@ export async function PUT(request: Request, context: RouteContext) {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      ...payload,
+      quantity,
+    }),
   });
 
   if (response.status === 401) {

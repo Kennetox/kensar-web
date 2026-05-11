@@ -26,6 +26,7 @@ import { hasCouponSessionMarker, setCouponSessionMarker } from "@/app/lib/coupon
 import { useWebCustomer } from "@/app/components/WebCustomerProvider";
 
 const GUEST_CART_STORAGE_KEY = "kensar_web_guest_cart_v1";
+const CART_MAX_UNITS_PER_ITEM = 3;
 
 type GuestCartItemInput = {
   product_name: string;
@@ -104,7 +105,7 @@ function parseGuestStorage(): WebCart {
 
     const items = parsed.items
       .map((item) => {
-        const quantity = Math.max(1, Number(item.quantity) || 1);
+        const quantity = Math.min(CART_MAX_UNITS_PER_ITEM, Math.max(1, Number(item.quantity) || 1));
         const unitPrice = Number(item.unit_price) || 0;
         const lineTotal = unitPrice * quantity;
         return {
@@ -257,14 +258,14 @@ export default function WebCartProvider({
   const addItem = useCallback(
     async (productId: number, quantity = 1, guestItem?: GuestCartItemInput) => {
       if (!authenticated) {
-        const nextQuantity = Math.max(1, Number(quantity) || 1);
+        const nextQuantity = Math.min(CART_MAX_UNITS_PER_ITEM, Math.max(1, Number(quantity) || 1));
         const current = parseGuestStorage();
         const index = current.items.findIndex((item) => item.product_id === productId);
 
         const nextItems = [...current.items];
         if (index >= 0) {
           const existing = nextItems[index];
-          const mergedQuantity = existing.quantity + nextQuantity;
+          const mergedQuantity = Math.min(CART_MAX_UNITS_PER_ITEM, existing.quantity + nextQuantity);
           nextItems[index] = {
             ...existing,
             quantity: mergedQuantity,
@@ -298,7 +299,10 @@ export default function WebCartProvider({
         return nextCart;
       }
 
-      const nextCart = await addWebCartItem({ product_id: productId, quantity });
+      const nextCart = await addWebCartItem({
+        product_id: productId,
+        quantity: Math.min(CART_MAX_UNITS_PER_ITEM, Math.max(1, Number(quantity) || 1)),
+      });
       setCart(nextCart);
       setCouponSessionMarker(hasActiveCoupon(nextCart));
       setError(null);
@@ -314,7 +318,7 @@ export default function WebCartProvider({
         .map((item) => {
           if (item.product_id !== productId) return item;
           if (quantity <= 0) return null;
-          const nextQuantity = Math.max(1, Number(quantity) || 1);
+          const nextQuantity = Math.min(CART_MAX_UNITS_PER_ITEM, Math.max(1, Number(quantity) || 1));
           return {
             ...item,
             quantity: nextQuantity,
@@ -330,7 +334,10 @@ export default function WebCartProvider({
       return nextCart;
     }
 
-    const nextCart = await updateWebCartItem(productId, quantity);
+    const nextCart = await updateWebCartItem(
+      productId,
+      Math.min(CART_MAX_UNITS_PER_ITEM, Math.max(1, Number(quantity) || 1))
+    );
     setCart(nextCart);
     setCouponSessionMarker(hasActiveCoupon(nextCart));
     setError(null);
