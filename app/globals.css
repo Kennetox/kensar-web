@@ -14301,6 +14301,8 @@ body .main-wrapper::before {
     display: block;
     width: 100%;
     overflow: visible;
+    border-radius: 22px;
+    background: transparent;
   }
 
   .catalog-filter-mobile {
@@ -14313,6 +14315,9 @@ body .main-wrapper::before {
 
   .catalog-filter-disclosure-summary {
     list-style: none;
+    appearance: none;
+    -webkit-appearance: none;
+    width: 100%;
     min-height: 54px;
     border: 1px solid rgba(15, 23, 42, 0.14);
     border-radius: 999px;
@@ -14328,19 +14333,21 @@ body .main-wrapper::before {
     cursor: pointer;
     transition: border-color 240ms ease, box-shadow 240ms ease;
     backface-visibility: hidden;
+    text-align: left;
   }
 
-  .catalog-filter-disclosure-summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .catalog-filter-disclosure[open] .catalog-filter-disclosure-summary {
+  .catalog-filter-disclosure.is-open .catalog-filter-disclosure-summary {
     border-top-left-radius: 22px;
     border-top-right-radius: 22px;
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
     border-bottom-color: transparent;
     box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+  }
+
+  .catalog-filter-disclosure.is-open {
+    overflow: hidden;
+    background: #ffffff;
   }
 
   .catalog-filter-disclosure .catalog-sidebar {
@@ -14363,21 +14370,15 @@ body .main-wrapper::before {
     transition:
       max-height 320ms cubic-bezier(0.22, 1, 0.36, 1),
       opacity 220ms ease,
-      transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+      transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 180ms ease;
   }
 
-  .catalog-filter-disclosure[open] .catalog-sidebar {
+  .catalog-filter-disclosure.is-open .catalog-sidebar {
     max-height: 1100px;
     opacity: 1;
     pointer-events: auto;
     transform: translateY(0);
-  }
-
-  .catalog-filter-disclosure.is-collapsing .catalog-sidebar {
-    max-height: 0;
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(-8px);
   }
 
   .catalog-filter-disclosure .catalog-filter-panel {

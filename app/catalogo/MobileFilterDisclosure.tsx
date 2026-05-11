@@ -7,23 +7,34 @@ type MobileFilterDisclosureProps = {
 };
 
 export default function MobileFilterDisclosure({ children }: MobileFilterDisclosureProps) {
-  const COLLAPSE_ANIMATION_MS = 320;
-  const detailsRef = useRef<HTMLDetailsElement | null>(null);
+  const disclosureRef = useRef<HTMLDivElement | null>(null);
   const [showFloating, setShowFloating] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const scrollDisclosureToTop = (behavior: ScrollBehavior = "smooth") => {
+    const disclosureNode = disclosureRef.current;
+    if (!disclosureNode) return;
+    const topbarHeightRaw = getComputedStyle(document.documentElement).getPropertyValue("--topbar-current-height");
+    const topbarHeight = Number.parseFloat(topbarHeightRaw) || 0;
+    const targetTop = disclosureNode.getBoundingClientRect().top + window.scrollY - topbarHeight;
+    window.scrollTo({
+      top: Math.max(0, targetTop),
+      behavior,
+    });
+  };
 
   useEffect(() => {
     const evaluateFloating = () => {
-      const detailsNode = detailsRef.current;
-      if (!detailsNode) return;
+      const disclosureNode = disclosureRef.current;
+      if (!disclosureNode) return;
       if (window.matchMedia("(min-width: 721px)").matches) {
         setShowFloating(false);
         return;
       }
 
-      const top = detailsNode.getBoundingClientRect().top + window.scrollY;
+      const top = disclosureNode.getBoundingClientRect().top + window.scrollY;
       const shouldFloat = window.scrollY > top + 120;
-      setShowFloating(shouldFloat && !detailsNode.open);
+      setShowFloating(shouldFloat && !isOpen);
     };
 
     evaluateFloating();
@@ -33,58 +44,45 @@ export default function MobileFilterDisclosure({ children }: MobileFilterDisclos
       window.removeEventListener("scroll", evaluateFloating);
       window.removeEventListener("resize", evaluateFloating);
     };
-  }, []);
+  }, [isOpen]);
 
   const openFilters = () => {
-    const detailsNode = detailsRef.current;
-    if (!detailsNode) return;
-    setIsClosing(false);
-    detailsNode.open = true;
-    const topbarHeightRaw = getComputedStyle(document.documentElement).getPropertyValue("--topbar-current-height");
-    const topbarHeight = Number.parseFloat(topbarHeightRaw) || 0;
-    const targetTop = detailsNode.getBoundingClientRect().top + window.scrollY - topbarHeight - 8;
-    window.scrollTo({
-      top: Math.max(0, targetTop),
-      behavior: "smooth",
+    if (!disclosureRef.current) return;
+    setIsOpen(true);
+    requestAnimationFrame(() => {
+      scrollDisclosureToTop("smooth");
+      window.setTimeout(() => {
+        scrollDisclosureToTop("auto");
+      }, 170);
     });
     setShowFloating(false);
   };
 
-  const handleSummaryClick = (event: React.MouseEvent<HTMLElement>) => {
-    const detailsNode = detailsRef.current;
-    if (!detailsNode) return;
-
-    if (!detailsNode.open) {
-      setIsClosing(false);
-      return;
-    }
-
-    event.preventDefault();
-    setIsClosing(true);
-    window.setTimeout(() => {
-      const activeDetails = detailsRef.current;
-      if (!activeDetails) return;
-      activeDetails.open = false;
-      setIsClosing(false);
-    }, COLLAPSE_ANIMATION_MS);
+  const handleSummaryClick = () => {
+    setIsOpen((current) => !current);
   };
 
   return (
     <>
-      <details
-        ref={detailsRef}
-        className={`catalog-filter-disclosure catalog-filter-mobile${isClosing ? " is-collapsing" : ""}`}
-      >
-        <summary className="catalog-filter-disclosure-summary" onClick={handleSummaryClick}>
+      <div ref={disclosureRef} className={`catalog-filter-disclosure catalog-filter-mobile${isOpen ? " is-open" : ""}`}>
+        <button
+          type="button"
+          className="catalog-filter-disclosure-summary"
+          onClick={handleSummaryClick}
+          aria-expanded={isOpen}
+          aria-controls="catalog-filter-panel-mobile"
+        >
           <span>Filtrar y ordenar</span>
           <span className="catalog-filter-disclosure-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none">
               <path d="M4 7h16M7 12h10M10 17h4" />
             </svg>
           </span>
-        </summary>
-        <aside className="catalog-sidebar">{children}</aside>
-      </details>
+        </button>
+        <aside id="catalog-filter-panel-mobile" className="catalog-sidebar">
+          {children}
+        </aside>
+      </div>
 
       {showFloating ? (
         <button type="button" className="catalog-filter-floating-trigger is-visible" onClick={openFilters}>
