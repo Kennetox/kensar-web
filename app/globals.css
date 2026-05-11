@@ -8802,7 +8802,7 @@ body .main-wrapper::before {
 
 .commerce-mid-feature {
   width: 100%;
-  margin: 0 auto 26px;
+  margin: 0 auto 20px;
 }
 
 .commerce-mid-feature .commerce-home-living-products {
@@ -9955,7 +9955,7 @@ body .main-wrapper::before {
 }
 
 .commerce-brand-collage {
-  margin-top: 30px;
+  margin-top: 22px;
   display: grid;
   gap: 40px;
   width: 100%;
@@ -10581,6 +10581,18 @@ body .main-wrapper::before {
 
   .commerce-home {
     padding: 0 16px 24px;
+  }
+
+  .commerce-discover + .commerce-categories-divider {
+    margin: 16px 0 10px;
+  }
+
+  .commerce-mid-feature {
+    margin: 0 auto 14px;
+  }
+
+  .commerce-mid-feature .commerce-home-living-products {
+    margin-top: 18px;
   }
 
   .home-product-carousel {
