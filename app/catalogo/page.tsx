@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import CatalogProductCard from "@/app/catalogo/CatalogProductCard";
 import CatalogFiltersSidebar from "@/app/catalogo/CatalogFiltersSidebar";
+import MobileFilterDisclosure from "@/app/catalogo/MobileFilterDisclosure";
 import KoraPageContextBridge from "@/app/components/KoraPageContextBridge";
 import {
   getCatalogCategories,
@@ -416,28 +417,18 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
           />
         </aside>
 
-        <details className="catalog-filter-disclosure catalog-filter-mobile">
-          <summary className="catalog-filter-disclosure-summary">
-            <span>Filtrar y ordenar</span>
-            <span className="catalog-filter-disclosure-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none">
-                <path d="M4 7h16M7 12h10M10 17h4" />
-              </svg>
-            </span>
-          </summary>
-          <aside className="catalog-sidebar">
-            <CatalogFiltersSidebar
-              query={localQ}
-              sort={sort}
-              minPrice={minPrice}
-              maxPrice={maxPrice > 0 ? maxPrice : effectiveAvailableMaxPrice}
-              availableMinPrice={effectiveAvailableMinPrice}
-              availableMaxPrice={effectiveAvailableMaxPrice}
-              selectedBrands={normalizedSelectedBrands}
-              brands={visibleBrands}
-            />
-          </aside>
-        </details>
+        <MobileFilterDisclosure>
+          <CatalogFiltersSidebar
+            query={localQ}
+            sort={sort}
+            minPrice={minPrice}
+            maxPrice={maxPrice > 0 ? maxPrice : effectiveAvailableMaxPrice}
+            availableMinPrice={effectiveAvailableMinPrice}
+            availableMaxPrice={effectiveAvailableMaxPrice}
+            selectedBrands={normalizedSelectedBrands}
+            brands={visibleBrands}
+          />
+        </MobileFilterDisclosure>
 
         <div className="catalog-store-content">
           {productList.items.length ? (
