@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   fetchCheckoutOrderPaymentStatus,
@@ -86,6 +86,10 @@ function CheckoutResultContent() {
   const [loading, setLoading] = useState(orderId > 0);
   const [error, setError] = useState<string | null>(null);
   const [checkoutContext, setCheckoutContext] = useState<CheckoutResultContext | null>(null);
+  const summaryAnchorRef = useRef<HTMLDivElement | null>(null);
+  const summaryCardRef = useRef<HTMLElement | null>(null);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [isNearSummaryArea, setIsNearSummaryArea] = useState(false);
 
   useEffect(() => {
     if (invalidOrder) {
@@ -261,6 +265,42 @@ function CheckoutResultContent() {
   const paymentStatusLabel = getPaymentStatusLabel(status?.payment_status || paymentHint || "pending");
   const mapAddress = deliveryMode === "pickup" ? PICKUP_ADDRESS_FULL : shippingAddress;
   const mapEmbedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(mapAddress)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+  const summaryItems = status?.items || [];
+  const hasSummaryItems = summaryItems.length > 0;
+  const leadSummaryItem = summaryItems[0] || null;
+  const leadSummaryImageUrl = normalizeImageUrl(leadSummaryItem?.image_url);
+  const extraSummaryItemsCount = Math.max(0, summaryItems.length - 1);
+  const showMobileFloatingSummary = hasSummaryItems && isMobileViewport && !isNearSummaryArea;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(max-width: 720px)");
+    const sync = () => setIsMobileViewport(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobileViewport) {
+      setIsNearSummaryArea(false);
+      return;
+    }
+    if (typeof window === "undefined" || !summaryAnchorRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        setIsNearSummaryArea(Boolean(entry?.isIntersecting));
+      },
+      {
+        root: null,
+        threshold: 0.15,
+        rootMargin: "0px 0px -72px 0px",
+      }
+    );
+    observer.observe(summaryAnchorRef.current);
+    return () => observer.disconnect();
+  }, [isMobileViewport, hasSummaryItems]);
 
   return (
     <main className="site-shell internal-page section-space checkout-page-shell checkout-result-page-shell">
@@ -389,7 +429,8 @@ function CheckoutResultContent() {
           </section>
         </article>
 
-        <aside className="checkout-summary-card checkout-result-summary-card">
+        <div ref={summaryAnchorRef} className="checkout-mobile-payment-anchor" aria-hidden="true" />
+        <aside ref={summaryCardRef} className="checkout-summary-card checkout-result-summary-card">
           <h2>Resumen de tu compra</h2>
           <div className="checkout-summary-items">
             {status?.items?.length ? (
@@ -446,6 +487,29 @@ function CheckoutResultContent() {
         <p className="checkout-result-guest-note">
           Esta compra fue procesada como invitado. Si deseas guardar tu historial, crea tu cuenta con el mismo correo.
         </p>
+      ) : null}
+      {showMobileFloatingSummary && leadSummaryItem ? (
+        <button
+          type="button"
+          className="checkout-mobile-floating-summary"
+          onClick={() => summaryCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+        >
+          <span
+            className={`checkout-mobile-floating-thumb${leadSummaryImageUrl ? " has-image" : ""}`}
+            style={leadSummaryImageUrl ? { backgroundImage: `url('${leadSummaryImageUrl}')` } : undefined}
+            aria-hidden="true"
+          >
+            {extraSummaryItemsCount > 0 ? (
+              <span className="checkout-mobile-floating-thumb-badge">+{extraSummaryItemsCount}</span>
+            ) : null}
+          </span>
+          <strong>{formatMoney(status?.total || 0)}</strong>
+          <span className="checkout-mobile-floating-chevron" aria-hidden="true">
+            <svg viewBox="0 0 16 10" fill="none">
+              <path d="m2 2 6 6 6-6" />
+            </svg>
+          </span>
+        </button>
       ) : null}
     </main>
   );
