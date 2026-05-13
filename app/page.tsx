@@ -11,6 +11,7 @@ import { buildWhatsAppPrefill } from "@/app/lib/kora/whatsapp-handoff";
 import {
   getCatalogCategories,
   getCatalogBestSellers,
+  getCatalogProduct,
   getCatalogProducts,
   getHomeSliders,
   type WebCatalogCategory,
@@ -306,12 +307,41 @@ async function loadHomeLivingProducts(seedProducts: WebCatalogProductCard[]) {
   return shuffleProducts([...mergedById.values()]).slice(0, 10);
 }
 
+async function hydrateBestSellerProducts(items: WebCatalogProductCard[]) {
+  const hydrated = await Promise.all(
+    items.map(async (item) => {
+      const hasPrimaryImage = Boolean((item.image_url || "").trim()) || Boolean((item.image_thumb_url || "").trim());
+      const hasGallery = Array.isArray(item.gallery) && item.gallery.length > 0;
+      if (hasPrimaryImage || hasGallery) {
+        return item;
+      }
+      try {
+        const detail = await getCatalogProduct(item.slug);
+        if (!detail) return item;
+        return {
+          ...item,
+          image_url: detail.image_url || item.image_url,
+          image_thumb_url: detail.image_thumb_url || item.image_thumb_url,
+          gallery: detail.gallery?.length ? detail.gallery : item.gallery,
+          short_description: detail.short_description || item.short_description,
+          long_description: detail.long_description || item.long_description,
+          badge_text: detail.badge_text ?? item.badge_text ?? null,
+          featured: typeof detail.featured === "boolean" ? detail.featured : item.featured,
+        } satisfies WebCatalogProductCard;
+      } catch {
+        return item;
+      }
+    })
+  );
+  return hydrated;
+}
+
 export default async function HomePage() {
   const { categories, products, sliders } = await loadHomeData();
 
   const livingProducts = await loadHomeLivingProducts(products);
   const bestSellerProducts = await getCatalogBestSellers({ limit: 10, days: 90 })
-    .then((result) => result.items)
+    .then((result) => hydrateBestSellerProducts(result.items))
     .catch(() => []);
   const fallbackSliderSlides = [
     {

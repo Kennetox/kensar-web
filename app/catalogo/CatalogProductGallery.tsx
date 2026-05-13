@@ -24,6 +24,7 @@ export default function CatalogProductGallery({
   const [imageIndex, setImageIndex] = useState(0);
   const [slideDirection, setSlideDirection] = useState<"left" | "right">("right");
   const [slideTick, setSlideTick] = useState(0);
+  const [activeImageFit, setActiveImageFit] = useState<"cover" | "contain">("cover");
   const activeImage = images[imageIndex] || null;
 
   useEffect(() => {
@@ -32,6 +33,26 @@ export default function CatalogProductGallery({
       image.src = src;
     });
   }, [images]);
+
+  useEffect(() => {
+    if (!activeImage) return;
+    const image = new window.Image();
+    image.src = activeImage;
+    image.onload = () => {
+      const width = image.naturalWidth || image.width || 0;
+      const height = image.naturalHeight || image.height || 0;
+      if (!width || !height) {
+        setActiveImageFit("cover");
+        return;
+      }
+      const ratio = width / height;
+      const isExtremeRatio = ratio < 0.75 || ratio > 1.35;
+      setActiveImageFit(isExtremeRatio ? "contain" : "cover");
+    };
+    image.onerror = () => {
+      setActiveImageFit("cover");
+    };
+  }, [activeImage]);
 
   function stepImage(direction: -1 | 1) {
     if (images.length <= 1) return;
@@ -56,12 +77,12 @@ export default function CatalogProductGallery({
       <Link href={detailHref} prefetch={false} className="catalog-product-card-media-link">
         <div
           key={`${activeImage ?? "fallback"}-${slideTick}`}
-          className={`storefront-media-image is-slide-${slideDirection}`}
+          className={`storefront-media-image is-slide-${slideDirection}${activeImage && activeImageFit === "contain" ? " is-smart-contain" : ""}`}
           style={{
             backgroundImage: activeImage
               ? `url('${activeImage}')`
               : "url('/branding/icono-white.svg'), linear-gradient(135deg, #d9e4f3 0%, #c9d8ee 100%)",
-            backgroundSize: activeImage ? "cover" : "36%, cover",
+            backgroundSize: activeImage ? undefined : "36%, cover",
             backgroundPosition: "center center, center center",
             backgroundRepeat: "no-repeat, no-repeat",
           }}
