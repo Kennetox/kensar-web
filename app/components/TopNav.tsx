@@ -36,10 +36,6 @@ export default function TopNav({ categories, brands }: TopNavProps) {
     return acc;
   }, {});
 
-  Object.values(childrenByParent).forEach((items) => {
-    items.sort((a, b) => a.name.localeCompare(b.name, "es"));
-  });
-
   return (
     <nav className="top-nav" aria-label="Navegacion principal">
       <Link href="/" className={`nav-link${isHomeActive ? " active" : ""}`}>

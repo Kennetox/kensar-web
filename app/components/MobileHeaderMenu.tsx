@@ -35,19 +35,13 @@ export default function MobileHeaderMenu({ categories }: MobileHeaderMenuProps) 
   );
 
   const childrenByParent = useMemo(() => {
-    const map = categories.reduce<Record<string, HeaderCategory[]>>((acc, item) => {
+    return categories.reduce<Record<string, HeaderCategory[]>>((acc, item) => {
       const parentPath = (item.parent_path || "").trim();
       if (!parentPath) return acc;
       if (!acc[parentPath]) acc[parentPath] = [];
       acc[parentPath].push(item);
       return acc;
     }, {});
-
-    Object.values(map).forEach((items) => {
-      items.sort((a, b) => a.name.localeCompare(b.name, "es"));
-    });
-
-    return map;
   }, [categories]);
 
   const activeParent = useMemo(
