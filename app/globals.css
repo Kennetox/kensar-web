@@ -13845,9 +13845,7 @@ body .main-wrapper::before {
 
 @media (hover: none), (pointer: coarse) {
   .catalog-gallery-arrow {
-    opacity: 0.72;
-    pointer-events: auto;
-    background: transparent;
+    display: none;
   }
 }
 
