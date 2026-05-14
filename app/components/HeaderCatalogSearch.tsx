@@ -159,7 +159,7 @@ export default function HeaderCatalogSearch() {
                     className="header-search-item-image"
                     style={{
                       backgroundImage: item.image_thumb_url || item.image_url ? `url('${item.image_thumb_url || item.image_url}')` : "url('/branding/icono-white.svg'), linear-gradient(135deg, #d9e4f3 0%, #c9d8ee 100%)",
-                      backgroundSize: item.image_thumb_url || item.image_url ? "cover" : "50%, cover",
+                      backgroundSize: item.image_thumb_url || item.image_url ? "contain" : "50%, cover",
                       backgroundPosition: "center center, center center",
                       backgroundRepeat: "no-repeat, no-repeat",
                     }}

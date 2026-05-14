@@ -32,10 +32,12 @@ export default function CatalogProductCard({
   product,
   catalogReturnTo,
   showAddToCart = true,
+  viewMode = "grid",
 }: {
   product: WebCatalogProductCard;
   catalogReturnTo?: string;
   showAddToCart?: boolean;
+  viewMode?: "grid" | "list";
 }) {
   const discountBadge = getDiscountBadgeText(product);
   const commercialBadge = product.badge_text?.trim() || null;
@@ -50,6 +52,85 @@ export default function CatalogProductCard({
   const detailHref = catalogReturnTo
     ? `/catalogo/${product.slug}?returnTo=${encodeURIComponent(catalogReturnTo)}`
     : `/catalogo/${product.slug}`;
+
+  if (viewMode === "list") {
+    return (
+      <article className="catalog-product-card-live catalog-product-card-list">
+        <div className="catalog-product-card-list-media catalog-product-card-media storefront-card-media catalog-hover-gallery">
+          <CatalogProductGallery
+            detailHref={detailHref}
+            gallery={product.gallery}
+            imageUrl={product.image_url}
+            imageThumbUrl={product.image_thumb_url}
+          />
+          {product.stock_status !== "in_stock" || product.featured || discountBadge || commercialBadge ? (
+            <div className="catalog-badge-stack" aria-hidden="true">
+              {product.stock_status !== "in_stock" ? (
+                <span className={`catalog-stock-badge stock-${product.stock_status}`}>
+                  {stockBadgeLabel}
+                </span>
+              ) : null}
+              {product.featured ? <span className="catalog-featured-badge">Destacado</span> : null}
+              {discountBadge ? <span className="catalog-discount-badge">{discountBadge}</span> : null}
+              {commercialBadge ? <span className="catalog-commercial-badge">{commercialBadge}</span> : null}
+            </div>
+          ) : null}
+        </div>
+        <div className="catalog-product-card-list-body catalog-product-card-body storefront-card-body">
+          <Link
+            href={detailHref}
+            prefetch={false}
+            className="catalog-product-card-body-link"
+            aria-label={`Ver detalle de ${product.name}`}
+          >
+            <div className="catalog-product-meta storefront-meta">
+              {product.category_name ? (
+                <span className="catalog-meta-chip">{product.category_name}</span>
+              ) : (
+                <span>Sin categoria</span>
+              )}
+              {product.brand ? <span>{product.brand}</span> : null}
+            </div>
+            <h3>{product.name}</h3>
+            <div className={`catalog-product-compare-price${product.compare_price ? "" : " is-empty"}`}>
+              {product.compare_price ? <del>{formatCatalogPrice(product.compare_price)}</del> : null}
+            </div>
+            <div className="catalog-product-price-row">
+              <strong>{formatCatalogPrice(product.price)}</strong>
+              <span className={product.sku ? undefined : "is-empty"}>
+                {product.sku ? `SKU ${product.sku}` : "\u00A0"}
+              </span>
+            </div>
+            <div className={`catalog-product-stock-line ${stockToneClass}`}>
+              <span className="catalog-product-stock-dot" aria-hidden="true" />
+              <span>{getStockLabel(product.stock_status)}</span>
+            </div>
+          </Link>
+        </div>
+        {showAddToCart ? (
+          <div className="catalog-product-card-list-actions">
+            <AddToCartButton
+              productId={product.id}
+              productName={product.name}
+              productSlug={product.slug}
+              productSku={product.sku}
+              imageUrl={product.image_thumb_url || product.image_url}
+              brand={product.brand}
+              stockStatus={product.stock_status}
+              unitPrice={product.price ?? 0}
+              comparePrice={product.compare_price}
+              showCartIcon={false}
+              wrapClassName="catalog-product-card-cta-wrap"
+              buttonClassName={isUnavailable ? "catalog-product-card-cta-disabled" : "catalog-product-card-cta-button"}
+            />
+            <Link href={detailHref} prefetch={false} className="catalog-product-list-info-btn">
+              Ver información
+            </Link>
+          </div>
+        ) : null}
+      </article>
+    );
+  }
 
   return (
     <article className="catalog-product-card-live storefront-card storefront-card-pro">

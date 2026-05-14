@@ -22,6 +22,7 @@ type CatalogPageProps = {
     min_price?: string;
     max_price?: string;
     page?: string;
+    view?: string;
   }>;
 };
 
@@ -61,6 +62,7 @@ function buildCatalogHref(input: {
   min_price?: string;
   max_price?: string;
   page?: string;
+  view?: "grid" | "list";
 }) {
   const categoryPath = input.category?.trim();
   const basePath = categoryPath
@@ -77,6 +79,7 @@ function buildCatalogHref(input: {
   if (input.min_price && Number(input.min_price) > 0) params.set("min_price", input.min_price);
   if (input.max_price && Number(input.max_price) > 0) params.set("max_price", input.max_price);
   if (input.page) params.set("page", input.page);
+  if (input.view && input.view !== "grid") params.set("view", input.view);
 
   const query = params.toString();
   return query ? `${basePath}?${query}` : basePath;
@@ -227,6 +230,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
   const minPrice = Math.max(Number(params.min_price) || 0, 0);
   const maxPrice = Math.max(Number(params.max_price) || 0, 0);
   const page = Math.max(Number(params.page) || 1, 1);
+  const view = (params.view || "").trim() === "list" ? "list" : "grid";
   const currentCatalogPath = buildCatalogHref({
     q: globalQ || undefined,
     local_q: localQ || undefined,
@@ -236,6 +240,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
     min_price: minPrice > 0 ? String(minPrice) : undefined,
     max_price: maxPrice > 0 ? String(maxPrice) : undefined,
     page: page > 1 ? String(page) : undefined,
+    view,
   });
   const isDirectCatalogRoot =
     !category &&
@@ -391,14 +396,71 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
               </>
             ) : null}
           </nav>
-          <p className="catalog-context-summary">
-            {productList.total} productos
-          </p>
+          <div className="catalog-context-side">
+            <p className="catalog-context-summary">
+              {productList.total} productos
+            </p>
+          </div>
         </div>
         <div className="catalog-context-banner" aria-label="Encabezado de categoría">
           <div className="catalog-context-banner-copy">
             <h1 className="catalog-context-title">{catalogHeaderTitle}</h1>
             <p className="catalog-context-subtitle">{catalogHeaderSubtitle}</p>
+          </div>
+          <div className="catalog-context-banner-controls">
+            <div className="catalog-view-toolbar catalog-view-toolbar-header" aria-label="Tipo de vista de productos">
+              <span className="catalog-view-toolbar-label">Ver como</span>
+              <div className="catalog-view-toolbar-actions">
+                <Link
+                  href={buildCatalogHref({
+                    q: globalQ || undefined,
+                    local_q: localQ || undefined,
+                    category: category || undefined,
+                    brand: normalizedSelectedBrands,
+                    sort,
+                    min_price: minPrice > 0 ? String(minPrice) : undefined,
+                    max_price: maxPrice > 0 ? String(maxPrice) : undefined,
+                    page: page > 1 ? String(page) : undefined,
+                    view: "list",
+                  })}
+                  className={`catalog-view-toggle catalog-view-toggle-list${view === "list" ? " is-active" : ""}`}
+                  aria-label="Ver como lista"
+                  title="Lista"
+                  aria-current={view === "list" ? "page" : undefined}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <circle cx="4" cy="6" r="1.6" />
+                    <circle cx="4" cy="12" r="1.6" />
+                    <circle cx="4" cy="18" r="1.6" />
+                    <path d="M8 6h12M8 12h12M8 18h12" />
+                  </svg>
+                </Link>
+                <Link
+                  href={buildCatalogHref({
+                    q: globalQ || undefined,
+                    local_q: localQ || undefined,
+                    category: category || undefined,
+                    brand: normalizedSelectedBrands,
+                    sort,
+                    min_price: minPrice > 0 ? String(minPrice) : undefined,
+                    max_price: maxPrice > 0 ? String(maxPrice) : undefined,
+                    page: page > 1 ? String(page) : undefined,
+                    view: "grid",
+                  })}
+                  className={`catalog-view-toggle catalog-view-toggle-grid${view === "grid" ? " is-active" : ""}`}
+                  aria-label="Ver como galeria"
+                  title="Galeria"
+                  aria-current={view === "grid" ? "page" : undefined}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <rect x="3" y="3" width="7" height="7" rx="0.8" />
+                    <rect x="14" y="3" width="7" height="7" rx="0.8" />
+                    <rect x="3" y="14" width="7" height="7" rx="0.8" />
+                    <rect x="14" y="14" width="7" height="7" rx="0.8" />
+                  </svg>
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -417,28 +479,84 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
           />
         </aside>
 
-        <MobileFilterDisclosure>
-          <CatalogFiltersSidebar
-            query={localQ}
-            sort={sort}
-            minPrice={minPrice}
-            maxPrice={maxPrice > 0 ? maxPrice : effectiveAvailableMaxPrice}
-            availableMinPrice={effectiveAvailableMinPrice}
-            availableMaxPrice={effectiveAvailableMaxPrice}
-            selectedBrands={normalizedSelectedBrands}
-            brands={visibleBrands}
-          />
-        </MobileFilterDisclosure>
+        <div className="catalog-mobile-controls">
+          <MobileFilterDisclosure>
+            <CatalogFiltersSidebar
+              query={localQ}
+              sort={sort}
+              minPrice={minPrice}
+              maxPrice={maxPrice > 0 ? maxPrice : effectiveAvailableMaxPrice}
+              availableMinPrice={effectiveAvailableMinPrice}
+              availableMaxPrice={effectiveAvailableMaxPrice}
+              selectedBrands={normalizedSelectedBrands}
+              brands={visibleBrands}
+            />
+          </MobileFilterDisclosure>
+          <div className="catalog-view-toolbar catalog-view-toolbar-mobile" aria-label="Tipo de vista de productos">
+            <span className="catalog-view-toolbar-label">Ver como</span>
+            <div className="catalog-view-toolbar-actions">
+              <Link
+                href={buildCatalogHref({
+                  q: globalQ || undefined,
+                  local_q: localQ || undefined,
+                  category: category || undefined,
+                  brand: normalizedSelectedBrands,
+                  sort,
+                  min_price: minPrice > 0 ? String(minPrice) : undefined,
+                  max_price: maxPrice > 0 ? String(maxPrice) : undefined,
+                  page: page > 1 ? String(page) : undefined,
+                  view: "list",
+                })}
+                className={`catalog-view-toggle catalog-view-toggle-list${view === "list" ? " is-active" : ""}`}
+                aria-label="Ver como lista"
+                title="Lista"
+                aria-current={view === "list" ? "page" : undefined}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <circle cx="4" cy="6" r="1.6" />
+                  <circle cx="4" cy="12" r="1.6" />
+                  <circle cx="4" cy="18" r="1.6" />
+                  <path d="M8 6h12M8 12h12M8 18h12" />
+                </svg>
+              </Link>
+              <Link
+                href={buildCatalogHref({
+                  q: globalQ || undefined,
+                  local_q: localQ || undefined,
+                  category: category || undefined,
+                  brand: normalizedSelectedBrands,
+                  sort,
+                  min_price: minPrice > 0 ? String(minPrice) : undefined,
+                  max_price: maxPrice > 0 ? String(maxPrice) : undefined,
+                  page: page > 1 ? String(page) : undefined,
+                  view: "grid",
+                })}
+                className={`catalog-view-toggle catalog-view-toggle-grid${view === "grid" ? " is-active" : ""}`}
+                aria-label="Ver como galeria"
+                title="Galeria"
+                aria-current={view === "grid" ? "page" : undefined}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <rect x="3" y="3" width="7" height="7" rx="0.8" />
+                  <rect x="14" y="3" width="7" height="7" rx="0.8" />
+                  <rect x="3" y="14" width="7" height="7" rx="0.8" />
+                  <rect x="14" y="14" width="7" height="7" rx="0.8" />
+                </svg>
+              </Link>
+            </div>
+          </div>
+        </div>
 
         <div className="catalog-store-content">
           {productList.items.length ? (
             <>
-              <section className="catalog-product-grid storefront-grid">
+              <section className={`catalog-product-grid storefront-grid${view === "list" ? " is-list" : ""}`}>
                 {productList.items.map((product) => (
                   <CatalogProductCard
                     key={product.id}
                     product={product}
                     catalogReturnTo={currentCatalogPath}
+                    viewMode={view}
                   />
                 ))}
               </section>
@@ -455,6 +573,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
                         min_price: minPrice > 0 ? String(minPrice) : undefined,
                         max_price: maxPrice > 0 ? String(maxPrice) : undefined,
                         page: page > 1 ? String(page - 1) : undefined,
+                        view,
                       })}
                       className={`catalog-pagination-nav${page <= 1 ? " is-disabled" : ""}`}
                       aria-disabled={page <= 1}
@@ -484,6 +603,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
                                 min_price: minPrice > 0 ? String(minPrice) : undefined,
                                 max_price: maxPrice > 0 ? String(maxPrice) : undefined,
                                 page: itemPage > 1 ? String(itemPage) : undefined,
+                                view,
                               })}
                               className={itemPage === page ? "catalog-pagination-page is-active" : "catalog-pagination-page"}
                               aria-current={itemPage === page ? "page" : undefined}
@@ -504,6 +624,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
                         min_price: minPrice > 0 ? String(minPrice) : undefined,
                         max_price: maxPrice > 0 ? String(maxPrice) : undefined,
                         page: page < totalPages ? String(page + 1) : String(totalPages),
+                        view,
                       })}
                       className={`catalog-pagination-nav${page >= totalPages ? " is-disabled" : ""}`}
                       aria-disabled={page >= totalPages}
