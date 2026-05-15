@@ -654,7 +654,7 @@ body.personaliza-editor-page .topbar-utility {
   width: 52px;
   height: 52px;
   border-radius: 8px;
-  background-color: #eef2ff;
+  background-color: #ffffff;
 }
 
 .header-search-item-copy {
@@ -2196,7 +2196,7 @@ body.mini-cart-open .main-wrapper {
 }
 
 .mini-cart-item-media.has-image {
-  background-color: transparent;
+  background-color: #ffffff;
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
@@ -5118,7 +5118,7 @@ body .main-wrapper::before {
 }
 
 .cart-item-media.has-image {
-  background-color: transparent;
+  background-color: #ffffff;
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
@@ -6397,7 +6397,7 @@ body .main-wrapper::before {
 }
 
 .checkout-summary-thumb.has-image {
-  background-color: transparent;
+  background-color: #ffffff;
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
@@ -7643,7 +7643,7 @@ body .main-wrapper::before {
   }
 
   .checkout-mobile-floating-thumb.has-image {
-    background-color: transparent;
+    background-color: #ffffff;
     background-repeat: no-repeat;
     background-position: center;
     background-size: contain;
@@ -7703,7 +7703,7 @@ body .main-wrapper::before {
   }
 
   .checkout-mobile-inline-thumb.has-image {
-    background-color: transparent;
+    background-color: #ffffff;
     background-repeat: no-repeat;
     background-position: center;
     background-size: contain;
