@@ -219,15 +219,18 @@ function removeEdgeConnectedNeutralBackground(
   return canvas;
 }
 
+function normalizeMaterialKey(value: string): string {
+  return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
 function resolveMaterialByCandidates<T extends { name?: string }>(
   materials: T[],
   candidates: string[]
 ): T | undefined {
-  const normalizeKey = (value: string) => value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
-  const normalizedCandidates = candidates.map((candidate) => normalizeKey(candidate)).filter(Boolean);
+  const normalizedCandidates = candidates.map((candidate) => normalizeMaterialKey(candidate)).filter(Boolean);
   const normalizedMaterials = materials.map((material) => ({
     material,
-    name: normalizeKey(material.name || ""),
+    name: normalizeMaterialKey(material.name || ""),
   }));
 
   // Prioridad 1: match exacto respetando el orden de candidates.
@@ -246,14 +249,13 @@ function resolveMaterialByCandidates<T extends { name?: string }>(
 }
 
 function resolveMaterialsByCandidates<T extends { name?: string }>(materials: T[], candidates: string[]): T[] {
-  const normalizeKey = (value: string) => value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
-  const normalizedCandidates = candidates.map((candidate) => normalizeKey(candidate)).filter(Boolean);
+  const normalizedCandidates = candidates.map((candidate) => normalizeMaterialKey(candidate)).filter(Boolean);
   const matched: T[] = [];
   const seen = new Set<number>();
   for (const candidate of normalizedCandidates) {
     materials.forEach((material, index) => {
       if (seen.has(index)) return;
-      const name = normalizeKey(material.name || "");
+      const name = normalizeMaterialKey(material.name || "");
       if (!name) return;
       if (name === candidate || name.includes(candidate)) {
         matched.push(material);
@@ -1039,7 +1041,7 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
       const nonTextMaterial =
         materials.find((material) => {
           if (material === textMaterial) return false;
-          const name = normalizeKey(material.name || "");
+          const name = normalizeMaterialKey(material.name || "");
           return !name.includes("text") && !name.includes("mat_text_zone");
         }) || null;
       if (nonTextMaterial) {
