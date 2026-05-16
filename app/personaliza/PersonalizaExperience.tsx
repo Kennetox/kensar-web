@@ -54,6 +54,7 @@ type TextLayerState = {
 type EditorSnapshot = {
   size: PersonalizableSize;
   campanaBellType: "cerrada" | "abierta";
+  campanaDesign: "color" | "colombia" | "puerto_rico";
   paintMode: "solid" | "gradient";
   solidColorSource: "preset" | "custom";
   solidPresetId: string;
@@ -302,6 +303,7 @@ export default function PersonalizaExperience() {
   const [product, setProduct] = useState<PersonalizableProductType>(DEFAULT_PERSONALIZATION.product);
   const [size, setSize] = useState<PersonalizableSize>(DEFAULT_PERSONALIZATION.size);
   const [campanaBellType, setCampanaBellType] = useState<"cerrada" | "abierta">("abierta");
+  const [campanaDesign, setCampanaDesign] = useState<"color" | "colombia" | "puerto_rico">("color");
   const [paintMode, setPaintMode] = useState<"solid" | "gradient">("solid");
   const [solidColorSource, setSolidColorSource] = useState<"preset" | "custom">("preset");
   const [solidPresetId, setSolidPresetId] = useState(SOLID_STYLE_PRESETS[0]?.id || STYLE_PRESETS[0].id);
@@ -413,6 +415,7 @@ export default function PersonalizaExperience() {
   const selectedCampanaType = selectedCampanaTypeFromQuery === "cromada" ? "cromada" : "clasica";
   const isCromadaVariant = selectedProductFromQuery === "campana" && selectedCampanaType === "cromada";
   const isCampanaVariant = selectedProductFromQuery === "campana";
+  const isPresetCampanaDesign = isCampanaVariant && campanaDesign !== "color";
   const isGuiroVariant = product === "guiro";
   const isMaracaVariant = product === "maraca";
   const isProductSelected =
@@ -434,6 +437,7 @@ export default function PersonalizaExperience() {
       JSON.stringify({
         size,
         campanaBellType,
+        campanaDesign,
         paintMode,
         solidColorSource,
         solidPresetId,
@@ -446,6 +450,7 @@ export default function PersonalizaExperience() {
       }),
     [
       campanaBellType,
+      campanaDesign,
       gradientEndColor,
       gradientPosition,
       gradientPresetId,
@@ -912,6 +917,7 @@ export default function PersonalizaExperience() {
     (): EditorSnapshot => ({
       size,
       campanaBellType,
+      campanaDesign,
       paintMode,
       solidColorSource,
       solidPresetId,
@@ -927,6 +933,7 @@ export default function PersonalizaExperience() {
     }),
     [
       campanaBellType,
+      campanaDesign,
       activeLayerId,
       gradientEndColor,
       gradientPosition,
@@ -955,6 +962,7 @@ export default function PersonalizaExperience() {
     setIsTextInputFocused(false);
     setSize(availableSizes[0]?.id || DEFAULT_PERSONALIZATION.size);
     setCampanaBellType("abierta");
+    setCampanaDesign("color");
     setPaintMode("solid");
     setSolidColorSource("preset");
     setSolidPresetId(defaultSolidPreset?.id || STYLE_PRESETS[0].id);
@@ -1024,6 +1032,7 @@ export default function PersonalizaExperience() {
   function applyEditorSnapshot(snapshot: EditorSnapshot) {
     setSize(snapshot.size);
     setCampanaBellType(snapshot.campanaBellType);
+    setCampanaDesign(snapshot.campanaDesign);
     setPaintMode(snapshot.paintMode);
     setSolidColorSource(snapshot.solidColorSource);
     setSolidPresetId(snapshot.solidPresetId);
@@ -1238,6 +1247,13 @@ export default function PersonalizaExperience() {
   }, [isMaracaVariant, paintMode]);
 
   useEffect(() => {
+    if (!isPresetCampanaDesign) return;
+    if (campanaBellType !== "abierta") {
+      setCampanaBellType("abierta");
+    }
+  }, [campanaBellType, isPresetCampanaDesign]);
+
+  useEffect(() => {
     if (!isProductSelected) return;
     const current = createEditorSnapshot();
     const previous = lastSnapshotRef.current;
@@ -1266,6 +1282,7 @@ export default function PersonalizaExperience() {
   }, [
     activeLayerId,
     campanaBellType,
+    campanaDesign,
     clearPendingHistoryTimer,
     commitPendingHistory,
     createEditorSnapshot,
@@ -2014,7 +2031,7 @@ export default function PersonalizaExperience() {
                   ))}
                 </select>
               </label>
-                <label className={styles.fieldLabel}>
+              <label className={`${styles.fieldLabel}${isPresetCampanaDesign ? ` ${styles.fieldLabelDisabled}` : ""}`}>
                   Tipo
                 <select
                   value={campanaBellType}
@@ -2022,10 +2039,23 @@ export default function PersonalizaExperience() {
                   onFocus={handleFocusCampanaType}
                   onClick={handleFocusCampanaType}
                   onBlur={handleBlurCampanaType}
-                    className={styles.selectField}
+                  className={styles.selectField}
+                  disabled={isPresetCampanaDesign}
                   >
-                    <option value="cerrada">Cerrada</option>
+                  <option value="cerrada">Cerrada</option>
                   <option value="abierta">Abierta</option>
+                </select>
+              </label>
+              <label className={styles.fieldLabel}>
+                Diseño
+                <select
+                  value={campanaDesign}
+                  onChange={(event) => setCampanaDesign(event.target.value as "color" | "colombia" | "puerto_rico")}
+                  className={styles.selectField}
+                >
+                  <option value="color">Color</option>
+                  <option value="colombia">Colombia</option>
+                  <option value="puerto_rico">Puerto Rico</option>
                 </select>
               </label>
             </div>
@@ -2046,13 +2076,15 @@ export default function PersonalizaExperience() {
             </label>
           ) : null}
 
-          <div className={styles.fieldLabel}>
+          <div className={`${styles.fieldLabel}${isPresetCampanaDesign ? ` ${styles.fieldLabelDisabled}` : ""}`}>
             Estilo
+            <div className={`${styles.styleSection}${isPresetCampanaDesign ? ` ${styles.styleSectionDisabled}` : ""}`}>
             <div className={styles.paintModeSwitch}>
               <button
                 type="button"
                 className={`${styles.paintModeButton}${paintMode === "solid" ? ` ${styles.paintModeButtonActive}` : ""}`}
                 onClick={() => setPaintMode("solid")}
+                disabled={isPresetCampanaDesign}
               >
                 Un color
               </button>
@@ -2061,6 +2093,7 @@ export default function PersonalizaExperience() {
                   type="button"
                   className={`${styles.paintModeButton}${paintMode === "gradient" ? ` ${styles.paintModeButtonActive}` : ""}`}
                   onClick={() => setPaintMode("gradient")}
+                  disabled={isPresetCampanaDesign}
                 >
                   Degradado
                 </button>
@@ -2074,6 +2107,7 @@ export default function PersonalizaExperience() {
                     key={preset.id}
                     type="button"
                     onClick={() => {
+                      if (isPresetCampanaDesign) return;
                       if (paintMode === "solid") {
                         setSolidColorSource("preset");
                         setSolidPresetId(preset.id);
@@ -2087,6 +2121,7 @@ export default function PersonalizaExperience() {
                       setGradientPosition(50);
                     }}
                     className={`${styles.styleButton}${isActive ? ` ${styles.styleButtonActive}` : ""}`}
+                    disabled={isPresetCampanaDesign}
                   >
                     <span className={styles.styleSwatch} style={{ background: preset.fill }} aria-hidden="true" />
                     <span>{preset.label}</span>
@@ -2100,6 +2135,7 @@ export default function PersonalizaExperience() {
                   type="button"
                   className={`${styles.styleButton}${solidColorSource === "custom" ? ` ${styles.styleButtonActive}` : ""}`}
                   onClick={() => setSolidColorSource("custom")}
+                  disabled={isPresetCampanaDesign}
                 >
                   <span className={styles.styleSwatch} style={{ background: solidPaintColor }} aria-hidden="true" />
                   <span>Color personalizado</span>
@@ -2115,6 +2151,7 @@ export default function PersonalizaExperience() {
                     }}
                     style={getColorPickerStyle(solidPaintColor)}
                     className={styles.colorPicker}
+                    disabled={isPresetCampanaDesign}
                   />
                 </label>
               </div>
@@ -2129,6 +2166,7 @@ export default function PersonalizaExperience() {
                       onChange={(event) => setGradientStartColor(event.target.value)}
                       style={getColorPickerStyle(gradientStartColor)}
                       className={styles.colorPicker}
+                      disabled={isPresetCampanaDesign}
                     />
                   </label>
                   <label className={styles.sliderField}>
@@ -2139,6 +2177,7 @@ export default function PersonalizaExperience() {
                       onChange={(event) => setGradientEndColor(event.target.value)}
                       style={getColorPickerStyle(gradientEndColor)}
                       className={styles.colorPicker}
+                      disabled={isPresetCampanaDesign}
                     />
                   </label>
                 </div>
@@ -2151,9 +2190,14 @@ export default function PersonalizaExperience() {
                     step={1}
                     value={gradientPosition}
                     onChange={(event) => setGradientPosition(Number(event.target.value))}
+                    disabled={isPresetCampanaDesign}
                   />
                 </label>
               </div>
+            ) : null}
+            </div>
+            {isPresetCampanaDesign ? (
+              <span className={styles.helperText}>Estilo bloqueado para diseños predefinidos (Colombia/Puerto Rico).</span>
             ) : null}
           </div>
 
@@ -2448,6 +2492,7 @@ export default function PersonalizaExperience() {
                   product={product}
                   campanaType={selectedCampanaType}
                   campanaBellType={campanaBellType}
+                  campanaDesign={campanaDesign}
                   focusOnText={shouldFocusTextIn3D}
                   focusTextOffsetX={activeLayerTransform.offsetX}
                   focusTextOffsetY={activeLayerTransform.offsetY}

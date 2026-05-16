@@ -32,6 +32,10 @@ const CAMPANA_MODEL_FALLBACK_MAP: Record<"clasica" | "cromada", string> = {
   clasica: "/personaliza/models/campana-v1.glb",
   cromada: "/personaliza/models/campana-cromada-v1.glb",
 };
+const CAMPANA_ABIERTA_DESIGN_MODEL_MAP: Record<"colombia" | "puerto_rico", string> = {
+  colombia: "/personaliza/models/camapana-colombiav1test.glb",
+  puerto_rico: "/personaliza/models/camapana-pr.glb",
+};
 const DEBUG_TEXT_TEXTURE_MODE = false;
 const SHOW_DEBUG_PANEL = true;
 const TEXT_LAYOUT_BY_PRODUCT: Record<
@@ -466,6 +470,8 @@ const MARACA_HEAD_STITCHES_TEXTURE_SRC = "/personaliza/models/detalles/costuras.
 const MARACA_HEAD_STITCHES_OPACITY = 0.58;
 const MARACA_HEAD_STICKER_TEXTURE_SRC = "/personaliza/models/detalles/logo-kensar-sticker.png";
 const MARACA_HEAD_STICKER_OPACITY = 1;
+const CAMPANA_PR_TEXT_ZONE_BASE_TEXTURE_SRC =
+  "/personaliza/models/extracted/01_Sin_ti_tulo-1Mesa_de_trabajo_5.png";
 const MARACA_RIBBON_LABEL_TEXT = "KENSAR ELECTRONIC ";
 const MARACA_WOOD_TEXT_PAINT: PaintConfig = {
   mode: "solid",
@@ -475,7 +481,17 @@ const MARACA_DEFAULT_ROUGHNESS = 1;
 const MARACA_DEFAULT_METALLIC = 0;
 const DEFAULT_MATERIAL_CANDIDATES = {
   paint: ["matpaint", "paint", "body", "base", "main", "material", "default"],
-  text: ["mat_text_zone", "text_zone", "text", "decal", "label", "logo"],
+  text: [
+    "mat_text_zone",
+    "mat_text_zone2",
+    "mat_text_zone_pr",
+    "mat_text_zone_co",
+    "text_zone",
+    "text",
+    "decal",
+    "label",
+    "logo",
+  ],
 };
 const MATERIAL_CANDIDATES_BY_PRODUCT: Record<
   "campana" | "guiro" | "maraca",
@@ -483,7 +499,14 @@ const MATERIAL_CANDIDATES_BY_PRODUCT: Record<
 > = {
   campana: {
     paint: ["matpaint", "cromado", ...DEFAULT_MATERIAL_CANDIDATES.paint],
-    text: ["mat_text_zone", "mat_text_zone_cromado", ...DEFAULT_MATERIAL_CANDIDATES.text],
+    text: [
+      "mat_text_zone",
+      "mat_text_zone2",
+      "mat_text_zone_pr",
+      "mat_text_zone_co",
+      "mat_text_zone_cromado",
+      ...DEFAULT_MATERIAL_CANDIDATES.text,
+    ],
   },
   guiro: {
     paint: ["textura_guiro", "matpaint", "guiro_body", "guiro", ...DEFAULT_MATERIAL_CANDIDATES.paint],
@@ -504,6 +527,7 @@ type ModelPreview3DProps = {
   product: "campana" | "guiro" | "maraca";
   campanaType?: "clasica" | "cromada";
   campanaBellType?: "abierta" | "cerrada";
+  campanaDesign?: "color" | "colombia" | "puerto_rico";
   focusOnText?: boolean;
   focusTextOffsetX?: number;
   focusTextOffsetY?: number;
@@ -517,6 +541,7 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
     product,
     campanaType,
     campanaBellType = "abierta",
+    campanaDesign = "color",
     focusOnText = false,
     focusTextOffsetX = 0,
     focusTextOffsetY = 0,
@@ -539,6 +564,9 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
   const maracaStitchesImagePromiseRef = useRef<Promise<HTMLImageElement> | null>(null);
   const maracaStickerImageRef = useRef<HTMLImageElement | null>(null);
   const maracaStickerImagePromiseRef = useRef<Promise<HTMLImageElement> | null>(null);
+  const campanaPrTextZoneBaseImageRef = useRef<HTMLImageElement | null>(null);
+  const campanaPrTextZoneBaseImagePromiseRef = useRef<Promise<HTMLImageElement> | null>(null);
+  const originalBaseImageByMaterialRef = useRef<Record<string, CanvasImageSource | null>>({});
   const cameraStateRef = useRef<CameraState>(getDefaultCameraStateByProduct(product));
   const cameraTargetRef = useRef<CameraTargetState>(DEFAULT_CAMERA_TARGET);
   const focusSnapshotRef = useRef<{ camera: CameraState; target: CameraTargetState } | null>(null);
@@ -548,10 +576,13 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
   const modelSrc = useMemo(() => {
     if (product === "campana") {
       const variant = campanaType || "clasica";
+      if (variant === "clasica" && campanaBellType === "abierta" && campanaDesign !== "color") {
+        return CAMPANA_ABIERTA_DESIGN_MODEL_MAP[campanaDesign] || CAMPANA_MODEL_MAP[variant][campanaBellType];
+      }
       return CAMPANA_MODEL_MAP[variant][campanaBellType] || CAMPANA_MODEL_FALLBACK_MAP[variant];
     }
     return PRODUCT_MODEL_MAP[product] ?? null;
-  }, [campanaBellType, campanaType, product]);
+  }, [campanaBellType, campanaDesign, campanaType, product]);
   const [debugSummary, setDebugSummary] = useState("Esperando carga de modelo...");
   const [hoveredControl, setHoveredControl] = useState<
     | "left"
@@ -695,10 +726,11 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
       productId: "campana" | "guiro" | "maraca",
       backgroundPaint: PaintConfig,
       options?: {
-        backgroundMode?: "paint" | "white";
+        backgroundMode?: "paint" | "white" | "transparent";
         paintSliceY?: { start: number; end: number };
         paintAngleOffsetDeg?: number;
         enhanceLightTextOnChrome?: boolean;
+        baseImage?: CanvasImageSource | null;
       }
     ) => {
       const canvas = document.createElement("canvas");
@@ -712,6 +744,40 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
       if (DEBUG_TEXT_TEXTURE_MODE) {
         context.fillStyle = "#fff4c2";
         context.fillRect(0, 0, canvas.width, canvas.height);
+      } else if (options?.baseImage) {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(options.baseImage, 0, 0, canvas.width, canvas.height);
+      } else if (backgroundMode === "transparent") {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+      } else if (
+        productId === "campana" &&
+        campanaBellType === "abierta" &&
+        campanaDesign === "colombia" &&
+        backgroundMode === "paint"
+      ) {
+        // En campana Colombia, la zona de texto debe conservar base tricolor
+        // para evitar el placeholder blanco al regenerar la textura.
+        const yellowWidth = Math.round(canvas.width * 0.45);
+        const blueWidth = Math.round(canvas.width * 0.275);
+        const redWidth = canvas.width - yellowWidth - blueWidth;
+        context.fillStyle = "#d9d24a";
+        context.fillRect(0, 0, yellowWidth, canvas.height);
+        context.fillStyle = "#1f4fd6";
+        context.fillRect(yellowWidth, 0, blueWidth, canvas.height);
+        context.fillStyle = "#d92424";
+        context.fillRect(yellowWidth + blueWidth, 0, redWidth, canvas.height);
+      } else if (
+        productId === "campana" &&
+        campanaBellType === "abierta" &&
+        campanaDesign === "puerto_rico" &&
+        backgroundMode === "paint"
+      ) {
+        // Base PR de la zona de texto: solo franjas (como UV de mat_text_zone3).
+        const stripeHeight = canvas.height / 5;
+        for (let index = 0; index < 5; index += 1) {
+          context.fillStyle = index % 2 === 0 ? "#e11d2e" : "#ffffff";
+          context.fillRect(0, Math.round(index * stripeHeight), canvas.width, Math.ceil(stripeHeight));
+        }
       } else if (backgroundMode === "white") {
         context.fillStyle = "#f8fafc";
         context.fillRect(0, 0, canvas.width, canvas.height);
@@ -776,6 +842,11 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
         const normalizedTextColor = toNormalizedHexColor(layer.textColor);
         const textLuminance = toLuminance(normalizedTextColor);
         const boostLightText = Boolean(options?.enhanceLightTextOnChrome && textLuminance > 0.72);
+        const suppressStroke =
+          backgroundMode === "transparent" &&
+          productId === "campana" &&
+          campanaBellType === "abierta" &&
+          (campanaDesign === "colombia" || campanaDesign === "puerto_rico");
         const effectiveTextColor = boostLightText ? "#ffffff" : normalizedTextColor;
         context.fillStyle = effectiveTextColor;
         context.strokeStyle = boostLightText
@@ -838,16 +909,18 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
         for (const line of limitedLines) {
           const drawMaxWidth = maxWidth / scaleXRatio;
           if (boostLightText) {
-            context.lineWidth = Math.max(3, Math.round(scaledFontSize * 0.1));
-            context.strokeText(line, 0, y, drawMaxWidth);
             context.fillText(line, 0, y, drawMaxWidth);
-            context.lineWidth = Math.max(2, Math.round(scaledFontSize * 0.05));
-            context.strokeStyle = "rgba(255, 255, 255, 0.35)";
-            context.strokeText(line, 0, y, drawMaxWidth);
-            context.fillStyle = "#ffffff";
-            context.fillText(line, 0, y, drawMaxWidth);
+            if (!suppressStroke) {
+              context.lineWidth = Math.max(3, Math.round(scaledFontSize * 0.1));
+              context.strokeText(line, 0, y, drawMaxWidth);
+              context.lineWidth = Math.max(2, Math.round(scaledFontSize * 0.05));
+              context.strokeStyle = "rgba(255, 255, 255, 0.35)";
+              context.strokeText(line, 0, y, drawMaxWidth);
+              context.fillStyle = "#ffffff";
+              context.fillText(line, 0, y, drawMaxWidth);
+            }
           } else {
-            context.strokeText(line, 0, y, drawMaxWidth);
+            if (!suppressStroke) context.strokeText(line, 0, y, drawMaxWidth);
             context.fillText(line, 0, y, drawMaxWidth);
           }
           y += lineHeight;
@@ -857,7 +930,7 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
 
       return canvas;
     },
-    [paintCanvasBackground, toLuminance, toNormalizedHexColor]
+    [campanaBellType, campanaDesign, campanaType, paintCanvasBackground, toLuminance, toNormalizedHexColor]
   );
 
   const applyModelCustomization = useCallback(async () => {
@@ -891,6 +964,61 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
     }
 
     const materials = viewer.model.materials;
+    const resolveMaterialBaseImage = (material: {
+      name?: string;
+      pbrMetallicRoughness?: {
+        baseColorTexture?: unknown;
+      };
+    }): CanvasImageSource | null => {
+      const materialName = (material.name || "").trim();
+      if (materialName && Object.prototype.hasOwnProperty.call(originalBaseImageByMaterialRef.current, materialName)) {
+        return originalBaseImageByMaterialRef.current[materialName] || null;
+      }
+      const info = material.pbrMetallicRoughness?.baseColorTexture as
+        | {
+            texture?: {
+              source?: {
+                element?: unknown;
+                image?: unknown;
+              };
+            };
+          }
+        | undefined;
+      const source = info?.texture?.source;
+      const element = source?.element;
+      const image = source?.image;
+      const isCanvasSource = (value: unknown): value is CanvasImageSource =>
+        Boolean(
+          value &&
+          (typeof ImageBitmap !== "undefined" && value instanceof ImageBitmap ||
+            typeof HTMLImageElement !== "undefined" && value instanceof HTMLImageElement ||
+            typeof HTMLCanvasElement !== "undefined" && value instanceof HTMLCanvasElement ||
+            typeof OffscreenCanvas !== "undefined" && value instanceof OffscreenCanvas ||
+            typeof HTMLVideoElement !== "undefined" && value instanceof HTMLVideoElement ||
+            typeof SVGImageElement !== "undefined" && value instanceof SVGImageElement)
+        );
+      if (isCanvasSource(element)) return element;
+      if (isCanvasSource(image)) return image;
+      return null;
+    };
+    const cacheOriginalMaterialBaseImage = (material: {
+      name?: string;
+      pbrMetallicRoughness?: {
+        baseColorTexture?: unknown;
+      };
+    }) => {
+      const materialName = (material.name || "").trim();
+      if (!materialName) return;
+      if (Object.prototype.hasOwnProperty.call(originalBaseImageByMaterialRef.current, materialName)) return;
+      const image = resolveMaterialBaseImage(material);
+      originalBaseImageByMaterialRef.current[materialName] = image || null;
+    };
+    for (const material of materials) cacheOriginalMaterialBaseImage(material);
+    const preserveCampanaBaseTexture =
+      product === "campana" &&
+      campanaType !== "cromada" &&
+      campanaBellType === "abierta" &&
+      campanaDesign !== "color";
     const materialNames = materials.map((material) => (material.name || "(sin nombre)").trim());
     const productCandidates = MATERIAL_CANDIDATES_BY_PRODUCT[product];
     const paintCandidates =
@@ -900,12 +1028,27 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
     const textCandidates =
       product === "campana" && campanaType === "cromada"
         ? ["mat_text_zone_cromado", ...productCandidates.text]
-        : productCandidates.text;
+        : product === "campana" && campanaDesign === "colombia"
+          ? ["mat_text_zone2", "mat_text_zone_co", ...productCandidates.text]
+          : product === "campana" && campanaDesign === "puerto_rico"
+            ? ["mat_text_zone3", "mat_text_zone_pr", ...productCandidates.text]
+            : productCandidates.text;
     let paintMaterial = resolveMaterialByCandidates(materials, paintCandidates) || materials[0];
+    let textMaterial = resolveMaterialByCandidates(materials, textCandidates) || paintMaterial;
+    if (preserveCampanaBaseTexture && textMaterial === paintMaterial) {
+      const nonTextMaterial =
+        materials.find((material) => {
+          if (material === textMaterial) return false;
+          const name = normalizeKey(material.name || "");
+          return !name.includes("text") && !name.includes("mat_text_zone");
+        }) || null;
+      if (nonTextMaterial) {
+        paintMaterial = nonTextMaterial;
+      }
+    }
     const paintPbr = paintMaterial?.pbrMetallicRoughness;
     paintPbr?.setBaseColorFactor?.([1, 1, 1, 1]);
 
-    let textMaterial = resolveMaterialByCandidates(materials, textCandidates) || paintMaterial;
     let usesSingleMaterialFallback = textMaterial === paintMaterial;
     let guiroWoodTintApplied = false;
     let guiroTeethMatteApplied = false;
@@ -1097,6 +1240,29 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
       product === "maraca"
         ? textLayers.filter((layer) => layer.face === "maraca_right").slice(0, 1)
         : [];
+    let campanaPrBaseImage: HTMLImageElement | null = null;
+    if (product === "campana" && campanaBellType === "abierta" && campanaDesign === "puerto_rico") {
+      const ensureCampanaPrBaseImage = async () => {
+        if (campanaPrTextZoneBaseImageRef.current) return campanaPrTextZoneBaseImageRef.current;
+        if (!campanaPrTextZoneBaseImagePromiseRef.current) {
+          campanaPrTextZoneBaseImagePromiseRef.current = new Promise<HTMLImageElement>((resolve, reject) => {
+            const image = new window.Image();
+            image.onload = () => {
+              campanaPrTextZoneBaseImageRef.current = image;
+              resolve(image);
+            };
+            image.onerror = () => reject(new Error("No se pudo cargar base PR text zone."));
+            image.src = CAMPANA_PR_TEXT_ZONE_BASE_TEXTURE_SRC;
+          });
+        }
+        return campanaPrTextZoneBaseImagePromiseRef.current;
+      };
+      try {
+        campanaPrBaseImage = await ensureCampanaPrBaseImage();
+      } catch {
+        campanaPrBaseImage = null;
+      }
+    }
     const textTextureCanvas = buildTextCanvas(
       product === "maraca" ? maracaTextLayersLeft : textLayers,
       product,
@@ -1104,6 +1270,7 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
       {
       backgroundMode: product === "guiro" ? "white" : "paint",
       enhanceLightTextOnChrome: product === "campana" && campanaType === "cromada",
+      baseImage: campanaPrBaseImage,
       }
     );
     const guiroFaceLayers: Record<"front_up" | "front_down" | "left" | "right", TextLayer3D[]> = {
@@ -1340,11 +1507,13 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
       return false;
     };
 
-    const paintApplied = usesSingleMaterialFallback
-      ? applyTextureToMaterial(paintMaterial, textTexture, true)
-      : paintMaterial
-        ? applyTextureToMaterial(paintMaterial, paintTexture)
-        : false;
+    const paintApplied = preserveCampanaBaseTexture
+      ? true
+      : usesSingleMaterialFallback
+        ? applyTextureToMaterial(paintMaterial, textTexture, true)
+        : paintMaterial
+          ? applyTextureToMaterial(paintMaterial, paintTexture)
+          : false;
     if (product === "maraca" && maracaRibbonMaterials.length && maracaRibbonTexture) {
       const materialName = maracaRibbonMaterials.map((material) => (material.name || "").trim()).join("|");
       const needsApply =
@@ -1383,7 +1552,9 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
         }
       }
     }
-    let textApplied = applyTextureToMaterial(textMaterial, textTexture, true);
+    let textApplied = preserveCampanaBaseTexture && usesSingleMaterialFallback
+      ? true
+      : applyTextureToMaterial(textMaterial, textTexture, true);
     if (product === "maraca") {
       const leftApplied = maracaTextMaterialLeft ? applyTextureToMaterial(maracaTextMaterialLeft, textTexture, true) : false;
       const rightTexture = maracaTextTextureRight || textTexture;
@@ -1409,10 +1580,12 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
       );
       return;
     }
+    const selectedPaintMaterialName = (paintMaterial?.name || "(sin nombre)").trim();
+    const selectedTextMaterialName = (textMaterial?.name || "(sin nombre)").trim();
     setDebugSummary(
-      `OK text+paint | Capas: ${textLayers.length} | Modo pintura: ${paintConfig.mode} | Materiales: ${materialNames.join(", ")}${usesSingleMaterialFallback ? " | Fallback: un solo material (paint+text)" : ""}${product === "guiro" ? ` | Caras texto: ${guiroTextFacesApplied.join(", ") || "sin caras"} | Madera: ${guiroWoodTintApplied ? "ok" : "no encontrada"} | Dientes mate: ${guiroTeethMatteApplied ? "ok" : "no encontrados"}` : ""}${product === "maraca" ? ` | Cabeza pintable: ${maracaHeadPaintApplied ? "ok" : "no encontrada"} | Cinta fija: ${maracaRibbonFixedApplied ? "ok" : "no encontrada"} | Cinta label: ${maracaRibbonLabelApplied ? "ok" : "no aplicado"} | Logo placeholder: ${maracaLogoApplied ? "ok" : "no aplicado"} | Madera fija: ${maracaWoodFixedApplied ? "ok" : "no encontrada"} | Madera txt base: ${maracaWoodTextBaseApplied ? "ok" : "no encontrada"}` : ""}`
+      `OK text+paint | Capas: ${textLayers.length} | Modo pintura: ${paintConfig.mode} | Materiales: ${materialNames.join(", ")} | Seleccionados: paint=${selectedPaintMaterialName}, text=${selectedTextMaterialName}${preserveCampanaBaseTexture ? " | Base GLB preservada (diseño predefinido)" : ""}${usesSingleMaterialFallback ? " | Fallback: un solo material (paint+text)" : ""}${product === "guiro" ? ` | Caras texto: ${guiroTextFacesApplied.join(", ") || "sin caras"} | Madera: ${guiroWoodTintApplied ? "ok" : "no encontrada"} | Dientes mate: ${guiroTeethMatteApplied ? "ok" : "no encontrados"}` : ""}${product === "maraca" ? ` | Cabeza pintable: ${maracaHeadPaintApplied ? "ok" : "no encontrada"} | Cinta fija: ${maracaRibbonFixedApplied ? "ok" : "no encontrada"} | Cinta label: ${maracaRibbonLabelApplied ? "ok" : "no aplicado"} | Logo placeholder: ${maracaLogoApplied ? "ok" : "no aplicado"} | Madera fija: ${maracaWoodFixedApplied ? "ok" : "no encontrada"} | Madera txt base: ${maracaWoodTextBaseApplied ? "ok" : "no encontrada"}` : ""}`
     );
-  }, [buildPaintCanvas, buildTextCanvas, campanaType, paintCanvasBackground, paintConfig, product, textLayers]);
+  }, [buildPaintCanvas, buildTextCanvas, campanaBellType, campanaDesign, campanaType, paintCanvasBackground, paintConfig, product, textLayers]);
 
   useEffect(() => {
     const viewer = modelViewerRef.current;
@@ -1450,6 +1623,9 @@ const ModelPreview3D = forwardRef<ModelPreview3DHandle, ModelPreview3DProps>(fun
     maracaLogoTextureRef.current = null;
     maracaLogoMaterialNameRef.current = "";
     maracaLogoAppliedRef.current = false;
+    originalBaseImageByMaterialRef.current = {};
+    campanaPrTextZoneBaseImageRef.current = null;
+    campanaPrTextZoneBaseImagePromiseRef.current = null;
     setIsUpsideDown(false);
     queueMicrotask(() => {
       applyCameraState(defaultCameraState);

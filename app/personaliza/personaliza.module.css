@@ -277,9 +277,23 @@
   letter-spacing: 0.01em;
 }
 
+.fieldLabelDisabled {
+  color: #64748b;
+}
+
+.styleSection {
+  display: grid;
+  gap: 8px;
+}
+
+.styleSectionDisabled {
+  opacity: 0.5;
+  filter: saturate(0.35);
+}
+
 .sizeTypeRow {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   align-items: end;
 }
@@ -1164,6 +1178,10 @@
 
   .workspace {
     grid-template-columns: 1fr;
+  }
+
+  .sizeTypeRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .editorCanvas,
