@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useWebCart } from "@/app/components/WebCartProvider";
+import { addToCart } from "@/app/lib/meta-pixel";
 
 export default function AddToCartButton({
   productId,
@@ -51,6 +52,14 @@ export default function AddToCartButton({
         unit_price: unitPrice,
         compare_price: comparePrice,
       });
+      addToCart(
+        {
+          id: productId,
+          name: productName,
+          price: unitPrice,
+        },
+        quantity
+      );
       const sourceRect = buttonRef.current?.getBoundingClientRect();
       if (sourceRect) {
         window.dispatchEvent(
