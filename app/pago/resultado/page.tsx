@@ -18,6 +18,17 @@ function formatMoney(value: number) {
 }
 
 type CheckoutResultContext = {
+  cartItems?: Array<{
+    id: number;
+    product_id: number;
+    product_name: string;
+    image_url?: string | null;
+    quantity: number;
+    unit_price: number;
+    line_total: number;
+  }>;
+  subtotal?: number;
+  total?: number;
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string | null;
@@ -96,6 +107,15 @@ function isApprovedFromBackend(status: WebCheckoutOrderPaymentStatus | null): bo
 function isTerminalPaymentStatus(value?: string | null): boolean {
   const normalized = normalizeStatusValue(value);
   return ["approved", "failed", "cancelled", "refunded"].includes(normalized);
+}
+
+function normalizeTerminalPaymentQueryValue(value?: string | null): "approved" | "failed" | "cancelled" | "refunded" | null {
+  const normalized = normalizeStatusValue(value);
+  if (normalized === "approved") return "approved";
+  if (normalized === "failed") return "failed";
+  if (normalized === "cancelled") return "cancelled";
+  if (normalized === "refunded") return "refunded";
+  return null;
 }
 
 function PendingRingIcon({ size = 26 }: { size?: number }) {
@@ -264,6 +284,8 @@ function CheckoutResultContent() {
     const params = new URLSearchParams();
     params.set("orderId", String(orderId));
     if (providerHint) params.set("provider", providerHint);
+    const terminalPayment = normalizeTerminalPaymentQueryValue(status.payment_status);
+    if (terminalPayment) params.set("payment", terminalPayment);
     const nextUrl = `/pago/resultado?${params.toString()}`;
     if (window.location.pathname + window.location.search === nextUrl) return;
     window.history.replaceState({}, "", nextUrl);
@@ -407,7 +429,20 @@ function CheckoutResultContent() {
   const paymentStatusLabel = getPaymentStatusLabel(status?.payment_status || paymentHint || "pending");
   const mapAddress = deliveryMode === "pickup" ? PICKUP_ADDRESS_FULL : shippingAddress;
   const mapEmbedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(mapAddress)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-  const summaryItems = status?.items || [];
+  const fallbackSummaryItems =
+    checkoutContext?.cartItems?.map((item, index) => ({
+      id: Number(item.id) || Number(item.product_id) || index + 1,
+      product_id: Number(item.product_id) || 0,
+      product_name: item.product_name || "Producto",
+      product_slug: "",
+      product_sku: null,
+      image_url: item.image_url || null,
+      quantity: Math.max(1, Number(item.quantity) || 1),
+      unit_price: Number(item.unit_price) || 0,
+      line_discount_value: 0,
+      line_total: Number(item.line_total) || 0,
+    })) || [];
+  const summaryItems = status?.items?.length ? status.items : fallbackSummaryItems;
   const hasSummaryItems = summaryItems.length > 0;
   const leadSummaryItem = summaryItems[0] || null;
   const leadSummaryImageUrl = normalizeImageUrl(leadSummaryItem?.image_url);
@@ -575,8 +610,8 @@ function CheckoutResultContent() {
         <aside ref={summaryCardRef} className="checkout-summary-card checkout-result-summary-card">
           <h2>Resumen de tu compra</h2>
           <div className="checkout-summary-items">
-            {status?.items?.length ? (
-              status.items.map((item) => {
+            {summaryItems.length ? (
+              summaryItems.map((item) => {
                 const resolvedImageUrl = normalizeImageUrl(item.image_url);
                 return (
                 <article key={item.id} className="checkout-summary-item">
@@ -604,7 +639,7 @@ function CheckoutResultContent() {
 
           <div className="checkout-summary-line">
             <span>Subtotal</span>
-            <strong>{formatMoney(status?.subtotal || 0)}</strong>
+            <strong>{formatMoney(status?.subtotal || checkoutContext?.subtotal || 0)}</strong>
           </div>
           {(status?.discount_amount || 0) > 0 ? (
             <div className="checkout-summary-line">
@@ -619,7 +654,7 @@ function CheckoutResultContent() {
           <div className="checkout-summary-line checkout-summary-total">
             <span>Total</span>
             <strong>
-              <span className="checkout-summary-currency">COP</span> {formatMoney(status?.total || 0)}
+              <span className="checkout-summary-currency">COP</span> {formatMoney(status?.total || checkoutContext?.total || 0)}
             </strong>
           </div>
         </aside>
@@ -645,7 +680,7 @@ function CheckoutResultContent() {
               <span className="checkout-mobile-floating-thumb-badge">+{extraSummaryItemsCount}</span>
             ) : null}
           </span>
-          <strong>{formatMoney(status?.total || 0)}</strong>
+          <strong>{formatMoney(status?.total || checkoutContext?.total || 0)}</strong>
           <span className="checkout-mobile-floating-chevron" aria-hidden="true">
             <svg viewBox="0 0 16 10" fill="none">
               <path d="m2 2 6 6 6-6" />

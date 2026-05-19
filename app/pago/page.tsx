@@ -88,6 +88,17 @@ type CheckoutSnapshot = {
 };
 
 type CheckoutResultContext = {
+  cartItems: Array<{
+    id: number;
+    product_id: number;
+    product_name: string;
+    image_url?: string | null;
+    quantity: number;
+    unit_price: number;
+    line_total: number;
+  }>;
+  subtotal: number;
+  total: number;
   customerName: string;
   customerEmail: string;
   customerPhone: string | null;
@@ -521,6 +532,7 @@ function PagoPageContent() {
   const effectiveSnapshot = buildSnapshotFromCart(cart);
   const items = effectiveSnapshot.items;
   const hasItems = items.length > 0;
+  const subtotal = effectiveSnapshot.subtotal;
   const subtotalBase = effectiveSnapshot.subtotalBase;
   const couponDiscountAmount = effectiveSnapshot.couponDiscountAmount;
   const totalWithCoupon = effectiveSnapshot.totalWithCoupon;
@@ -741,6 +753,17 @@ function PagoPageContent() {
             .filter(Boolean)
             .join(", ");
     const checkoutResultContext: CheckoutResultContext = {
+      cartItems: items.map((item) => ({
+        id: item.id,
+        product_id: item.product_id,
+        product_name: item.product_name,
+        image_url: item.image_url || null,
+        quantity: Math.max(1, Number(item.quantity) || 1),
+        unit_price: Number(item.unit_price) || 0,
+        line_total: Number(item.line_total) || 0,
+      })),
+      subtotal,
+      total: totalWithCoupon,
       customerName: [firstName, lastName].filter(Boolean).join(" ").trim() || email,
       customerEmail: email,
       customerPhone: checkoutPhone || null,
