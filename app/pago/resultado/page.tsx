@@ -390,7 +390,7 @@ function CheckoutResultContent() {
       return "El pago no fue aprobado. Puedes intentar nuevamente con otro medio.";
     }
     if (hintPending) {
-      return "Tu pago está pendiente de confirmación por el proveedor.";
+      return "Estamos validando tu pago con la plataforma de pago. La confirmación puede tardar unos segundos o, en algunos casos, unos minutos.";
     }
     return "Estamos confirmando el estado del pago con el proveedor.";
   })();
