@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
@@ -27,6 +28,10 @@ import { useWebCustomer } from "@/app/components/WebCustomerProvider";
 
 const GUEST_CART_STORAGE_KEY = "kensar_web_guest_cart_v1";
 const CART_MAX_UNITS_PER_ITEM = 3;
+const PERSONALIZA_CHECKOUT_CONTEXT_STORAGE_KEY = "kensar_web_personaliza_checkout_context_v1";
+const CHECKOUT_COMPLETED_EVENT_NAME = "kensar:checkout-completed";
+const CHECKOUT_CLEARED_ORDER_PREFIX = "kensar_web_checkout_cleared_order_";
+const CART_REFRESH_THROTTLE_MS = 2000;
 
 type GuestCartItemInput = {
   product_name: string;
@@ -152,6 +157,7 @@ export default function WebCartProvider({
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const refreshThrottleRef = useRef(0);
 
   const hasActiveCoupon = useCallback((nextCart: WebCart | null) => {
     return Boolean(nextCart?.coupon_code && nextCart.coupon_code.trim().length > 0);
@@ -254,6 +260,80 @@ export default function WebCartProvider({
       active = false;
     };
   }, [authenticated, customerLoading, normalizeAuthenticatedCouponSession]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const runThrottledRefresh = () => {
+      const now = Date.now();
+      if (now - refreshThrottleRef.current < CART_REFRESH_THROTTLE_MS) return;
+      refreshThrottleRef.current = now;
+      void refreshCart();
+    };
+
+    const onFocus = () => {
+      runThrottledRefresh();
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState !== "visible") return;
+      runThrottledRefresh();
+    };
+
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [refreshCart]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const onCheckoutCompleted = (event: Event) => {
+      const customEvent = event as CustomEvent<{ orderId?: number; approved?: boolean }>;
+      const detail = customEvent.detail || {};
+      if (!detail.approved) return;
+      const orderId = Number(detail.orderId || 0);
+      if (orderId > 0) {
+        const idempotencyKey = `${CHECKOUT_CLEARED_ORDER_PREFIX}${orderId}`;
+        const alreadyProcessed =
+          window.sessionStorage.getItem(idempotencyKey) === "1" ||
+          window.localStorage.getItem(idempotencyKey) === "1";
+        if (alreadyProcessed) return;
+        window.sessionStorage.setItem(idempotencyKey, "1");
+        window.localStorage.setItem(idempotencyKey, "1");
+      }
+
+      window.localStorage.removeItem(GUEST_CART_STORAGE_KEY);
+      window.localStorage.removeItem(PERSONALIZA_CHECKOUT_CONTEXT_STORAGE_KEY);
+
+      if (!authenticated) {
+        const nextGuest = buildGuestCart();
+        setCart(nextGuest);
+        setCouponSessionMarker(false);
+        return;
+      }
+
+      void (async () => {
+        try {
+          await clearWebCart();
+        } catch {
+          // Fallback to backend source of truth in case clear endpoint races with payment processing.
+        } finally {
+          await refreshCart();
+          await refreshOrders();
+        }
+      })();
+    };
+
+    window.addEventListener(CHECKOUT_COMPLETED_EVENT_NAME, onCheckoutCompleted as EventListener);
+    return () => {
+      window.removeEventListener(CHECKOUT_COMPLETED_EVENT_NAME, onCheckoutCompleted as EventListener);
+    };
+  }, [authenticated, refreshCart, refreshOrders]);
 
   const addItem = useCallback(
     async (productId: number, quantity = 1, guestItem?: GuestCartItemInput) => {

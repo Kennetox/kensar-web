@@ -6832,6 +6832,12 @@ body .main-wrapper::before {
   font-weight: 900;
 }
 
+.checkout-pending-ring-spin {
+  animation: checkout-pending-ring-spin 0.95s linear infinite;
+  will-change: transform;
+  transform-origin: center;
+}
+
 .checkout-result-flow-card.is-failed .checkout-result-hero-icon-v2 {
   background: #fee2e2;
   color: #991b1b;
@@ -6880,6 +6886,15 @@ body .main-wrapper::before {
   100% {
     transform: scale(1) rotate(0deg);
     opacity: 1;
+  }
+}
+
+@keyframes checkout-pending-ring-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
   }
 }
 

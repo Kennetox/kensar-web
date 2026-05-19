@@ -38,6 +38,8 @@ const GUEST_CART_STORAGE_KEY = "kensar_web_guest_cart_v1";
 const PERSONALIZA_CHECKOUT_CONTEXT_STORAGE_KEY = "kensar_web_personaliza_checkout_context_v1";
 const SUPPORT_EMAIL = "kensarelec@gmail.com";
 const META_PURCHASE_SENT_PREFIX = "meta_purchase_sent_order_";
+const CHECKOUT_COMPLETED_EVENT_NAME = "kensar:checkout-completed";
+const CHECKOUT_CLEARED_ORDER_PREFIX = "kensar_web_checkout_cleared_order_";
 
 function firstNameFromFullName(fullName?: string | null): string {
   const parts = (fullName || "").trim().split(/\s+/).filter(Boolean);
@@ -88,6 +90,58 @@ function isApprovedFromBackend(status: WebCheckoutOrderPaymentStatus | null): bo
     orderStatus === "aprobado" ||
     orderStatus === "paid" ||
     orderStatus === "success"
+  );
+}
+
+function isTerminalPaymentStatus(value?: string | null): boolean {
+  const normalized = normalizeStatusValue(value);
+  return ["approved", "failed", "cancelled", "refunded"].includes(normalized);
+}
+
+function PendingRingIcon({ size = 26 }: { size?: number }) {
+  const center = size / 2;
+  const maxThickness = Math.max(4, size * 0.2);
+  const minThickness = Math.max(1.25, size * 0.05);
+  const outerRadius = center - 1;
+  const startDeg = -104;
+  const endDeg = 200;
+  const segments = 70;
+
+  const toXY = (deg: number, radius: number) => {
+    const rad = (deg * Math.PI) / 180;
+    return { x: center + radius * Math.cos(rad), y: center + radius * Math.sin(rad) };
+  };
+
+  const outerPoints: string[] = [];
+  const innerPoints: string[] = [];
+  for (let i = 0; i <= segments; i += 1) {
+    const t = i / segments;
+    const angle = startDeg + (endDeg - startDeg) * t;
+    const thickness = minThickness + (maxThickness - minThickness) * t;
+    const outer = toXY(angle, outerRadius);
+    const inner = toXY(angle, outerRadius - thickness);
+    outerPoints.push(`${outer.x.toFixed(3)},${outer.y.toFixed(3)}`);
+    innerPoints.push(`${inner.x.toFixed(3)},${inner.y.toFixed(3)}`);
+  }
+
+  const pathD = `M ${outerPoints.join(" L ")} L ${innerPoints.reverse().join(" L ")} Z`;
+  const startMid = toXY(startDeg, outerRadius - minThickness / 2);
+  const endMid = toXY(endDeg, outerRadius - maxThickness / 2);
+
+  return (
+    <span className="inline-flex checkout-pending-ring-spin" style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
+        <defs>
+          <linearGradient id="checkout-pending-ring-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#0f172a" />
+            <stop offset="100%" stopColor="#020617" />
+          </linearGradient>
+        </defs>
+        <path d={pathD} fill="url(#checkout-pending-ring-gradient)" />
+        <circle cx={startMid.x} cy={startMid.y} r={minThickness / 2} fill="#334155" />
+        <circle cx={endMid.x} cy={endMid.y} r={maxThickness / 2} fill="#020617" />
+      </svg>
+    </span>
   );
 }
 
@@ -173,18 +227,14 @@ function CheckoutResultContent() {
         if (cancelled) return;
         setStatus(next);
         setError(null);
-        if (hintFailure && next.payment_status !== "approved") {
-          setLoading(false);
-          return;
-        }
         if (
           hintSuccess &&
-          ["approved", "failed", "cancelled", "refunded"].includes(next.payment_status || "")
+          isTerminalPaymentStatus(next.payment_status)
         ) {
           setLoading(false);
           return;
         }
-        const pending = next.payment_status === "pending";
+        const pending = normalizeStatusValue(next.payment_status) === "pending";
         if (!pending || attempts >= maxAttempts) {
           setLoading(false);
           return;
@@ -203,11 +253,37 @@ function CheckoutResultContent() {
     return () => {
       cancelled = true;
     };
-  }, [accessToken, hintFailure, hintSuccess, invalidOrder, orderId, paymentHint, providerHint, tokenReady]);
+  }, [accessToken, hintSuccess, invalidOrder, orderId, paymentHint, providerHint, tokenReady]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!status || loading) return;
+    if (!isTerminalPaymentStatus(status.payment_status)) return;
+    if (!orderId || Number.isNaN(orderId)) return;
+
+    const params = new URLSearchParams();
+    params.set("orderId", String(orderId));
+    if (providerHint) params.set("provider", providerHint);
+    const nextUrl = `/pago/resultado?${params.toString()}`;
+    if (window.location.pathname + window.location.search === nextUrl) return;
+    window.history.replaceState({}, "", nextUrl);
+  }, [loading, orderId, providerHint, status]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!isApprovedFromBackend(status)) return;
+
+    const idempotencyKey =
+      orderId > 0 && !Number.isNaN(orderId) ? `${CHECKOUT_CLEARED_ORDER_PREFIX}${orderId}` : "";
+    const alreadyProcessed = idempotencyKey
+      ? window.sessionStorage.getItem(idempotencyKey) === "1" ||
+        window.localStorage.getItem(idempotencyKey) === "1"
+      : false;
+    if (!alreadyProcessed && idempotencyKey) {
+      window.sessionStorage.setItem(idempotencyKey, "1");
+      window.localStorage.setItem(idempotencyKey, "1");
+    }
+
     try {
       window.localStorage.removeItem(GUEST_CART_STORAGE_KEY);
       window.localStorage.removeItem(`kensar_web_guest_order_token_${orderId}`);
@@ -216,6 +292,14 @@ function CheckoutResultContent() {
     } catch {
       // Ignore storage failures.
     }
+    window.dispatchEvent(
+      new CustomEvent(CHECKOUT_COMPLETED_EVENT_NAME, {
+        detail: {
+          orderId,
+          approved: true,
+        },
+      })
+    );
   }, [orderId, status]);
 
   useEffect(() => {
@@ -366,7 +450,7 @@ function CheckoutResultContent() {
         <article className={`checkout-form-card checkout-result-flow-card ${toneClass}`}>
           <header className="checkout-result-hero-v2">
             <span className={`checkout-result-hero-icon-v2${isApproved ? " is-approved" : ""}`} aria-hidden="true">
-              {isApproved ? "✓" : isFailedLike ? "!" : "⏳"}
+              {isApproved ? "✓" : isFailedLike ? "!" : <PendingRingIcon />}
             </span>
             <div className="checkout-result-hero-copy-v2">
               <p className="checkout-result-confirmation">Confirmación N°{status?.provider_reference || orderLabel}</p>
