@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Script from "next/script";
 import MetaPixelRouteTracker from "@/app/components/MetaPixelRouteTracker";
 
@@ -23,7 +24,9 @@ export default function MetaPixel() {
           fbq('init', '${pixelId}');
         `}
       </Script>
-      <MetaPixelRouteTracker />
+      <Suspense fallback={null}>
+        <MetaPixelRouteTracker />
+      </Suspense>
       <noscript>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
