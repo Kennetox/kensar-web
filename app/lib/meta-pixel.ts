@@ -60,9 +60,22 @@ function resolveCurrency(value?: string | null) {
   return (value || DEFAULT_CURRENCY).trim().toUpperCase() || DEFAULT_CURRENCY;
 }
 
+function buildPageContext() {
+  if (typeof window === "undefined") return {};
+  const pathname = (window.location.pathname || "").trim() || "/";
+  const search = window.location.search || "";
+  const hash = window.location.hash || "";
+  const pagePath = `${pathname}${search}${hash}`;
+  return {
+    page_path: pagePath,
+    page_title: document.title || undefined,
+    event_source_url: window.location.href || undefined,
+  };
+}
+
 export function pageView() {
   if (!isPixelReady()) return;
-  window.fbq!("track", "PageView");
+  window.fbq!("track", "PageView", buildPageContext());
 }
 
 export function viewContent(product: PixelProduct) {
@@ -71,6 +84,7 @@ export function viewContent(product: PixelProduct) {
   if (!contentId) return;
   const price = toPositiveNumber(product.price);
   window.fbq!("track", "ViewContent", {
+    ...buildPageContext(),
     content_ids: [contentId],
     content_type: "product",
     content_name: product.name || undefined,
@@ -94,6 +108,7 @@ export function addToCart(product: PixelProduct, quantity: number) {
   const price = toPositiveNumber(product.price);
   const value = price ? price * safeQuantity : null;
   window.fbq!("track", "AddToCart", {
+    ...buildPageContext(),
     content_ids: [contentId],
     content_type: "product",
     content_name: product.name || undefined,
@@ -114,6 +129,7 @@ export function initiateCheckout(cart: PixelCart) {
   const contents = buildContents(cart.items);
   if (!contents.length) return;
   window.fbq!("track", "InitiateCheckout", {
+    ...buildPageContext(),
     content_ids: contents.map((item) => item.id),
     content_type: "product",
     value: toPositiveNumber(cart.total) || undefined,
@@ -127,6 +143,7 @@ export function purchase(order: PixelOrder) {
   const contents = buildContents(order.items);
   if (!contents.length) return;
   window.fbq!("track", "Purchase", {
+    ...buildPageContext(),
     content_ids: contents.map((item) => item.id),
     content_type: "product",
     value: toPositiveNumber(order.total) || undefined,
