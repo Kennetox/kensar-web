@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useWebCustomer } from "@/app/components/WebCustomerProvider";
+import { viewContent } from "@/app/lib/meta-pixel";
 import {
   getViewedProductsStorageKey,
   type ViewedProductEntry,
@@ -34,6 +35,15 @@ function safeRead(storageKey: string): ViewedProductEntry[] {
 
 export default function ProductViewTracker({ product }: ProductViewTrackerProps) {
   const { authenticated, customer } = useWebCustomer();
+
+  useEffect(() => {
+    viewContent({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      quantity: 1,
+    });
+  }, [product.id, product.name, product.price]);
 
   useEffect(() => {
     if (!authenticated || !customer?.id) return;

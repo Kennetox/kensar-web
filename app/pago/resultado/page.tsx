@@ -7,6 +7,7 @@ import {
   fetchCheckoutOrderPaymentStatus,
   type WebCheckoutOrderPaymentStatus,
 } from "@/app/lib/webCart";
+import { purchase } from "@/app/lib/meta-pixel";
 
 function formatMoney(value: number) {
   return new Intl.NumberFormat("es-CO", {
@@ -90,6 +91,7 @@ function CheckoutResultContent() {
   const summaryCardRef = useRef<HTMLElement | null>(null);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [isNearSummaryArea, setIsNearSummaryArea] = useState(false);
+  const trackedPurchaseRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (invalidOrder) {
@@ -194,6 +196,24 @@ function CheckoutResultContent() {
       // Ignore storage failures.
     }
   }, [orderId, status]);
+
+  useEffect(() => {
+    if (!status || status.payment_status !== "approved") return;
+    const purchaseKey = `${status.order_id}:${status.payment_status}`;
+    if (trackedPurchaseRef.current === purchaseKey) return;
+    purchase({
+      id: status.order_id,
+      items: (status.items || []).map((item) => ({
+        id: item.product_id,
+        name: item.product_name,
+        quantity: item.quantity,
+        price: item.unit_price,
+      })),
+      total: status.total,
+      currency: status.currency || "COP",
+    });
+    trackedPurchaseRef.current = purchaseKey;
+  }, [status]);
 
   const paymentLabel = useMemo(() => {
     if (status?.payment_status === "approved") return "Pago aprobado";

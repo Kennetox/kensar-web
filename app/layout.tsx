@@ -18,6 +18,7 @@ import WebCustomerProvider from "./components/WebCustomerProvider";
 import TopbarScrollBehavior from "./components/TopbarScrollBehavior";
 import CheckoutHeaderMode from "./components/CheckoutHeaderMode";
 import RouteScrollReset from "./components/RouteScrollReset";
+import MetaPixel from "./components/MetaPixel";
 import { getCatalogCategories, getCatalogProducts } from "@/app/lib/metrikCatalog";
 import { buildWhatsAppPrefill } from "@/app/lib/kora/whatsapp-handoff";
 import "./globals.css";
@@ -153,6 +154,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="es">
       <body className={inter.className}>
+        <MetaPixel />
         <TopbarScrollBehavior />
         <CheckoutHeaderMode />
         <RouteScrollReset />

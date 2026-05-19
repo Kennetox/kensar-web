@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import ProductPaymentMethods from "@/app/catalogo/ProductPaymentMethods";
 import { useWebCart } from "@/app/components/WebCartProvider";
+import { addToCart } from "@/app/lib/meta-pixel";
 import type { WebCatalogProductDetail } from "@/app/lib/metrikCatalog";
 
 export default function ProductPurchaseCta({
@@ -103,6 +104,14 @@ export default function ProductPurchaseCta({
         unit_price: unitPrice,
         compare_price: comparePrice,
       });
+      addToCart(
+        {
+          id: productId,
+          name: productName,
+          price: unitPrice,
+        },
+        quantity
+      );
       setMessage("Producto agregado al carrito.");
       window.setTimeout(() => setMessage(null), 1800);
     } catch (error) {

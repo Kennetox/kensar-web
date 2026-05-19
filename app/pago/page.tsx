@@ -7,6 +7,7 @@ import { Suspense, useEffect, useMemo, useRef, useState, type InputHTMLAttribute
 import { AsYouType, getCountryCallingCode, parsePhoneNumberFromString, type CountryCode } from "libphonenumber-js";
 import { useWebCart } from "@/app/components/WebCartProvider";
 import { useWebCustomer } from "@/app/components/WebCustomerProvider";
+import { initiateCheckout } from "@/app/lib/meta-pixel";
 import {
   createMercadoPagoGuestCheckout,
   createUnifiedCheckout,
@@ -480,6 +481,7 @@ function PagoPageContent() {
   const summaryCardRef = useRef<HTMLElement | null>(null);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [isNearPaymentArea, setIsNearPaymentArea] = useState(false);
+  const trackedCheckoutSignatureRef = useRef<string | null>(null);
 
   const cartSignature = useMemo(
     () =>
@@ -539,6 +541,22 @@ function PagoPageContent() {
     `/pago${safeReturnTo ? `?returnTo=${encodeURIComponent(safeReturnTo)}` : ""}`
   )}`;
   const showMobileFloatingSummary = hasItems && isMobileViewport && !isNearPaymentArea;
+
+  useEffect(() => {
+    if (!hasItems) return;
+    if (trackedCheckoutSignatureRef.current === cartSignature) return;
+    initiateCheckout({
+      items: items.map((item) => ({
+        id: item.product_id,
+        name: item.product_name,
+        quantity: item.quantity,
+        price: item.unit_price,
+      })),
+      total: totalWithCoupon,
+      currency: "COP",
+    });
+    trackedCheckoutSignatureRef.current = cartSignature;
+  }, [cartSignature, hasItems, items, totalWithCoupon]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
