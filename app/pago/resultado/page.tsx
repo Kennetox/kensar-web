@@ -37,6 +37,7 @@ const CHECKOUT_RESULT_CONTEXT_STORAGE_PREFIX = "kensar_web_checkout_result_conte
 const GUEST_CART_STORAGE_KEY = "kensar_web_guest_cart_v1";
 const PERSONALIZA_CHECKOUT_CONTEXT_STORAGE_KEY = "kensar_web_personaliza_checkout_context_v1";
 const SUPPORT_EMAIL = "kensarelec@gmail.com";
+const META_PURCHASE_SENT_PREFIX = "meta_purchase_sent_order_";
 
 function firstNameFromFullName(fullName?: string | null): string {
   const parts = (fullName || "").trim().split(/\s+/).filter(Boolean);
@@ -68,6 +69,26 @@ function normalizeImageUrl(value?: string | null): string | null {
     return raw;
   }
   return `/${raw}`;
+}
+
+function normalizeStatusValue(value?: string | null): string {
+  return (value || "").trim().toLowerCase();
+}
+
+function isApprovedFromBackend(status: WebCheckoutOrderPaymentStatus | null): boolean {
+  if (!status) return false;
+  const paymentStatus = normalizeStatusValue(status.payment_status);
+  const orderStatus = normalizeStatusValue(status.status);
+  return (
+    paymentStatus === "approved" ||
+    paymentStatus === "aprobado" ||
+    paymentStatus === "paid" ||
+    paymentStatus === "success" ||
+    orderStatus === "approved" ||
+    orderStatus === "aprobado" ||
+    orderStatus === "paid" ||
+    orderStatus === "success"
+  );
 }
 
 function CheckoutResultContent() {
@@ -186,7 +207,7 @@ function CheckoutResultContent() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (!status || status.payment_status !== "approved") return;
+    if (!isApprovedFromBackend(status)) return;
     try {
       window.localStorage.removeItem(GUEST_CART_STORAGE_KEY);
       window.localStorage.removeItem(`kensar_web_guest_order_token_${orderId}`);
@@ -198,9 +219,19 @@ function CheckoutResultContent() {
   }, [orderId, status]);
 
   useEffect(() => {
-    if (!status || status.payment_status !== "approved") return;
-    const purchaseKey = `${status.order_id}:${status.payment_status}`;
-    if (trackedPurchaseRef.current === purchaseKey) return;
+    if (typeof window === "undefined") return;
+    if (!status || loading) return;
+    if (!isApprovedFromBackend(status)) return;
+    if (!orderId || Number.isNaN(orderId)) return;
+
+    const storageKey = `${META_PURCHASE_SENT_PREFIX}${orderId}`;
+    const purchaseKey = `${orderId}:approved`;
+    const alreadyTracked =
+      trackedPurchaseRef.current === purchaseKey ||
+      window.sessionStorage.getItem(storageKey) === "1" ||
+      window.localStorage.getItem(storageKey) === "1";
+    if (alreadyTracked) return;
+
     purchase({
       id: status.order_id,
       items: (status.items || []).map((item) => ({
@@ -212,8 +243,15 @@ function CheckoutResultContent() {
       total: status.total,
       currency: status.currency || "COP",
     });
+
     trackedPurchaseRef.current = purchaseKey;
-  }, [status]);
+    try {
+      window.sessionStorage.setItem(storageKey, "1");
+      window.localStorage.setItem(storageKey, "1");
+    } catch {
+      // Ignore storage failures.
+    }
+  }, [loading, orderId, status]);
 
   const paymentLabel = useMemo(() => {
     if (status?.payment_status === "approved") return "Pago aprobado";
@@ -251,7 +289,7 @@ function CheckoutResultContent() {
     return "Estamos confirmando el estado del pago con el proveedor.";
   })();
 
-  const isApproved = status?.payment_status === "approved";
+  const isApproved = isApprovedFromBackend(status);
   const isFailedLike =
     status?.payment_status === "failed" ||
     status?.payment_status === "cancelled" ||
