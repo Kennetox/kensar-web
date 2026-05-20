@@ -196,7 +196,7 @@ export default async function CatalogProductDetailPage({
 
       <section className="product-detail-grid">
         <article className="product-visual-card">
-          <ProductDetailGallery productName={product.name} gallery={gallery} />
+          <ProductDetailGallery productName={product.name} gallery={gallery} videoUrl={product.video_url || null} />
 
           <div className="product-rich-description product-rich-description-desktop">
             <h2>Descripción</h2>

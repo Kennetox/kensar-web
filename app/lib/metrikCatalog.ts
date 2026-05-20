@@ -57,6 +57,7 @@ export type WebCatalogProductCard = {
   image_url: string | null;
   image_thumb_url: string | null;
   gallery: string[];
+  video_url?: string | null;
   badge_text?: string | null;
   price_mode: "visible" | "consultar";
   price: number | null;
@@ -101,6 +102,7 @@ export type WebCatalogProductDetail = {
   image_url: string | null;
   image_thumb_url: string | null;
   gallery: string[];
+  video_url?: string | null;
   price_mode: "visible" | "consultar";
   price: number | null;
   compare_price: number | null;
@@ -170,6 +172,7 @@ function normalizeCatalogProductCard(
     image_url: resolveCatalogAssetUrl(baseUrl, item.image_url),
     image_thumb_url: resolveCatalogAssetUrl(baseUrl, item.image_thumb_url),
     gallery: item.gallery.map((image) => resolveCatalogAssetUrl(baseUrl, image) || image),
+    video_url: resolveCatalogAssetUrl(baseUrl, item.video_url || null),
   };
 }
 
@@ -186,6 +189,7 @@ function normalizeCatalogProductDetail(
     image_url: resolveCatalogAssetUrl(baseUrl, item.image_url),
     image_thumb_url: resolveCatalogAssetUrl(baseUrl, item.image_thumb_url),
     gallery: item.gallery.map((image) => resolveCatalogAssetUrl(baseUrl, image) || image),
+    video_url: resolveCatalogAssetUrl(baseUrl, item.video_url || null),
   };
 }
 
