@@ -3838,7 +3838,7 @@ body .main-wrapper::before {
 
 .product-gallery-shell {
   display: grid;
-  grid-template-columns: 84px minmax(0, 1fr);
+  grid-template-columns: 92px minmax(0, 1fr);
   gap: 12px;
   align-items: stretch;
 }
@@ -3851,9 +3851,12 @@ body .main-wrapper::before {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 92px;
   max-height: 360px;
   overflow-y: auto;
-  padding-right: 2px;
+  padding-right: 8px;
+  box-sizing: border-box;
+  scrollbar-gutter: stable;
 }
 
 .product-thumb-rail.is-empty {
@@ -3879,11 +3882,14 @@ body .main-wrapper::before {
 }
 
 .product-main-video {
-  width: 100%;
+  position: absolute;
+  inset: 0;
+  width: 90%;
   height: 100%;
+  left: 5%;
   object-fit: contain;
-  background: #ffffff;
-  position: relative;
+  object-position: center;
+  background: #000000;
   z-index: 1;
 }
 
@@ -4074,27 +4080,63 @@ body .main-wrapper::before {
 }
 
 .product-gallery-video-thumb {
+  position: relative;
   width: 100%;
   height: 100%;
-  display: grid;
-  place-items: center;
-  gap: 2px;
-  color: #0f172a;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.product-gallery-video-thumb-media {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
 }
 
 .product-gallery-video-thumb-icon {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   width: 28px;
   height: 28px;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #0f172a;
+  background: rgba(15, 23, 42, 0.88);
   color: #ffffff;
   font-size: 0.78rem;
+}
+
+.product-gallery-video-thumb-label {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: 4px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  text-align: center;
+  background: rgba(15, 23, 42, 0.85);
+  color: #ffffff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.product-gallery-video-thumb.is-compact .product-gallery-video-thumb-icon {
+  width: 22px;
+  height: 22px;
+  font-size: 0.66rem;
+}
+
+.product-gallery-video-thumb.is-compact .product-gallery-video-thumb-label {
+  left: 3px;
+  right: 3px;
+  bottom: 3px;
+  padding: 1px 4px;
+  font-size: 0.52rem;
 }
 
 .product-gallery-thumb.is-active {

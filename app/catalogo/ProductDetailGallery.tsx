@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type GalleryItem =
   | { kind: "image"; src: string }
@@ -35,11 +35,27 @@ export default function ProductDetailGallery({
   const [zoomActive, setZoomActive] = useState(false);
   const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 });
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const mainVideoRef = useRef<HTMLVideoElement | null>(null);
 
   const activeItem = items[activeIndex] || items[0];
   const canNavigate = items.length > 1;
   const activeIsVideo = activeItem?.kind === "video";
   const activeImage = activeItem?.kind === "image" ? activeItem.src : null;
+  const fallbackVideoPoster = images[0] || undefined;
+  const compactVideoThumb = items.length >= 5;
+
+  useEffect(() => {
+    if (!activeIsVideo) return;
+    const video = mainVideoRef.current;
+    if (!video) return;
+    video.currentTime = 0;
+    const playPromise = video.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch(() => {
+        // Algunos navegadores pueden bloquear autoplay en ciertos contextos.
+      });
+    }
+  }, [activeIndex, activeIsVideo]);
 
   const goPrev = useCallback(() => {
     setActiveIndex((prev) => (prev <= 0 ? items.length - 1 : prev - 1));
@@ -104,9 +120,21 @@ export default function ProductDetailGallery({
                   unoptimized
                 />
               ) : (
-                <div className="product-gallery-video-thumb" aria-hidden="true">
+                <div
+                  className={`product-gallery-video-thumb${compactVideoThumb ? " is-compact" : ""}`}
+                  aria-hidden="true"
+                >
+                  <video
+                    src={item.src}
+                    className="product-gallery-video-thumb-media"
+                    muted
+                    playsInline
+                    autoPlay
+                    loop
+                    preload="auto"
+                  />
                   <span className="product-gallery-video-thumb-icon">▶</span>
-                  <span>Video</span>
+                  <span className="product-gallery-video-thumb-label">Video</span>
                 </div>
               )}
             </button>
@@ -148,10 +176,16 @@ export default function ProductDetailGallery({
           {activeIsVideo ? (
             <video
               key={`${activeItem.src}-${activeIndex}`}
+              ref={mainVideoRef}
               src={activeItem.src}
               className="product-main-video"
               controls
-              preload="metadata"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              poster={fallbackVideoPoster}
             />
           ) : activeImage ? (
             <>
