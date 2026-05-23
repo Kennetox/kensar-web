@@ -1,11 +1,17 @@
-import { getCatalogProducts, type WebCatalogProductCard } from "@/app/lib/metrikCatalog";
+import type { WebCatalogProductCard, WebCatalogProductList } from "@/app/lib/metrikCatalog";
 
 export const revalidate = 300;
 
 const SITE_ORIGIN = "https://kensarelectronic.com";
 const FEED_TITLE = "Kensar Electronic - Meta Catalog Feed";
 const FEED_DESCRIPTION = "Catalogo de productos de Kensar Electronic para Meta Commerce Manager.";
-const PAGE_SIZE = 200;
+const PAGE_SIZE = 60;
+
+type FeedFetchError = Error & {
+  endpoint?: string;
+  status?: number;
+  responseBody?: string;
+};
 
 function escapeXml(value: string): string {
   return value
@@ -22,6 +28,33 @@ function sanitizeText(value: string | null | undefined): string {
 
 function resolveProductLink(slug: string): string {
   return `${SITE_ORIGIN}/catalogo/${encodeURIComponent(slug)}`;
+}
+
+function getApiBaseUrl(): string {
+  const baseUrl = (process.env.METRIK_API_BASE_URL || "").trim();
+  if (!baseUrl) {
+    throw new Error("Missing METRIK_API_BASE_URL");
+  }
+  return baseUrl.replace(/\/$/, "");
+}
+
+function resolveCatalogAssetUrl(baseUrl: string, value: string | null): string | null {
+  if (!value) return null;
+  try {
+    return new URL(value, `${baseUrl}/`).toString();
+  } catch {
+    return value;
+  }
+}
+
+function normalizeCatalogProductCard(baseUrl: string, item: WebCatalogProductCard): WebCatalogProductCard {
+  return {
+    ...item,
+    image_url: resolveCatalogAssetUrl(baseUrl, item.image_url),
+    image_thumb_url: resolveCatalogAssetUrl(baseUrl, item.image_thumb_url),
+    gallery: (item.gallery || []).map((image) => resolveCatalogAssetUrl(baseUrl, image) || image),
+    video_url: resolveCatalogAssetUrl(baseUrl, item.video_url || null),
+  };
 }
 
 function resolveAvailability(stockStatus: WebCatalogProductCard["stock_status"]): "in stock" | "out of stock" {
@@ -72,16 +105,31 @@ async function fetchAllCatalogProducts(): Promise<WebCatalogProductCard[]> {
   const items: WebCatalogProductCard[] = [];
   let page = 1;
   let totalPages = 1;
+  const baseUrl = getApiBaseUrl();
 
   while (page <= totalPages) {
-    const response = await getCatalogProducts({
-      page,
-      page_size: PAGE_SIZE,
-      sort: "recommended",
+    const params = new URLSearchParams();
+    params.set("page", String(page));
+    params.set("page_size", String(PAGE_SIZE));
+    params.set("sort", "recommended");
+    const endpoint = `${baseUrl}/web/catalog/products?${params.toString()}`;
+    const response = await fetch(endpoint, {
+      next: { revalidate },
     });
-    const currentItems = Array.isArray(response.items) ? response.items : [];
-    items.push(...currentItems);
-    totalPages = Math.max(1, Math.ceil((response.total || 0) / (response.page_size || PAGE_SIZE)));
+
+    if (!response.ok) {
+      const body = await response.text();
+      const error = new Error(`Catalog request failed: ${response.status}`) as FeedFetchError;
+      error.endpoint = endpoint;
+      error.status = response.status;
+      error.responseBody = body;
+      throw error;
+    }
+
+    const data = (await response.json()) as WebCatalogProductList;
+    const currentItems = Array.isArray(data.items) ? data.items : [];
+    items.push(...currentItems.map((item) => normalizeCatalogProductCard(baseUrl, item)));
+    totalPages = Math.max(1, Math.ceil((data.total || 0) / (data.page_size || PAGE_SIZE)));
     page += 1;
   }
 
@@ -119,14 +167,30 @@ export async function GET() {
       },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return new Response(`<?xml version="1.0" encoding="UTF-8"?><error>${escapeXml(message)}</error>`, {
+    const typed = error as FeedFetchError;
+    const message = typed?.message || "Unknown error";
+    const endpoint = typed?.endpoint || "";
+    const status = typed?.status ? String(typed.status) : "";
+    const responseBody = typed?.responseBody || "";
+    return new Response(
+      [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        "<error>",
+        `<message>${escapeXml(message)}</message>`,
+        endpoint ? `<endpoint>${escapeXml(endpoint)}</endpoint>` : "",
+        status ? `<status>${escapeXml(status)}</status>` : "",
+        responseBody ? `<response_body>${escapeXml(responseBody)}</response_body>` : "",
+        "</error>",
+      ]
+        .filter(Boolean)
+        .join(""),
+      {
       status: 500,
       headers: {
         "Content-Type": "application/xml; charset=utf-8",
         "Cache-Control": "no-store",
       },
-    });
+      }
+    );
   }
 }
-
