@@ -69,6 +69,11 @@ export const metadata: Metadata = {
       "Catalogo web de Kensar Electronic con atencion comercial directa y operacion conectada a tienda.",
     images: ["/branding/kensar-logo.png"],
   },
+  verification: {
+    other: {
+      "facebook-domain-verification": "r5a82p39rm7txuq3iyugs73cms8whn",
+    },
+  },
 };
 
 export const viewport: Viewport = {
