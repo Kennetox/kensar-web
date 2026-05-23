@@ -330,8 +330,11 @@ function CheckoutResultContent() {
     if (!isApprovedFromBackend(status)) return;
     if (!orderId || Number.isNaN(orderId)) return;
 
-    const storageKey = `${META_PURCHASE_SENT_PREFIX}${orderId}`;
-    const purchaseKey = `${orderId}:approved`;
+    const resolvedOrderId = Number(status.order_id || orderId || 0);
+    if (!resolvedOrderId || Number.isNaN(resolvedOrderId)) return;
+
+    const storageKey = `${META_PURCHASE_SENT_PREFIX}${resolvedOrderId}`;
+    const purchaseKey = `${resolvedOrderId}:approved`;
     const alreadyTracked =
       trackedPurchaseRef.current === purchaseKey ||
       window.sessionStorage.getItem(storageKey) === "1" ||

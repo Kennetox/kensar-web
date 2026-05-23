@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import Script from "next/script";
 import MetaPixelRouteTracker from "@/app/components/MetaPixelRouteTracker";
+import { flushPendingEvents } from "@/app/lib/meta-pixel";
 
 const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
 
@@ -11,7 +12,7 @@ export default function MetaPixel() {
 
   return (
     <>
-      <Script id="meta-pixel-base" strategy="afterInteractive">
+      <Script id="meta-pixel-base" strategy="afterInteractive" onLoad={flushPendingEvents}>
         {`
           !function(f,b,e,v,n,t,s)
           {if(f.fbq)return;n=f.fbq=function(){n.callMethod?

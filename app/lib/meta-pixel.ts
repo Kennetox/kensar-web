@@ -3,6 +3,7 @@
 declare global {
   interface Window {
     fbq?: (...args: unknown[]) => void;
+    __kensarMetaPixelQueue?: Array<{ eventName: string; payload?: Record<string, unknown> }>;
   }
 }
 
@@ -27,9 +28,14 @@ type PixelOrder = {
 };
 
 const DEFAULT_CURRENCY = "COP";
+const MAX_PENDING_EVENTS = 20;
+
+function isBrowser() {
+  return typeof window !== "undefined";
+}
 
 function isPixelReady() {
-  return typeof window !== "undefined" && typeof window.fbq === "function";
+  return isBrowser() && typeof window.fbq === "function";
 }
 
 function toPositiveNumber(value: unknown): number | null {
@@ -61,7 +67,7 @@ function resolveCurrency(value?: string | null) {
 }
 
 function buildPageContext() {
-  if (typeof window === "undefined") return {};
+  if (!isBrowser()) return {};
   const pathname = (window.location.pathname || "").trim() || "/";
   const search = window.location.search || "";
   const hash = window.location.hash || "";
@@ -73,17 +79,52 @@ function buildPageContext() {
   };
 }
 
-export function pageView() {
+function queueEvent(eventName: string, payload?: Record<string, unknown>) {
+  if (!isBrowser()) return;
+  const queue = window.__kensarMetaPixelQueue || [];
+  queue.push({ eventName, payload });
+  if (queue.length > MAX_PENDING_EVENTS) {
+    queue.splice(0, queue.length - MAX_PENDING_EVENTS);
+  }
+  window.__kensarMetaPixelQueue = queue;
+}
+
+function trackEvent(eventName: string, payload?: Record<string, unknown>) {
+  if (!isBrowser()) return;
+  if (!isPixelReady()) {
+    queueEvent(eventName, payload);
+    return;
+  }
+  window.fbq!("track", eventName, payload || {});
+}
+
+export function flushPendingEvents() {
   if (!isPixelReady()) return;
-  window.fbq!("track", "PageView", buildPageContext());
+  const queue = window.__kensarMetaPixelQueue || [];
+  if (!queue.length) return;
+  for (const entry of queue) {
+    window.fbq!("track", entry.eventName, entry.payload || {});
+  }
+  window.__kensarMetaPixelQueue = [];
+}
+
+export function fbqTrack(eventName: string, payload?: Record<string, unknown>) {
+  trackEvent(eventName, payload);
+}
+
+export function fbqPageView() {
+  trackEvent("PageView", buildPageContext());
+}
+
+export function pageView() {
+  fbqPageView();
 }
 
 export function viewContent(product: PixelProduct) {
-  if (!isPixelReady()) return;
   const contentId = normalizeProductId(product.id);
   if (!contentId) return;
   const price = toPositiveNumber(product.price);
-  window.fbq!("track", "ViewContent", {
+  fbqTrack("ViewContent", {
     ...buildPageContext(),
     content_ids: [contentId],
     content_type: "product",
@@ -101,13 +142,12 @@ export function viewContent(product: PixelProduct) {
 }
 
 export function addToCart(product: PixelProduct, quantity: number) {
-  if (!isPixelReady()) return;
   const contentId = normalizeProductId(product.id);
   if (!contentId) return;
   const safeQuantity = Math.max(1, Math.round(Number(quantity) || 1));
   const price = toPositiveNumber(product.price);
   const value = price ? price * safeQuantity : null;
-  window.fbq!("track", "AddToCart", {
+  fbqTrack("AddToCart", {
     ...buildPageContext(),
     content_ids: [contentId],
     content_type: "product",
@@ -125,10 +165,9 @@ export function addToCart(product: PixelProduct, quantity: number) {
 }
 
 export function initiateCheckout(cart: PixelCart) {
-  if (!isPixelReady()) return;
   const contents = buildContents(cart.items);
   if (!contents.length) return;
-  window.fbq!("track", "InitiateCheckout", {
+  fbqTrack("InitiateCheckout", {
     ...buildPageContext(),
     content_ids: contents.map((item) => item.id),
     content_type: "product",
@@ -139,16 +178,15 @@ export function initiateCheckout(cart: PixelCart) {
 }
 
 export function purchase(order: PixelOrder) {
-  if (!isPixelReady()) return;
   const contents = buildContents(order.items);
   if (!contents.length) return;
-  window.fbq!("track", "Purchase", {
+  fbqTrack("Purchase", {
     ...buildPageContext(),
+    order_id: order.id ? String(order.id) : undefined,
     content_ids: contents.map((item) => item.id),
     content_type: "product",
     value: toPositiveNumber(order.total) || undefined,
     currency: resolveCurrency(order.currency),
     contents,
-    order_id: order.id ? String(order.id) : undefined,
   });
 }
