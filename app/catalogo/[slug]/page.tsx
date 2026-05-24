@@ -337,6 +337,7 @@ export default async function CatalogProductDetailPage({
                   productSku={product.sku}
                   imageUrl={product.image_url}
                   brand={product.brand}
+                  category={product.category_name || product.category_path || null}
                   unitPrice={product.price ?? 0}
                   comparePrice={product.compare_price}
                 />
@@ -378,6 +379,8 @@ export default async function CatalogProductDetailPage({
           price: product.price,
           compare_price: product.compare_price,
           brand: product.brand,
+          category: product.category_name || product.category_path || null,
+          sku: product.sku,
         }}
       />
     </main>

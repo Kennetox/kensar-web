@@ -7,6 +7,7 @@ import { Suspense, useEffect, useMemo, useRef, useState, type InputHTMLAttribute
 import { AsYouType, getCountryCallingCode, parsePhoneNumberFromString, type CountryCode } from "libphonenumber-js";
 import { useWebCart } from "@/app/components/WebCartProvider";
 import { useWebCustomer } from "@/app/components/WebCustomerProvider";
+import { gaBeginCheckout } from "@/app/lib/ga4";
 import { initiateCheckout } from "@/app/lib/meta-pixel";
 import {
   createMercadoPagoGuestCheckout,
@@ -566,6 +567,18 @@ function PagoPageContent() {
       })),
       total: totalWithCoupon,
       currency: "COP",
+    });
+    gaBeginCheckout({
+      currency: "COP",
+      value: totalWithCoupon,
+      items: items.map((item) => ({
+        item_id: String(item.product_id),
+        item_name: item.product_name,
+        item_brand: item.brand || undefined,
+        item_variant: item.product_sku || undefined,
+        price: item.unit_price,
+        quantity: item.quantity,
+      })),
     });
     trackedCheckoutSignatureRef.current = cartSignature;
   }, [cartSignature, hasItems, items, totalWithCoupon]);

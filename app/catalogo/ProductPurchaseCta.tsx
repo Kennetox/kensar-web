@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import ProductPaymentMethods from "@/app/catalogo/ProductPaymentMethods";
 import { useWebCart } from "@/app/components/WebCartProvider";
+import { gaAddToCart } from "@/app/lib/ga4";
 import { addToCart } from "@/app/lib/meta-pixel";
 import type { WebCatalogProductDetail } from "@/app/lib/metrikCatalog";
 
@@ -15,6 +16,7 @@ export default function ProductPurchaseCta({
   productSku,
   imageUrl,
   brand,
+  category,
   unitPrice,
   comparePrice,
 }: {
@@ -25,6 +27,7 @@ export default function ProductPurchaseCta({
   productSku: string | null;
   imageUrl: string | null;
   brand: string | null;
+  category: string | null;
   unitPrice: number;
   comparePrice: number | null;
 }) {
@@ -112,6 +115,21 @@ export default function ProductPurchaseCta({
         },
         quantity
       );
+      gaAddToCart({
+        currency: "COP",
+        value: unitPrice * quantity,
+        items: [
+          {
+            item_id: String(productId),
+            item_name: productName,
+            item_brand: brand || undefined,
+            item_category: category || undefined,
+            item_variant: productSku || undefined,
+            price: unitPrice,
+            quantity,
+          },
+        ],
+      });
       setMessage("Producto agregado al carrito.");
       window.setTimeout(() => setMessage(null), 1800);
     } catch (error) {

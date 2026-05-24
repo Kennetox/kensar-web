@@ -7,6 +7,7 @@ import {
   fetchCheckoutOrderPaymentStatus,
   type WebCheckoutOrderPaymentStatus,
 } from "@/app/lib/webCart";
+import { gaPurchase } from "@/app/lib/ga4";
 import { purchase } from "@/app/lib/meta-pixel";
 
 function formatMoney(value: number) {
@@ -351,6 +352,18 @@ function CheckoutResultContent() {
       })),
       total: status.total,
       currency: status.currency || "COP",
+    });
+    gaPurchase({
+      transaction_id: String(status.order_id || resolvedOrderId),
+      value: status.total,
+      currency: status.currency || "COP",
+      items: (status.items || []).map((item) => ({
+        item_id: String(item.product_id),
+        item_name: item.product_name,
+        item_variant: item.product_sku || undefined,
+        price: item.unit_price,
+        quantity: item.quantity,
+      })),
     });
 
     trackedPurchaseRef.current = purchaseKey;

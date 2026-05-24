@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useWebCustomer } from "@/app/components/WebCustomerProvider";
+import { gaViewItem } from "@/app/lib/ga4";
 import { viewContent } from "@/app/lib/meta-pixel";
 import {
   getViewedProductsStorageKey,
@@ -18,6 +19,8 @@ type ProductViewTrackerProps = {
     price: number | null;
     compare_price: number | null;
     brand: string | null;
+    category: string | null;
+    sku: string | null;
   };
 };
 
@@ -43,7 +46,22 @@ export default function ProductViewTracker({ product }: ProductViewTrackerProps)
       price: product.price,
       quantity: 1,
     });
-  }, [product.id, product.name, product.price]);
+    gaViewItem({
+      currency: "COP",
+      value: product.price ?? undefined,
+      items: [
+        {
+          item_id: String(product.id),
+          item_name: product.name,
+          item_brand: product.brand || undefined,
+          item_category: product.category || undefined,
+          item_variant: product.sku || undefined,
+          price: product.price ?? undefined,
+          quantity: 1,
+        },
+      ],
+    });
+  }, [product.id, product.name, product.price, product.brand, product.category, product.sku]);
 
   useEffect(() => {
     if (!authenticated || !customer?.id) return;
