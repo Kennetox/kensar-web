@@ -25,7 +25,19 @@ export type WebCart = {
   total: number;
   coupon_code?: string | null;
   coupon_discount_percent?: number;
+  coupon_discount_type?: "percent" | "fixed_amount" | null;
+  coupon_discount_value?: number;
   updated_at: string;
+};
+
+export type WebGuestCouponPreview = {
+  code: string;
+  discount_type: "percent" | "fixed_amount";
+  discount_value: number;
+  discount_percent: number;
+  subtotal_base: number;
+  discount_amount: number;
+  total: number;
 };
 
 export type WebOrderSummary = {
@@ -262,6 +274,19 @@ export async function clearWebCartCoupon(): Promise<WebCart> {
   return parseJsonResponse<WebCart>(response);
 }
 
+export async function previewWebGuestCoupon(input: {
+  code: string;
+  items: Array<{ product_id: number; quantity: number }>;
+}): Promise<WebGuestCouponPreview> {
+  const response = await fetch("/api/catalog/coupon/preview", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(input),
+  });
+  return parseJsonResponse<WebGuestCouponPreview>(response);
+}
+
 export async function createWebOrderFromCart(notes?: string): Promise<WebOrderSummary> {
   const response = await fetch("/api/orders", {
     method: "POST",
@@ -340,6 +365,7 @@ export async function createMercadoPagoGuestCheckout(input: {
   customer_phone?: string;
   customer_tax_id?: string;
   customer_address?: string;
+  coupon_code?: string;
   notes?: string;
   checkout_context?: Record<string, unknown>;
   payer?: {
@@ -368,6 +394,7 @@ export async function createWompiGuestCheckout(input: {
   customer_phone?: string;
   customer_tax_id?: string;
   customer_address?: string;
+  coupon_code?: string;
   notes?: string;
   checkout_context?: Record<string, unknown>;
 }): Promise<WebWompiCheckoutInit> {

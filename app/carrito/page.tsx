@@ -56,6 +56,9 @@ function CarritoPageContent() {
   const totalWithCoupon = cart?.total ?? subtotal;
   const activeCouponCode = (cart?.coupon_code || "").trim();
   const activeCouponPercent = Number(cart?.coupon_discount_percent || 0);
+  const activeCouponType =
+    cart?.coupon_discount_type === "fixed_amount" ? "fixed_amount" : activeCouponCode ? "percent" : null;
+  const activeCouponValue = Number(cart?.coupon_discount_value || 0);
   const sortedItems = useMemo(() => cart?.items ?? [], [cart?.items]);
   const subtotalWithoutDiscount = sortedItems.reduce((acc, item) => {
     const quantity = Number(item.quantity) || 0;
@@ -315,7 +318,12 @@ function CarritoPageContent() {
             {couponDiscountAmount > 0 ? (
               <div className="cart-summary-line cart-summary-saving">
                 <span>
-                  Cupón {activeCouponCode ? activeCouponCode : ""}{activeCouponPercent > 0 ? ` (${activeCouponPercent}%)` : ""}
+                  Cupón {activeCouponCode ? activeCouponCode : ""}
+                  {activeCouponType === "fixed_amount"
+                    ? ` (${formatMoney(activeCouponValue)})`
+                    : activeCouponPercent > 0
+                      ? ` (${activeCouponPercent}%)`
+                      : ""}
                 </span>
                 <strong>- {formatMoney(couponDiscountAmount)}</strong>
               </div>

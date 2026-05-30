@@ -11,8 +11,10 @@ import { gaBeginCheckout } from "@/app/lib/ga4";
 import { initiateCheckout } from "@/app/lib/meta-pixel";
 import {
   createMercadoPagoGuestCheckout,
+  previewWebGuestCoupon,
   createUnifiedCheckout,
   createWompiGuestCheckout,
+  type WebGuestCouponPreview,
   type WebCartItem,
 } from "@/app/lib/webCart";
 
@@ -85,6 +87,8 @@ type CheckoutSnapshot = {
   totalWithCoupon: number;
   activeCouponCode: string;
   activeCouponPercent: number;
+  activeCouponType: "percent" | "fixed_amount" | null;
+  activeCouponValue: number;
   subtotalWithoutDiscount: number;
 };
 
@@ -242,6 +246,9 @@ function buildSnapshotFromCart(cart: ReturnType<typeof useWebCart>["cart"]): Che
   const totalWithCoupon = cart?.total ?? subtotal;
   const activeCouponCode = (cart?.coupon_code || "").trim();
   const activeCouponPercent = Number(cart?.coupon_discount_percent || 0);
+  const activeCouponType =
+    cart?.coupon_discount_type === "fixed_amount" ? "fixed_amount" : activeCouponCode ? "percent" : null;
+  const activeCouponValue = Number(cart?.coupon_discount_value || 0);
   const subtotalWithoutDiscount = items.reduce((acc, item) => {
     const quantity = Number(item.quantity) || 0;
     if (typeof item.compare_price === "number" && item.compare_price > item.unit_price) {
@@ -257,6 +264,8 @@ function buildSnapshotFromCart(cart: ReturnType<typeof useWebCart>["cart"]): Che
     totalWithCoupon,
     activeCouponCode,
     activeCouponPercent,
+    activeCouponType,
+    activeCouponValue,
     subtotalWithoutDiscount,
   };
 }
@@ -475,10 +484,15 @@ function FloatingPhoneInput({
 function PagoPageContent() {
   const searchParams = useSearchParams();
   const { authenticated, customer } = useWebCustomer();
-  const { cart, error, createOrder } = useWebCart();
+  const { cart, error, createOrder, applyCoupon, clearCoupon } = useWebCart();
   const [orderId, setOrderId] = useState<number | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponMessage, setCouponMessage] = useState<string | null>(null);
+  const [couponSaving, setCouponSaving] = useState(false);
+  const [couponOpen, setCouponOpen] = useState(false);
+  const [guestCouponPreview, setGuestCouponPreview] = useState<WebGuestCouponPreview | null>(null);
   const [checkoutEmail, setCheckoutEmail] = useState(customer?.email || "");
   const [checkoutFirstName, setCheckoutFirstName] = useState((customer?.first_name || "").trim());
   const [checkoutLastName, setCheckoutLastName] = useState((customer?.last_name || "").trim());
@@ -535,10 +549,23 @@ function PagoPageContent() {
   const hasItems = items.length > 0;
   const subtotal = effectiveSnapshot.subtotal;
   const subtotalBase = effectiveSnapshot.subtotalBase;
-  const couponDiscountAmount = effectiveSnapshot.couponDiscountAmount;
-  const totalWithCoupon = effectiveSnapshot.totalWithCoupon;
-  const activeCouponCode = effectiveSnapshot.activeCouponCode;
-  const activeCouponPercent = effectiveSnapshot.activeCouponPercent;
+  const guestCouponDiscountAmount = guestCouponPreview?.discount_amount ?? 0;
+  const guestTotalWithCoupon = guestCouponPreview?.total ?? effectiveSnapshot.totalWithCoupon;
+  const guestCouponCode = (guestCouponPreview?.code || "").trim();
+  const guestCouponPercent = Number(guestCouponPreview?.discount_percent || 0);
+  const guestCouponType =
+    guestCouponPreview?.discount_type === "fixed_amount" ? "fixed_amount" : guestCouponCode ? "percent" : null;
+  const guestCouponValue = Number(guestCouponPreview?.discount_value || 0);
+  const couponDiscountAmount = authenticated
+    ? effectiveSnapshot.couponDiscountAmount
+    : guestCouponDiscountAmount;
+  const totalWithCoupon = authenticated ? effectiveSnapshot.totalWithCoupon : guestTotalWithCoupon;
+  const activeCouponCode = authenticated ? effectiveSnapshot.activeCouponCode : guestCouponCode;
+  const activeCouponPercent = authenticated
+    ? effectiveSnapshot.activeCouponPercent
+    : guestCouponPercent;
+  const activeCouponType = authenticated ? effectiveSnapshot.activeCouponType : guestCouponType;
+  const activeCouponValue = authenticated ? effectiveSnapshot.activeCouponValue : guestCouponValue;
   const subtotalWithoutDiscount = effectiveSnapshot.subtotalWithoutDiscount;
   const hasDiscountGap = subtotalWithoutDiscount > subtotalBase + 0.5;
   const leadItem = items[0] ?? null;
@@ -554,6 +581,93 @@ function PagoPageContent() {
     `/pago${safeReturnTo ? `?returnTo=${encodeURIComponent(safeReturnTo)}` : ""}`
   )}`;
   const showMobileFloatingSummary = hasItems && isMobileViewport && !isNearPaymentArea;
+
+  useEffect(() => {
+    setCouponCode(activeCouponCode || "");
+    if (activeCouponCode) {
+      setCouponOpen(true);
+    }
+  }, [activeCouponCode]);
+
+  async function handleApplyCouponFromCheckout() {
+    if (!couponCode.trim()) {
+      setCouponMessage("Ingresa un código para continuar.");
+      return;
+    }
+    if (!authenticated) {
+      if (!items.length) {
+        setCouponMessage("Tu carrito está vacío.");
+        return;
+      }
+      try {
+        setCouponSaving(true);
+        setCouponMessage(null);
+        setCheckoutError(null);
+        const preview = await previewWebGuestCoupon({
+          code: couponCode.trim().toUpperCase(),
+          items: items.map((item) => ({
+            product_id: item.product_id,
+            quantity: Math.max(1, Number(item.quantity) || 1),
+          })),
+        });
+        setGuestCouponPreview(preview);
+        setCouponCode(preview.code);
+        setCouponMessage("Cupón aplicado correctamente.");
+        setCouponOpen(false);
+      } catch (nextError) {
+        setGuestCouponPreview(null);
+        setCouponMessage(
+          nextError instanceof Error ? nextError.message : "No se pudo aplicar el cupón."
+        );
+      } finally {
+        setCouponSaving(false);
+      }
+      return;
+    }
+    try {
+      setCouponSaving(true);
+      setCouponMessage(null);
+      setCheckoutError(null);
+      const applied = await applyCoupon(couponCode.trim());
+      const nextCode = (applied.coupon_code || "").trim();
+      if (!nextCode) {
+        setCouponMessage("No se pudo aplicar el cupón.");
+        return;
+      }
+      setCouponCode(nextCode);
+      setCouponMessage("Cupón aplicado correctamente.");
+      setCouponOpen(false);
+    } catch (nextError) {
+      setCouponMessage(
+        nextError instanceof Error ? nextError.message : "No se pudo aplicar el cupón."
+      );
+    } finally {
+      setCouponSaving(false);
+    }
+  }
+
+  async function handleClearCouponFromCheckout() {
+    if (!authenticated) {
+      setCouponCode("");
+      setGuestCouponPreview(null);
+      setCouponMessage("Código removido.");
+      return;
+    }
+    try {
+      setCouponSaving(true);
+      setCouponMessage(null);
+      setCheckoutError(null);
+      await clearCoupon();
+      setCouponCode("");
+      setCouponMessage("Cupón removido.");
+    } catch (nextError) {
+      setCouponMessage(
+        nextError instanceof Error ? nextError.message : "No se pudo remover el cupón."
+      );
+    } finally {
+      setCouponSaving(false);
+    }
+  }
 
   useEffect(() => {
     if (!hasItems) return;
@@ -644,6 +758,12 @@ function PagoPageContent() {
       window.localStorage.removeItem(PERSONALIZA_CHECKOUT_CONTEXT_STORAGE_KEY);
     }
   }, [items]);
+
+  useEffect(() => {
+    if (authenticated) return;
+    setGuestCouponPreview(null);
+    setCouponMessage(null);
+  }, [authenticated, cartSignature]);
 
   function resolveMercadoPagoUrl(input: {
     sandbox_init_point?: string | null;
@@ -866,6 +986,7 @@ function PagoPageContent() {
           customer_phone: checkoutPhone || undefined,
           customer_tax_id: identification || undefined,
           customer_address: resolvedShippingAddress || undefined,
+          coupon_code: activeCouponCode || undefined,
           checkout_context: checkoutContextPayload,
         };
         const init =
@@ -1488,65 +1609,128 @@ function PagoPageContent() {
             </form>
           </article>
 
-          <aside ref={summaryCardRef} className="checkout-summary-card">
-            <h2>Resumen de tu compra</h2>
-            <div className="checkout-summary-items">
-              {items.map((item) => (
-                <article key={item.id} className="checkout-summary-item">
-                  <div
-                    className={`checkout-summary-thumb${item.image_url ? " has-image" : ""}`}
-                    style={item.image_url ? { backgroundImage: `url('${item.image_url}')` } : undefined}
-                    aria-hidden="true"
-                  >
-                    <span className="checkout-summary-thumb-badge">{item.quantity}</span>
-                  </div>
-                  <div className="checkout-summary-item-copy">
-                    <p>{item.product_name}</p>
-                    <small>Cantidad {item.quantity}</small>
-                  </div>
-                  <div className="checkout-summary-item-price">
-                    <strong>{formatMoney(item.line_total)}</strong>
-                    {typeof item.compare_price === "number" && item.compare_price > item.unit_price ? (
-                      <small>{formatMoney(item.compare_price * item.quantity)}</small>
-                    ) : null}
-                  </div>
-                </article>
-              ))}
-            </div>
+          <div className="checkout-summary-side">
+            <aside ref={summaryCardRef} className="checkout-summary-card">
+              <h2>Resumen de tu compra</h2>
+              <div className="checkout-summary-items">
+                {items.map((item) => (
+                  <article key={item.id} className="checkout-summary-item">
+                    <div
+                      className={`checkout-summary-thumb${item.image_url ? " has-image" : ""}`}
+                      style={item.image_url ? { backgroundImage: `url('${item.image_url}')` } : undefined}
+                      aria-hidden="true"
+                    >
+                      <span className="checkout-summary-thumb-badge">{item.quantity}</span>
+                    </div>
+                    <div className="checkout-summary-item-copy">
+                      <p>{item.product_name}</p>
+                      <small>Cantidad {item.quantity}</small>
+                    </div>
+                    <div className="checkout-summary-item-price">
+                      <strong>{formatMoney(item.line_total)}</strong>
+                      {typeof item.compare_price === "number" && item.compare_price > item.unit_price ? (
+                        <small>{formatMoney(item.compare_price * item.quantity)}</small>
+                      ) : null}
+                    </div>
+                  </article>
+                ))}
+              </div>
 
-            <div className="checkout-summary-line">
-              <span>Subtotal</span>
-              <strong>{formatMoney(subtotalBase)}</strong>
-            </div>
-            {hasDiscountGap ? (
-              <div className="checkout-summary-line checkout-summary-line-compare">
-                <span>Antes</span>
-                <strong>{formatMoney(subtotalWithoutDiscount)}</strong>
-              </div>
-            ) : null}
-            {couponDiscountAmount > 0 ? (
               <div className="checkout-summary-line">
-                <span>
-                  Cupón {activeCouponCode ? activeCouponCode : ""}{activeCouponPercent > 0 ? ` (${activeCouponPercent}%)` : ""}
-                </span>
-                <strong>- {formatMoney(couponDiscountAmount)}</strong>
+                <span>Subtotal</span>
+                <strong>{formatMoney(subtotalBase)}</strong>
               </div>
-            ) : null}
-            <div className="checkout-summary-line">
-              <span>{deliveryMode === "pickup" ? "Retiro en tienda" : "Envío a domicilio"}</span>
-              <small>
-                {deliveryMode === "pickup"
-                  ? "Retiro en Cra 24 #30-75, Palmira"
-                  : "El costo y la modalidad de envío se confirmarán por WhatsApp según tu ciudad antes del despacho."}
-              </small>
+              {hasDiscountGap ? (
+                <div className="checkout-summary-line checkout-summary-line-compare">
+                  <span>Antes</span>
+                  <strong>{formatMoney(subtotalWithoutDiscount)}</strong>
+                </div>
+              ) : null}
+              {couponDiscountAmount > 0 ? (
+                <div className="checkout-summary-line">
+                  <span>
+                    Cupón {activeCouponCode ? activeCouponCode : ""}
+                    {activeCouponType === "fixed_amount"
+                      ? ` (${formatMoney(activeCouponValue)})`
+                      : activeCouponPercent > 0
+                        ? ` (${activeCouponPercent}%)`
+                        : ""}
+                  </span>
+                  <strong>- {formatMoney(couponDiscountAmount)}</strong>
+                </div>
+              ) : null}
+              <div className="checkout-summary-line">
+                <span>{deliveryMode === "pickup" ? "Retiro en tienda" : "Envío a domicilio"}</span>
+                <small>
+                  {deliveryMode === "pickup"
+                    ? "Retiro en Cra 24 #30-75, Palmira"
+                    : "El costo y la modalidad de envío se confirmarán por WhatsApp según tu ciudad antes del despacho."}
+                </small>
+              </div>
+              <div className="checkout-summary-line checkout-summary-total">
+                <span>Total</span>
+                <strong>
+                  <span className="checkout-summary-currency">COP</span> {formatMoney(totalWithCoupon)}
+                </strong>
+              </div>
+            </aside>
+            <button
+              type="button"
+              className={`checkout-coupon-toggle${couponOpen ? " is-open" : ""}`}
+              onClick={() => setCouponOpen((prev) => !prev)}
+              aria-expanded={couponOpen}
+              aria-controls="checkout-coupon-panel"
+            >
+              Tengo un código de descuento
+              <span className="checkout-coupon-toggle-icon" aria-hidden="true">
+                ▾
+              </span>
+            </button>
+            <div
+              id="checkout-coupon-panel"
+              className={`checkout-coupon-collapse${couponOpen ? " is-open" : ""}`}
+            >
+              <div className="checkout-coupon-box">
+                <div className={`checkout-coupon-row${activeCouponCode ? " has-active-coupon" : ""}`}>
+                  <input
+                    id="checkout-coupon-code"
+                    type="text"
+                    inputMode="text"
+                    autoCapitalize="characters"
+                    autoComplete="off"
+                    spellCheck={false}
+                    value={couponCode}
+                    onChange={(event) => {
+                      setCouponCode(event.target.value.toUpperCase());
+                      if (couponMessage) setCouponMessage(null);
+                    }}
+                    placeholder="Ej: KENSAR10"
+                    disabled={couponSaving}
+                  />
+                  {activeCouponCode ? (
+                    <button
+                      type="button"
+                      className="checkout-coupon-btn checkout-coupon-btn-clear"
+                      onClick={() => void handleClearCouponFromCheckout()}
+                      disabled={couponSaving}
+                    >
+                      Quitar
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="checkout-coupon-btn"
+                      onClick={() => void handleApplyCouponFromCheckout()}
+                      disabled={couponSaving}
+                    >
+                      Aplicar
+                    </button>
+                  )}
+                </div>
+                {couponMessage ? <p className="checkout-coupon-note">{couponMessage}</p> : null}
+              </div>
             </div>
-            <div className="checkout-summary-line checkout-summary-total">
-              <span>Total</span>
-              <strong>
-                <span className="checkout-summary-currency">COP</span> {formatMoney(totalWithCoupon)}
-              </strong>
-            </div>
-          </aside>
+          </div>
         </section>
       )}
       {showMobileFloatingSummary && leadItem ? (
