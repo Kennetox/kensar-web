@@ -6412,15 +6412,22 @@ body .main-wrapper::before {
   line-height: 1.33;
 }
 
-.checkout-summary-card {
+.checkout-summary-side {
   width: 100%;
   max-width: 360px;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  position: sticky;
+  top: calc(var(--topbar-current-height) + 8px);
+}
+
+.checkout-summary-card {
+  width: 100%;
   padding: 16px;
   display: grid;
   gap: 10px;
   align-content: start;
-  position: sticky;
-  top: calc(var(--topbar-current-height) + 8px);
 }
 
 .checkout-summary-card h2 {
@@ -6550,6 +6557,120 @@ body .main-wrapper::before {
   text-decoration: line-through;
   text-decoration-thickness: 1px;
   font-size: 0.86rem;
+}
+
+.checkout-coupon-box {
+  display: grid;
+  gap: 6px;
+  margin-top: 0;
+  padding-top: 0;
+  justify-items: center;
+}
+
+.checkout-coupon-toggle {
+  width: fit-content;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin-top: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-self: center;
+  gap: 6px;
+  color: #0f172a;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.checkout-coupon-toggle-icon {
+  display: inline-flex;
+  font-size: 0.72rem;
+  transition: transform 220ms ease;
+}
+
+.checkout-coupon-toggle.is-open .checkout-coupon-toggle-icon {
+  transform: rotate(180deg);
+}
+
+.checkout-coupon-collapse {
+  margin-top: 0;
+  width: 100%;
+  justify-self: center;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transform: translateY(-4px);
+  transition:
+    max-height 260ms ease,
+    opacity 200ms ease,
+    transform 220ms ease;
+}
+
+.checkout-coupon-collapse.is-open {
+  max-height: 120px;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.checkout-coupon-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  width: 100%;
+}
+
+.checkout-coupon-row.has-active-coupon {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.checkout-coupon-row input {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid rgba(148, 163, 184, 0.36);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f172a;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  outline: none;
+}
+
+.checkout-coupon-row input:focus {
+  border-color: rgba(2, 105, 201, 0.62);
+}
+
+.checkout-coupon-btn {
+  min-height: 34px;
+  border-radius: 8px;
+  border: 1px solid #0f172a;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.checkout-coupon-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.checkout-coupon-btn.checkout-coupon-btn-clear {
+  border-color: rgba(185, 28, 28, 0.4);
+  background: #ffffff;
+  color: #b91c1c;
+}
+
+.checkout-coupon-note {
+  margin: 0;
+  color: #0f172a;
+  font-size: 0.71rem;
 }
 
 .checkout-summary-total {
@@ -12167,7 +12288,6 @@ body .main-wrapper::before {
 @media (prefers-reduced-motion: reduce) {
   .reveal,
   .reveal-visible,
-  .kora-chat-panel,
   .kora-chat-toggle,
   .kora-chat-action-btn,
   .footer-column,
@@ -12183,6 +12303,15 @@ body .main-wrapper::before {
     filter: none;
     transition: none;
     animation: none;
+  }
+
+  .kora-chat-panel {
+    transition: none;
+  }
+
+  .kora-chat-panel.is-open {
+    opacity: 1;
+    transform: none;
   }
 
   .hero-slide-content .hero-anim-item,
