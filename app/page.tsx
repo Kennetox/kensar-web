@@ -312,7 +312,8 @@ async function hydrateBestSellerProducts(items: WebCatalogProductCard[]) {
     items.map(async (item) => {
       const hasPrimaryImage = Boolean((item.image_url || "").trim()) || Boolean((item.image_thumb_url || "").trim());
       const hasGallery = Array.isArray(item.gallery) && item.gallery.length > 0;
-      if (hasPrimaryImage || hasGallery) {
+      const needsStockRefresh = item.stock_status !== "in_stock";
+      if ((hasPrimaryImage || hasGallery) && !needsStockRefresh) {
         return item;
       }
       try {
@@ -326,6 +327,13 @@ async function hydrateBestSellerProducts(items: WebCatalogProductCard[]) {
           short_description: detail.short_description || item.short_description,
           long_description: detail.long_description || item.long_description,
           badge_text: detail.badge_text ?? item.badge_text ?? null,
+          price_mode: detail.price_mode ?? item.price_mode,
+          price: typeof detail.price === "number" || detail.price === null ? detail.price : item.price,
+          compare_price:
+            typeof detail.compare_price === "number" || detail.compare_price === null
+              ? detail.compare_price
+              : item.compare_price,
+          stock_status: detail.stock_status ?? item.stock_status,
           featured: typeof detail.featured === "boolean" ? detail.featured : item.featured,
         } satisfies WebCatalogProductCard;
       } catch {

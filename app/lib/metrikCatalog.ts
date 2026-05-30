@@ -325,7 +325,7 @@ export async function getCatalogBestSellers(input?: { limit?: number; days?: num
   if (input?.limit && input.limit > 0) params.set("limit", String(input.limit));
   if (input?.days && input.days > 0) params.set("days", String(input.days));
   const baseUrl = getApiBaseUrl();
-  const response = await fetchCatalog<WebCatalogBestSellerList>("/web/catalog/best-sellers", params);
+  const response = await fetchCatalogFast<WebCatalogBestSellerList>("/web/catalog/best-sellers", params);
   return {
     ...response,
     items: response.items.map((item) => normalizeCatalogProductCard(baseUrl, item)),
