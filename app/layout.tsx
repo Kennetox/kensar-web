@@ -109,7 +109,7 @@ async function loadHeaderCategories(): Promise<HeaderCategory[]> {
   try {
     const rows = await getCatalogProducts({ page: 1 });
     const categories = rows.filters.categories
-      .filter((item) => item.value)
+      .filter((item) => item.value && Number(item.count || 0) > 0)
       .map((item) => ({
         id: item.value,
         path: item.value,
