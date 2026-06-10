@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { buildCatalogCategoryHref } from "@/app/lib/catalogRoutes";
 
 type HeaderCategory = {
@@ -35,6 +36,19 @@ export default function TopNav({ categories, brands }: TopNavProps) {
     acc[parentPath].push(item);
     return acc;
   }, {});
+  const [catalogMenuOpen, setCatalogMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const className = "catalog-menu-active";
+    if (catalogMenuOpen) {
+      document.body.classList.add(className);
+    } else {
+      document.body.classList.remove(className);
+    }
+    return () => {
+      document.body.classList.remove(className);
+    };
+  }, [catalogMenuOpen]);
 
   return (
     <nav className="top-nav" aria-label="Navegacion principal">
@@ -42,7 +56,11 @@ export default function TopNav({ categories, brands }: TopNavProps) {
         Inicio
       </Link>
 
-      <div className={`nav-item-dropdown${isCatalogActive ? " active" : ""}`}>
+      <div
+        className={`nav-item-dropdown${isCatalogActive ? " active" : ""}`}
+        onMouseEnter={() => setCatalogMenuOpen(true)}
+        onMouseLeave={() => setCatalogMenuOpen(false)}
+      >
         <span className={`nav-link nav-link-with-caret${isCatalogActive ? " active" : ""}`}>
           Catalogo
           <span className="nav-caret" aria-hidden="true">

@@ -110,7 +110,15 @@ body.search-focus-active .topbar {
   border-bottom-color: transparent;
 }
 
+body.catalog-menu-active .topbar {
+  border-bottom-color: transparent;
+}
+
 body.search-focus-active .topbar-container {
+  z-index: 3;
+}
+
+body.catalog-menu-active .topbar-container {
   z-index: 3;
 }
 
@@ -124,6 +132,13 @@ body.search-focus-active .header-search-results {
 }
 
 body.search-focus-active::before {
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: saturate(0.86) blur(0.8px);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+body.catalog-menu-active::before {
   background: rgba(15, 23, 42, 0.42);
   backdrop-filter: saturate(0.86) blur(0.8px);
   opacity: 1;
