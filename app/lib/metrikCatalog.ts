@@ -262,30 +262,7 @@ export async function getCatalogCategories() {
 }
 
 export async function getCatalogCategoryHierarchy() {
-  const response = await getCatalogProducts({ page: 1, page_size: 1 });
-  const categories = response.filters.categories || [];
-  const parentKeys = new Set(
-    categories
-      .map((item) => (item.parent_value || "").trim().toLowerCase())
-      .filter(Boolean)
-  );
-
-  return categories
-    .filter((item) => item.value?.trim())
-    .map((item) => ({
-      id: item.value,
-      path: item.value,
-      name: item.label,
-      parent_path: item.parent_value || null,
-      level: item.level || 1,
-      has_children: parentKeys.has(item.value.trim().toLowerCase()),
-      image_url: null,
-      tile_color: null,
-      is_active: true,
-      home_featured: false,
-      home_featured_order: 0,
-      product_count: item.count || 0,
-    }));
+  return getCatalogCategories();
 }
 
 export async function getHomeSliders() {
