@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { Inter } from "next/font/google";
 import { Suspense } from "react";
 import TopNav from "./components/TopNav";
 import AccountAccess from "./components/AccountAccess";
@@ -23,11 +22,6 @@ import GoogleAnalytics from "./components/GoogleAnalytics";
 import { getCatalogCategories, getCatalogProducts } from "@/app/lib/metrikCatalog";
 import { buildWhatsAppPrefill } from "@/app/lib/kora/whatsapp-handoff";
 import "./globals.css";
-
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://kensarelectronic.com"),
@@ -159,7 +153,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="es">
-      <body className={inter.className}>
+      <body>
         <MetaPixel />
         <GoogleAnalytics />
         <TopbarScrollBehavior />

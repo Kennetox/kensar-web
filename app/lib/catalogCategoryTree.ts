@@ -1,17 +1,22 @@
-import type { WebCatalogCategory } from "@/app/lib/metrikCatalog";
+type CatalogCategoryLike = {
+  id?: string | number;
+  path: string;
+  parent_path?: string | null;
+  name?: string;
+};
 
-export type CatalogCategoryTrailNode = {
-  category: WebCatalogCategory;
+export type CatalogCategoryTrailNode<T extends CatalogCategoryLike = CatalogCategoryLike> = {
+  category: T;
   segments: string[];
-  trail: WebCatalogCategory[];
+  trail: T[];
 };
 
 function normalizeSegment(value: string | null | undefined) {
   return (value || "").trim().toLowerCase();
 }
 
-export function buildCatalogCategoryMap(categories: WebCatalogCategory[]) {
-  return categories.reduce<Record<string, WebCatalogCategory>>((acc, category) => {
+export function buildCatalogCategoryMap<T extends CatalogCategoryLike>(categories: T[]) {
+  return categories.reduce<Record<string, T>>((acc, category) => {
     const key = normalizeSegment(category.path);
     if (!key) return acc;
     acc[key] = category;
@@ -19,8 +24,8 @@ export function buildCatalogCategoryMap(categories: WebCatalogCategory[]) {
   }, {});
 }
 
-export function buildCatalogCategoryChildrenMap(categories: WebCatalogCategory[]) {
-  return categories.reduce<Record<string, WebCatalogCategory[]>>((acc, category) => {
+export function buildCatalogCategoryChildrenMap<T extends CatalogCategoryLike>(categories: T[]) {
+  return categories.reduce<Record<string, T[]>>((acc, category) => {
     const parentKey = normalizeSegment(category.parent_path);
     if (!parentKey) return acc;
     if (!acc[parentKey]) acc[parentKey] = [];
@@ -29,13 +34,13 @@ export function buildCatalogCategoryChildrenMap(categories: WebCatalogCategory[]
   }, {});
 }
 
-export function getCatalogCategoryTrail(
-  category: WebCatalogCategory,
-  categoryMap: Record<string, WebCatalogCategory>
-): CatalogCategoryTrailNode {
+export function getCatalogCategoryTrail<T extends CatalogCategoryLike>(
+  category: T,
+  categoryMap: Record<string, T>
+): CatalogCategoryTrailNode<T> {
   const visited = new Set<string>();
-  const trail: WebCatalogCategory[] = [];
-  let current: WebCatalogCategory | undefined = category;
+  const trail: T[] = [];
+  let current: T | undefined = category;
 
   while (current) {
     const currentKey = normalizeSegment(current.path);
@@ -58,7 +63,7 @@ export function getCatalogCategoryTrail(
 
 export function buildCatalogCategoryTrailFromKey(
   categoryKey: string | null | undefined,
-  categoryMap: Record<string, WebCatalogCategory>
+  categoryMap: Record<string, CatalogCategoryLike>
 ): CatalogCategoryTrailNode | null {
   const normalizedKey = normalizeSegment(categoryKey);
   if (!normalizedKey) return null;
@@ -68,7 +73,7 @@ export function buildCatalogCategoryTrailFromKey(
 }
 
 export function resolveCatalogCategoryBySegments(
-  categories: WebCatalogCategory[],
+  categories: CatalogCategoryLike[],
   segments: string[]
 ): CatalogCategoryTrailNode | null {
   const normalizedSegments = segments.map((segment) => normalizeSegment(segment)).filter(Boolean);
@@ -77,7 +82,7 @@ export function resolveCatalogCategoryBySegments(
   const childrenMap = buildCatalogCategoryChildrenMap(categories);
   const roots = categories.filter((category) => !normalizeSegment(category.parent_path));
   let currentLevel = roots;
-  const trail: WebCatalogCategory[] = [];
+  const trail: CatalogCategoryLike[] = [];
 
   for (const segment of normalizedSegments) {
     const nextCategory = currentLevel.find((category) => normalizeSegment(category.path) === segment);

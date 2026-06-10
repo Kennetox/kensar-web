@@ -47,9 +47,6 @@ async function fetchAllPublishedProducts(): Promise<WebCatalogProductCard[]> {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [categories, products] = await Promise.all([getCatalogCategories(), fetchAllPublishedProducts()]);
-  const categoryMap = buildCatalogCategoryMap(categories);
-
   const entries: MetadataRoute.Sitemap = [
     {
       url: toAbsoluteUrl("/"),
@@ -58,6 +55,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
   ];
+
+  let categories: Awaited<ReturnType<typeof getCatalogCategories>> = [];
+  let products: WebCatalogProductCard[] = [];
+  try {
+    [categories, products] = await Promise.all([getCatalogCategories(), fetchAllPublishedProducts()]);
+  } catch {
+    return entries;
+  }
+
+  const categoryMap = buildCatalogCategoryMap(categories);
 
   const categoryEntries = categories
     .filter((category) => category.path?.trim())
