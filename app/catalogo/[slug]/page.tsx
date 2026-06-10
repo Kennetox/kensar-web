@@ -14,7 +14,7 @@ import { buildCatalogCategoryHrefFromSegments, buildCatalogCategoryMap, buildCat
 import { buildWhatsAppPrefill } from "@/app/lib/kora/whatsapp-handoff";
 import {
   formatCatalogPrice,
-  getCatalogCategories,
+  getCatalogCategoryHierarchy,
   getCatalogProduct,
   getCatalogProducts,
   getStockLabel,
@@ -144,7 +144,7 @@ export default async function CatalogProductDetailPage({
   const gallery = [product.image_url, product.image_thumb_url, ...product.gallery].filter(
     (image, index, list): image is string => Boolean(image) && list.indexOf(image) === index
   );
-  const categories = await getCatalogCategories().catch(() => []);
+  const categories = await getCatalogCategoryHierarchy().catch(() => []);
   const categoryMap = buildCatalogCategoryMap(categories);
   const categoryTrail = buildCatalogCategoryTrailFromKey(product.category_path, categoryMap);
   const descriptionText = (product.long_description || product.short_description || "").trim();

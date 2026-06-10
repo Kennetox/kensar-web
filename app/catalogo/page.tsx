@@ -13,7 +13,7 @@ import {
   type CatalogCategoryTrailNode,
 } from "@/app/lib/catalogCategoryTree";
 import {
-  getCatalogCategories,
+  getCatalogCategoryHierarchy,
   getCatalogProducts,
   type WebCatalogCategory,
   type WebCatalogFilterOption,
@@ -195,7 +195,7 @@ async function loadCatalogData(input: {
 }> {
   try {
     const [categories, productList] = await Promise.all([
-      getCatalogCategories(),
+      getCatalogCategoryHierarchy(),
       getCatalogProducts({
         q: input.q || undefined,
         category: input.category || undefined,

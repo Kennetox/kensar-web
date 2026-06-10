@@ -15,7 +15,7 @@ import {
 } from "@/app/lib/catalogCategoryTree";
 import { buildWhatsAppPrefill } from "@/app/lib/kora/whatsapp-handoff";
 import {
-  getCatalogCategories,
+  getCatalogCategoryHierarchy,
   getCatalogBestSellers,
   getCatalogProduct,
   getCatalogProducts,
@@ -188,7 +188,7 @@ const fallbackProducts: WebCatalogProductCard[] = [
 async function loadHomeData(): Promise<HomeData> {
   try {
     const [categories, productList, sliders] = await Promise.all([
-      getCatalogCategories(),
+      getCatalogCategoryHierarchy(),
       getCatalogProducts({ page: 1 }),
       getHomeSliders(),
     ]);

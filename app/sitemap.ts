@@ -5,7 +5,11 @@ import {
   buildCatalogCategoryMap,
   buildCatalogCategoryTrailFromKey,
 } from "@/app/lib/catalogCategoryTree";
-import { getCatalogCategories, getCatalogProducts, type WebCatalogProductCard } from "@/app/lib/metrikCatalog";
+import {
+  getCatalogCategoryHierarchy,
+  getCatalogProducts,
+  type WebCatalogProductCard,
+} from "@/app/lib/metrikCatalog";
 
 export const revalidate = 600;
 
@@ -56,10 +60,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  let categories: Awaited<ReturnType<typeof getCatalogCategories>> = [];
+  let categories: Awaited<ReturnType<typeof getCatalogCategoryHierarchy>> = [];
   let products: WebCatalogProductCard[] = [];
   try {
-    [categories, products] = await Promise.all([getCatalogCategories(), fetchAllPublishedProducts()]);
+    [categories, products] = await Promise.all([getCatalogCategoryHierarchy(), fetchAllPublishedProducts()]);
   } catch {
     return entries;
   }

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import CatalogoPage from "@/app/catalogo/page";
-import { getCatalogCategories } from "@/app/lib/metrikCatalog";
+import { getCatalogCategoryHierarchy } from "@/app/lib/metrikCatalog";
 import { resolveCatalogCategoryBySegments } from "@/app/lib/catalogCategoryTree";
 
 type CategoryCatalogPageProps = {
@@ -24,7 +24,7 @@ export default async function CategoryCatalogPage({ params, searchParams }: Cate
     notFound();
   }
 
-  const categories = await getCatalogCategories();
+  const categories = await getCatalogCategoryHierarchy();
   const resolved = resolveCatalogCategoryBySegments(categories, pathSegments);
   if (!resolved) {
     notFound();
