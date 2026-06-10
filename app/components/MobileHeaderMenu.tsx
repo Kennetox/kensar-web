@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { buildCatalogCategoryHref } from "@/app/lib/catalogRoutes";
+import { buildCatalogCategoryMap, buildCatalogCategoryTrailFromKey } from "@/app/lib/catalogCategoryTree";
 
 type HeaderCategory = {
   id: string;
@@ -33,6 +34,7 @@ export default function MobileHeaderMenu({ categories }: MobileHeaderMenuProps) 
     () => categories.filter((category) => !category.parent_path),
     [categories]
   );
+  const categoryMap = useMemo(() => buildCatalogCategoryMap(categories), [categories]);
 
   const childrenByParent = useMemo(() => {
     return categories.reduce<Record<string, HeaderCategory[]>>((acc, item) => {
@@ -50,6 +52,13 @@ export default function MobileHeaderMenu({ categories }: MobileHeaderMenuProps) 
   );
 
   const activeSubcategories = activeParentPath ? childrenByParent[activeParentPath] || [] : [];
+
+  function getCategoryHref(category: HeaderCategory, fallbackSegments: string[] = [category.path]) {
+    const trail = buildCatalogCategoryTrailFromKey(category.path, categoryMap);
+    return buildCatalogCategoryHref({
+      categorySegments: trail?.segments?.length ? trail.segments : fallbackSegments,
+    });
+  }
 
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
@@ -156,7 +165,7 @@ export default function MobileHeaderMenu({ categories }: MobileHeaderMenuProps) 
                       return (
                         <Link
                           key={category.id}
-                          href={buildCatalogCategoryHref({ categoryPath: category.path })}
+                          href={getCategoryHref(category)}
                           onClick={closeMenu}
                         >
                           {category.name}
@@ -183,7 +192,7 @@ export default function MobileHeaderMenu({ categories }: MobileHeaderMenuProps) 
                 <div className="mobile-menu-nav">
                   {activeParent ? (
                     <Link
-                      href={buildCatalogCategoryHref({ categoryPath: activeParent.path })}
+                      href={getCategoryHref(activeParent)}
                       onClick={closeMenu}
                     >
                       Ver todo en {activeParent.name}
@@ -192,10 +201,7 @@ export default function MobileHeaderMenu({ categories }: MobileHeaderMenuProps) 
                   {activeSubcategories.map((subcategory) => (
                     <Link
                       key={subcategory.id}
-                      href={buildCatalogCategoryHref({
-                        categoryPath: subcategory.path,
-                        parentCategoryPath: activeParent?.path || undefined,
-                      })}
+                      href={getCategoryHref(subcategory, [activeParent?.path || subcategory.path, subcategory.path])}
                       onClick={closeMenu}
                     >
                       {subcategory.name}

@@ -5,6 +5,14 @@ import CatalogFiltersSidebar from "@/app/catalogo/CatalogFiltersSidebar";
 import MobileFilterDisclosure from "@/app/catalogo/MobileFilterDisclosure";
 import KoraPageContextBridge from "@/app/components/KoraPageContextBridge";
 import {
+  buildCatalogCategoryHrefFromSegments,
+  buildCatalogCategoryChildrenMap,
+  buildCatalogCategoryMap,
+  buildCatalogCategoryTrailFromKey,
+  resolveCatalogCategoryBySegments,
+  type CatalogCategoryTrailNode,
+} from "@/app/lib/catalogCategoryTree";
+import {
   getCatalogCategories,
   getCatalogProducts,
   type WebCatalogCategory,
@@ -24,6 +32,7 @@ type CatalogPageProps = {
     page?: string;
     view?: string;
   }>;
+  categoryPathSegments?: string[];
 };
 
 type PaginationToken = number | "ellipsis";
@@ -57,6 +66,7 @@ function buildCatalogHref(input: {
   q?: string;
   local_q?: string;
   category?: string;
+  categorySegments?: string[];
   brand?: string[];
   sort?: string;
   min_price?: string;
@@ -64,8 +74,11 @@ function buildCatalogHref(input: {
   page?: string;
   view?: "grid" | "list";
 }) {
+  const categorySegments = (input.categorySegments || []).map((segment) => segment.trim()).filter(Boolean);
   const categoryPath = input.category?.trim();
-  const basePath = categoryPath
+  const basePath = categorySegments.length
+    ? buildCatalogCategoryHrefFromSegments(categorySegments)
+    : categoryPath
     ? `/catalogo/categoria/${encodeURIComponent(categoryPath)}`
     : "/catalogo";
   const params = new URLSearchParams();
@@ -201,7 +214,7 @@ async function loadCatalogData(input: {
   }
 }
 
-export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
+export default async function CatalogoPage({ searchParams, categoryPathSegments }: CatalogPageProps) {
   const CATALOG_PAGE_SIZE = 24;
   const params = (await searchParams) ?? {};
   const rawSort = (params.sort || "").trim();
@@ -231,17 +244,6 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
   const maxPrice = Math.max(Number(params.max_price) || 0, 0);
   const page = Math.max(Number(params.page) || 1, 1);
   const view = (params.view || "").trim() === "list" ? "list" : "grid";
-  const currentCatalogPath = buildCatalogHref({
-    q: globalQ || undefined,
-    local_q: localQ || undefined,
-    category: category || undefined,
-    brand: normalizedSelectedBrands,
-    sort,
-    min_price: minPrice > 0 ? String(minPrice) : undefined,
-    max_price: maxPrice > 0 ? String(maxPrice) : undefined,
-    page: page > 1 ? String(page) : undefined,
-    view,
-  });
   const isDirectCatalogRoot =
     !category &&
     !effectiveQ &&
@@ -263,6 +265,30 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
     max_price: maxPrice > 0 ? maxPrice : undefined,
     page,
     page_size: CATALOG_PAGE_SIZE,
+  });
+
+  const categoryMap = buildCatalogCategoryMap(categories);
+  const resolvedCategoryTrail: CatalogCategoryTrailNode | null = categoryPathSegments?.length
+    ? resolveCatalogCategoryBySegments(categories, categoryPathSegments)
+    : category
+    ? buildCatalogCategoryTrailFromKey(category, categoryMap)
+    : null;
+  const selectedCategoryNode = resolvedCategoryTrail?.category || null;
+  const selectedCategoryPathSegments = resolvedCategoryTrail?.segments || (category ? [category] : []);
+  const catalogHrefBase = {
+    q: globalQ || undefined,
+    local_q: localQ || undefined,
+    category: category || undefined,
+    categorySegments: selectedCategoryPathSegments.length ? selectedCategoryPathSegments : undefined,
+    brand: normalizedSelectedBrands,
+    sort,
+    min_price: minPrice > 0 ? String(minPrice) : undefined,
+    max_price: maxPrice > 0 ? String(maxPrice) : undefined,
+    page: page > 1 ? String(page) : undefined,
+  };
+  const currentCatalogPath = buildCatalogHref({
+    ...catalogHrefBase,
+    view,
   });
 
   if (hasError || !productList) {
@@ -326,11 +352,17 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
     selectedFilterCategory?.parent_value
       ? categoryFilterMap.get(selectedFilterCategory.parent_value) || null
       : null;
+  const categoryChildrenMap = buildCatalogCategoryChildrenMap(visibleCategories);
+  const selectedCategoryChildren = selectedCategoryNode
+    ? categoryChildrenMap[selectedCategoryNode.path.trim().toLowerCase()] || []
+    : [];
   const totalPages = Math.max(1, Math.ceil((productList.total || 0) / Math.max(1, productList.page_size || 24)));
   const selectedCategoryName =
+    selectedCategoryNode?.name ||
     visibleCategories.find((item) => item.path === category)?.name ||
     productList.filters.categories.find((item) => item.value === category)?.label ||
     "";
+  const selectedCategoryTrailLabels = resolvedCategoryTrail?.trail.map((item) => item.name) || [];
   const derivedMaxPriceFromItems = productList.items.reduce((currentMax, item) => {
     const numericPrice =
       typeof item.price === "number" && Number.isFinite(item.price) ? Math.round(item.price) : 0;
@@ -358,7 +390,9 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
   );
   const catalogHeaderTitle = category && selectedCategoryName ? selectedCategoryName : "Catalogo";
   const catalogHeaderSubtitle =
-    category && selectedParentFilterCategory
+    category && selectedCategoryTrailLabels.length > 1
+      ? selectedCategoryTrailLabels.join(" / ")
+      : category && selectedParentFilterCategory
       ? `Subcategoria de ${selectedParentFilterCategory.label}`
       : category
       ? "Categoria del catalogo"
@@ -374,7 +408,15 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
     >
       <KoraPageContextBridge
         pageContext={
-          category
+          category && selectedCategoryTrailLabels.length > 1
+            ? {
+                pageType: "subcategory",
+                categorySlug: selectedCategoryTrailLabels[0] || category,
+                categoryName: selectedCategoryTrailLabels[0] || category,
+                subcategorySlug: selectedCategoryNode?.path || category,
+                subcategoryName: selectedCategoryName || category,
+              }
+            : category
             ? {
                 pageType: "category",
                 categorySlug: category,
@@ -389,12 +431,14 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
             <Link href="/">Inicio</Link>
             <span>/</span>
             <span>Catalogo</span>
-            {category && selectedCategoryName ? (
-              <>
-                <span>/</span>
-                <span>{selectedCategoryName}</span>
-              </>
-            ) : null}
+            {selectedCategoryTrailLabels.length
+              ? selectedCategoryTrailLabels.map((label, index) => (
+                  <span key={`${label}-${index}`}>
+                    <span>/</span>
+                    <span>{label}</span>
+                  </span>
+                ))
+              : null}
           </nav>
           <div className="catalog-context-side">
             <p className="catalog-context-summary">
@@ -412,17 +456,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
               <span className="catalog-view-toolbar-label">Ver como</span>
               <div className="catalog-view-toolbar-actions">
                 <Link
-                  href={buildCatalogHref({
-                    q: globalQ || undefined,
-                    local_q: localQ || undefined,
-                    category: category || undefined,
-                    brand: normalizedSelectedBrands,
-                    sort,
-                    min_price: minPrice > 0 ? String(minPrice) : undefined,
-                    max_price: maxPrice > 0 ? String(maxPrice) : undefined,
-                    page: page > 1 ? String(page) : undefined,
-                    view: "list",
-                  })}
+                  href={buildCatalogHref({ ...catalogHrefBase, view: "list" })}
                   className={`catalog-view-toggle catalog-view-toggle-list${view === "list" ? " is-active" : ""}`}
                   aria-label="Ver como lista"
                   title="Lista"
@@ -436,17 +470,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
                   </svg>
                 </Link>
                 <Link
-                  href={buildCatalogHref({
-                    q: globalQ || undefined,
-                    local_q: localQ || undefined,
-                    category: category || undefined,
-                    brand: normalizedSelectedBrands,
-                    sort,
-                    min_price: minPrice > 0 ? String(minPrice) : undefined,
-                    max_price: maxPrice > 0 ? String(maxPrice) : undefined,
-                    page: page > 1 ? String(page) : undefined,
-                    view: "grid",
-                  })}
+                  href={buildCatalogHref({ ...catalogHrefBase, view: "grid" })}
                   className={`catalog-view-toggle catalog-view-toggle-grid${view === "grid" ? " is-active" : ""}`}
                   aria-label="Ver como galeria"
                   title="Galeria"
@@ -464,6 +488,25 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
           </div>
         </div>
       </section>
+
+      {selectedCategoryChildren.length ? (
+        <section className="catalog-subcategory-strip" aria-label="Subcategorias de la categoria actual">
+          {selectedCategoryChildren.map((child) => {
+            const childTrail = buildCatalogCategoryTrailFromKey(child.path, categoryMap);
+            return (
+              <Link
+                key={child.id}
+                href={buildCatalogHref({
+                  categorySegments: childTrail?.segments || [child.path],
+                })}
+                className="catalog-subcategory-chip"
+              >
+                {child.name}
+              </Link>
+            );
+          })}
+        </section>
+      ) : null}
 
       <section className="catalog-store-layout">
         <aside className="catalog-sidebar catalog-sidebar-desktop">
@@ -496,17 +539,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
             <span className="catalog-view-toolbar-label">Ver como</span>
             <div className="catalog-view-toolbar-actions">
               <Link
-                href={buildCatalogHref({
-                  q: globalQ || undefined,
-                  local_q: localQ || undefined,
-                  category: category || undefined,
-                  brand: normalizedSelectedBrands,
-                  sort,
-                  min_price: minPrice > 0 ? String(minPrice) : undefined,
-                  max_price: maxPrice > 0 ? String(maxPrice) : undefined,
-                  page: page > 1 ? String(page) : undefined,
-                  view: "list",
-                })}
+                href={buildCatalogHref({ ...catalogHrefBase, view: "list" })}
                 className={`catalog-view-toggle catalog-view-toggle-list${view === "list" ? " is-active" : ""}`}
                 aria-label="Ver como lista"
                 title="Lista"
@@ -520,17 +553,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
                 </svg>
               </Link>
               <Link
-                href={buildCatalogHref({
-                  q: globalQ || undefined,
-                  local_q: localQ || undefined,
-                  category: category || undefined,
-                  brand: normalizedSelectedBrands,
-                  sort,
-                  min_price: minPrice > 0 ? String(minPrice) : undefined,
-                  max_price: maxPrice > 0 ? String(maxPrice) : undefined,
-                  page: page > 1 ? String(page) : undefined,
-                  view: "grid",
-                })}
+                href={buildCatalogHref({ ...catalogHrefBase, view: "grid" })}
                 className={`catalog-view-toggle catalog-view-toggle-grid${view === "grid" ? " is-active" : ""}`}
                 aria-label="Ver como galeria"
                 title="Galeria"
@@ -565,13 +588,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
                   <nav className="catalog-pagination" aria-label="Paginación de catálogo">
                     <Link
                       href={buildCatalogHref({
-                        q: globalQ || undefined,
-                        local_q: localQ || undefined,
-                        category: category || undefined,
-                        brand: normalizedSelectedBrands,
-                        sort,
-                        min_price: minPrice > 0 ? String(minPrice) : undefined,
-                        max_price: maxPrice > 0 ? String(maxPrice) : undefined,
+                        ...catalogHrefBase,
                         page: page > 1 ? String(page - 1) : undefined,
                         view,
                       })}
@@ -595,13 +612,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
                           <div key={`page-wrap-${itemPage}`} className="catalog-pagination-page-wrap">
                             <Link
                               href={buildCatalogHref({
-                                q: globalQ || undefined,
-                                local_q: localQ || undefined,
-                                category: category || undefined,
-                                brand: normalizedSelectedBrands,
-                                sort,
-                                min_price: minPrice > 0 ? String(minPrice) : undefined,
-                                max_price: maxPrice > 0 ? String(maxPrice) : undefined,
+                                ...catalogHrefBase,
                                 page: itemPage > 1 ? String(itemPage) : undefined,
                                 view,
                               })}
@@ -616,13 +627,7 @@ export default async function CatalogoPage({ searchParams }: CatalogPageProps) {
                     </div>
                     <Link
                       href={buildCatalogHref({
-                        q: globalQ || undefined,
-                        local_q: localQ || undefined,
-                        category: category || undefined,
-                        brand: normalizedSelectedBrands,
-                        sort,
-                        min_price: minPrice > 0 ? String(minPrice) : undefined,
-                        max_price: maxPrice > 0 ? String(maxPrice) : undefined,
+                        ...catalogHrefBase,
                         page: page < totalPages ? String(page + 1) : String(totalPages),
                         view,
                       })}

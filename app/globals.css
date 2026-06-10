@@ -13358,6 +13358,40 @@ body .main-wrapper::before {
   font-weight: 600;
 }
 
+.catalog-subcategory-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 0 2px;
+}
+
+.catalog-subcategory-chip {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: #ffffff;
+  color: #334155;
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1;
+  transition:
+    border-color 0.16s ease,
+    color 0.16s ease,
+    background-color 0.16s ease,
+    transform 0.16s ease;
+}
+
+.catalog-subcategory-chip:hover {
+  border-color: rgba(37, 99, 235, 0.28);
+  color: #1d4ed8;
+  background: rgba(37, 99, 235, 0.06);
+  transform: translateY(-1px);
+}
+
 .catalog-context-chip small {
   color: #64748b;
   font-size: 0.7rem;

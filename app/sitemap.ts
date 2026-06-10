@@ -1,5 +1,10 @@
 import type { MetadataRoute } from "next";
 import { buildCatalogCategoryHref } from "@/app/lib/catalogRoutes";
+import {
+  buildCatalogCategoryHrefFromSegments,
+  buildCatalogCategoryMap,
+  buildCatalogCategoryTrailFromKey,
+} from "@/app/lib/catalogCategoryTree";
 import { getCatalogCategories, getCatalogProducts, type WebCatalogProductCard } from "@/app/lib/metrikCatalog";
 
 export const revalidate = 600;
@@ -43,6 +48,7 @@ async function fetchAllPublishedProducts(): Promise<WebCatalogProductCard[]> {
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [categories, products] = await Promise.all([getCatalogCategories(), fetchAllPublishedProducts()]);
+  const categoryMap = buildCatalogCategoryMap(categories);
 
   const entries: MetadataRoute.Sitemap = [
     {
@@ -56,10 +62,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const categoryEntries = categories
     .filter((category) => category.path?.trim())
     .map((category) => ({
-      url: toAbsoluteUrl(buildCatalogCategoryHref({
-        categoryPath: category.path,
-        parentCategoryPath: category.parent_path,
-      })),
+      url: toAbsoluteUrl(
+        buildCatalogCategoryTrailFromKey(category.path, categoryMap)?.segments.length
+          ? buildCatalogCategoryHrefFromSegments(
+              buildCatalogCategoryTrailFromKey(category.path, categoryMap)?.segments || [category.path]
+            )
+          : buildCatalogCategoryHref({
+              categoryPath: category.path,
+              parentCategoryPath: category.parent_path,
+            })
+      ),
       lastModified: new Date(),
       changeFrequency: "weekly" as const,
       priority: category.parent_path ? 0.65 : 0.75,

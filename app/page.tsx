@@ -2,11 +2,17 @@ import Link from "next/link";
 import Image from "next/image";
 import CatalogProductCard from "@/app/catalogo/CatalogProductCard";
 import CommerceSlider from "@/app/components/CommerceSlider";
+import HomeBrandCollage from "@/app/components/HomeBrandCollage";
 import HomeProductCarousel from "@/app/components/HomeProductCarousel";
 import HomePersonalizaHighlight from "@/app/components/HomePersonalizaHighlight";
 import KoraPageContextBridge from "@/app/components/KoraPageContextBridge";
 import Reveal from "@/app/components/Reveal";
 import { buildCatalogCategoryHref } from "@/app/lib/catalogRoutes";
+import {
+  buildCatalogCategoryHrefFromSegments,
+  buildCatalogCategoryMap,
+  buildCatalogCategoryTrailFromKey,
+} from "@/app/lib/catalogCategoryTree";
 import { buildWhatsAppPrefill } from "@/app/lib/kora/whatsapp-handoff";
 import {
   getCatalogCategories,
@@ -201,14 +207,27 @@ async function loadHomeData(): Promise<HomeData> {
   }
 }
 
-function buildCategoryHref(path: string | null, parentPath?: string | null) {
+function buildCategoryHref(
+  path: string | null,
+  parentPath?: string | null,
+  categoryMap?: Record<string, WebCatalogCategory>
+) {
+  if (categoryMap && path) {
+    const trail = buildCatalogCategoryTrailFromKey(path, categoryMap);
+    if (trail?.segments.length) {
+      return buildCatalogCategoryHrefFromSegments(trail.segments);
+    }
+  }
   return buildCatalogCategoryHref({
     categoryPath: path,
     parentCategoryPath: parentPath,
   });
 }
 
-function resolveSliderHref(slider: WebCatalogHomeSlider) {
+function resolveSliderHref(
+  slider: WebCatalogHomeSlider,
+  categoryMap?: Record<string, WebCatalogCategory>
+) {
   const linkType = (slider.link_type || "catalogo").trim().toLowerCase();
   const rawValue = (slider.link_value || "").trim();
   if (linkType === "sin_link") {
@@ -216,12 +235,12 @@ function resolveSliderHref(slider: WebCatalogHomeSlider) {
   }
   if (linkType === "categoria") {
     if (!rawValue) return "/catalogo";
-    return buildCategoryHref(rawValue);
+    return buildCategoryHref(rawValue, undefined, categoryMap);
   }
   if (linkType === "subcategoria") {
     const [parentKey, childKey] = rawValue.split("::").map((item) => item.trim());
     if (!parentKey || !childKey) return "/catalogo";
-    return buildCategoryHref(childKey, parentKey);
+    return buildCategoryHref(childKey, parentKey, categoryMap);
   }
   if (linkType === "personalizacion") {
     return "/personaliza";
@@ -346,6 +365,7 @@ async function hydrateBestSellerProducts(items: WebCatalogProductCard[]) {
 
 export default async function HomePage() {
   const { categories, products, sliders } = await loadHomeData();
+  const categoryMap = buildCatalogCategoryMap(categories);
 
   const livingProducts = await loadHomeLivingProducts(products);
   const bestSellerProducts = await getCatalogBestSellers({ limit: 10, days: 90 })
@@ -356,7 +376,7 @@ export default async function HomePage() {
       id: "guitarras",
       image: "/sliders/home/slide-01-desktop.webp",
       alt: "Promociones y descuentos en categorias destacadas",
-      href: buildCategoryHref("instrumentos"),
+      href: buildCategoryHref("instrumentos", undefined, categoryMap),
       ctaLabel: "VER GUITARRAS",
       ctaXPercent: 50,
       ctaYPercent: 80,
@@ -387,7 +407,7 @@ export default async function HomePage() {
           image: slider.image_url || "",
           mobileImage: slider.mobile_image_url || null,
           alt: slider.alt_text || "Promoción destacada Kensar",
-          href: resolveSliderHref(slider),
+          href: resolveSliderHref(slider, categoryMap),
           ctaLabel: slider.cta_label || "",
           ctaXPercent:
             typeof slider.cta_x_percent === "number" ? slider.cta_x_percent : 50,
@@ -424,7 +444,7 @@ export default async function HomePage() {
     .slice(0, HOME_FEATURED_CATEGORY_LIMIT)
     .map((category) => ({
       id: category.id,
-      href: buildCategoryHref(category.path, category.parent_path),
+      href: buildCategoryHref(category.path, category.parent_path, categoryMap),
       name: category.name,
       imageUrl: category.image_url,
     }));
@@ -434,7 +454,7 @@ export default async function HomePage() {
     .slice(0, HOME_FEATURED_CATEGORY_LIMIT)
     .map((category) => ({
       id: category.id,
-      href: buildCategoryHref(category.path, category.parent_path),
+      href: buildCategoryHref(category.path, category.parent_path, categoryMap),
       name: category.name,
       imageUrl: category.image_url,
     }));
@@ -512,46 +532,7 @@ export default async function HomePage() {
         )}
       </section>
 
-      <section className="commerce-brand-collage" aria-label="Marcas que respaldan tu sonido">
-        <Reveal className="commerce-brand-collage-head">
-          <p className="commerce-section-kicker">Marcas destacadas</p>
-          <h2>Marcas que respaldan tu sonido</h2>
-        </Reveal>
-
-        <div className="brand-collage-grid">
-          <Link href={`/catalogo?brand=${encodeURIComponent("Yamaha")}`} className="brand-tile brand-tile-main" aria-label="Explorar Yamaha">
-            <div
-              className="brand-tile-image"
-              style={{ backgroundImage: "url('/brands/collage/hero-yamaha.webp')" }}
-              aria-hidden="true"
-            />
-          </Link>
-
-          <Link href={`/catalogo?brand=${encodeURIComponent("Pro DJ")}`} className="brand-tile brand-tile-top-left" aria-label="Explorar Pro DJ">
-            <div
-              className="brand-tile-image"
-              style={{ backgroundImage: "url('/brands/collage/title-prodj.webp')" }}
-              aria-hidden="true"
-            />
-          </Link>
-
-          <Link href={`/catalogo?brand=${encodeURIComponent("Ritmo Musical")}`} className="brand-tile brand-tile-top-right" aria-label="Explorar RM">
-            <div
-              className="brand-tile-image"
-              style={{ backgroundImage: "url('/brands/collage/title-rm1.webp')" }}
-              aria-hidden="true"
-            />
-          </Link>
-
-          <Link href={`/catalogo?brand=${encodeURIComponent("Spain")}`} className="brand-tile brand-tile-bottom" aria-label="Explorar Spain">
-            <div
-              className="brand-tile-image"
-              style={{ backgroundImage: "url('/brands/collage/banner-spain.webp')" }}
-              aria-hidden="true"
-            />
-          </Link>
-        </div>
-      </section>
+      <HomeBrandCollage />
       <section className="commerce-next-clean-section" aria-label="Tecnologia Kensar">
         {livingProducts.length > 0 ? (
           <div className="commerce-home-living-products">

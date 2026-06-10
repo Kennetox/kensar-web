@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { buildCatalogCategoryHref } from "@/app/lib/catalogRoutes";
+import { buildCatalogCategoryMap, buildCatalogCategoryTrailFromKey } from "@/app/lib/catalogCategoryTree";
 
 type HeaderCategory = {
   id: string;
@@ -28,6 +29,7 @@ export default function TopNav({ categories, brands }: TopNavProps) {
   const isCustomizeActive = pathname === "/personaliza" || pathname.startsWith("/personaliza/");
   const isContactActive = pathname === "/empresa" || pathname.startsWith("/empresa/");
   const hasBrands = brands.length > 0;
+  const categoryMap = buildCatalogCategoryMap(categories);
   const parentCategories = categories.filter((category) => !category.parent_path);
   const childrenByParent = categories.reduce<Record<string, HeaderCategory[]>>((acc, item) => {
     const parentPath = (item.parent_path || "").trim();
@@ -49,6 +51,13 @@ export default function TopNav({ categories, brands }: TopNavProps) {
       document.body.classList.remove(className);
     };
   }, [catalogMenuOpen]);
+
+  function getCategoryHref(category: HeaderCategory, fallbackSegments: string[] = [category.path]) {
+    const trail = buildCatalogCategoryTrailFromKey(category.path, categoryMap);
+    return buildCatalogCategoryHref({
+      categorySegments: trail?.segments?.length ? trail.segments : fallbackSegments,
+    });
+  }
 
   return (
     <nav className="top-nav" aria-label="Navegacion principal">
@@ -79,7 +88,7 @@ export default function TopNav({ categories, brands }: TopNavProps) {
                 className={hasSubcategories ? "nav-dropdown-item has-submenu" : "nav-dropdown-item"}
               >
                 <Link
-                  href={buildCatalogCategoryHref({ categoryPath: category.path })}
+                  href={getCategoryHref(category)}
                   className={hasSubcategories ? "nav-dropdown-link nav-dropdown-link-parent" : "nav-dropdown-link"}
                   role="menuitem"
                 >
@@ -91,10 +100,7 @@ export default function TopNav({ categories, brands }: TopNavProps) {
                     {subcategories.map((subcategory) => (
                       <Link
                         key={subcategory.id}
-                        href={buildCatalogCategoryHref({
-                          categoryPath: subcategory.path,
-                          parentCategoryPath: category.path,
-                        })}
+                        href={getCategoryHref(subcategory, [category.path, subcategory.path])}
                         className="nav-dropdown-link"
                         role="menuitem"
                       >

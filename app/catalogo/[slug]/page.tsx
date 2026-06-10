@@ -10,9 +10,11 @@ import ProductViewTracker from "@/app/catalogo/ProductViewTracker";
 import ProductHorizontalDragScroll from "@/app/catalogo/ProductHorizontalDragScroll";
 import KoraPageContextBridge from "@/app/components/KoraPageContextBridge";
 import { buildCatalogCategoryHref } from "@/app/lib/catalogRoutes";
+import { buildCatalogCategoryHrefFromSegments, buildCatalogCategoryMap, buildCatalogCategoryTrailFromKey } from "@/app/lib/catalogCategoryTree";
 import { buildWhatsAppPrefill } from "@/app/lib/kora/whatsapp-handoff";
 import {
   formatCatalogPrice,
+  getCatalogCategories,
   getCatalogProduct,
   getCatalogProducts,
   getStockLabel,
@@ -142,12 +144,17 @@ export default async function CatalogProductDetailPage({
   const gallery = [product.image_url, product.image_thumb_url, ...product.gallery].filter(
     (image, index, list): image is string => Boolean(image) && list.indexOf(image) === index
   );
+  const categories = await getCatalogCategories().catch(() => []);
+  const categoryMap = buildCatalogCategoryMap(categories);
+  const categoryTrail = buildCatalogCategoryTrailFromKey(product.category_path, categoryMap);
   const descriptionText = (product.long_description || product.short_description || "").trim();
   const relatedProducts = await getRelatedProducts(product.id, product.category_path);
   const discountBadge = getDetailDiscountBadgeText(product);
   const commercialBadge = product.badge_text?.trim() || null;
   const fallbackCatalogHref = product.category_path
-    ? buildCatalogCategoryHref({ categoryPath: product.category_path })
+    ? categoryTrail?.segments.length
+      ? buildCatalogCategoryHrefFromSegments(categoryTrail.segments)
+      : buildCatalogCategoryHref({ categoryPath: product.category_path })
     : "/";
   const shippingWhatsAppHref = buildWhatsAppPrefill({
     origin: "product_page_whatsapp",
@@ -190,7 +197,11 @@ export default async function CatalogProductDetailPage({
       <section className="catalog-breadcrumbs">
         <ProductBackToCatalogLink fallbackHref={fallbackCatalogHref} />
         <span>Catálogo</span>
-        {product.category_path ? <span>{product.category_name || "Categoría"}</span> : null}
+        {categoryTrail?.trail.length
+          ? categoryTrail.trail.map((category) => <span key={category.id}>{category.name}</span>)
+          : product.category_path
+          ? <span>{product.category_name || "Categoría"}</span>
+          : null}
         <span>{product.name}</span>
       </section>
 
