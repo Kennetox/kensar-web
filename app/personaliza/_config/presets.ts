@@ -17,6 +17,11 @@ export type ProductPreset = {
   textLabel: string;
   textPlaceholder: string;
   cardImage: string;
+  homeBeforeImage?: string;
+  homeAfterImage?: string;
+  homeHoverTitle?: string;
+  homeHoverCopy?: string;
+  homeWhatsappMessage?: string;
 };
 
 export const PERSONALIZABLE_PRODUCTS: ProductPreset[] = [
@@ -27,6 +32,11 @@ export const PERSONALIZABLE_PRODUCTS: ProductPreset[] = [
     textLabel: "Texto en campana",
     textPlaceholder: "Ej: Son de Barrio",
     cardImage: "/personaliza/cards/campana.png",
+    homeBeforeImage: "/personaliza/cards/campana-cromada.png",
+    homeAfterImage: "/personaliza/cards/campana.png",
+    homeHoverTitle: "Convierte tu campana en una pieza única",
+    homeHoverCopy: "Nombre, logo o bandera aplicada sobre un acabado profesional.",
+    homeWhatsappMessage: "Hola, quiero personalizar una campana.",
   },
   {
     id: "guiro",
@@ -35,6 +45,11 @@ export const PERSONALIZABLE_PRODUCTS: ProductPreset[] = [
     textLabel: "Texto en güiro",
     textPlaceholder: "Ej: Rumba Viva",
     cardImage: "/personaliza/cards/guiro.png",
+    homeBeforeImage: "/personaliza/cards/guiro.png",
+    homeAfterImage: "/personaliza/cards/guiro.png",
+    homeHoverTitle: "Lleva tu güiro a otro nivel",
+    homeHoverCopy: "Personaliza con nombre, logo o una gráfica a tu estilo.",
+    homeWhatsappMessage: "Hola, quiero personalizar un güiro.",
   },
   {
     id: "maraca",
@@ -43,6 +58,11 @@ export const PERSONALIZABLE_PRODUCTS: ProductPreset[] = [
     textLabel: "Texto en maracas",
     textPlaceholder: "Ej: Clan Rivera",
     cardImage: "/personaliza/cards/maracas1.png",
+    homeBeforeImage: "/personaliza/cards/maracas1.png",
+    homeAfterImage: "/personaliza/cards/maracas1.png",
+    homeHoverTitle: "Haz que tus maracas destaquen",
+    homeHoverCopy: "Ideal para nombres, colores y diseños con identidad propia.",
+    homeWhatsappMessage: "Hola, quiero personalizar unas maracas.",
   },
 ];
 

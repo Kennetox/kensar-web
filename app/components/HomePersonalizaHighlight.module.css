@@ -1,5 +1,5 @@
 .section {
-  padding: 0 0 8px;
+  padding: 0 0 10px;
 }
 
 .intro {
@@ -13,28 +13,21 @@
   margin: 0;
   color: #1d4ed8;
   font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-weight: 800;
+  letter-spacing: 0.11em;
   text-transform: uppercase;
 }
 
 .intro h2 {
   margin: 0;
   color: #0f172a;
-  font-size: clamp(1.22rem, 2.2vw, 1.8rem);
-  line-height: 1.16;
-  letter-spacing: -0.02em;
-}
-
-.copy {
-  margin: 0;
-  color: #475569;
-  font-size: 0.9rem;
-  line-height: 1.45;
+  font-size: clamp(1.2rem, 2.1vw, 1.72rem);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
 }
 
 .grid {
-  margin-top: 40px;
+  margin-top: 28px;
   display: grid;
   grid-template-columns: repeat(3, minmax(220px, 1fr));
   gap: 14px;
@@ -42,112 +35,162 @@
   margin-inline: auto;
 }
 
-.item {
-  width: 100%;
-}
-
-.imageTile {
-  width: 100%;
-  aspect-ratio: 16 / 15;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  background: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
+.card {
   position: relative;
+  display: block;
+  text-decoration: none;
+  color: inherit;
   isolation: isolate;
+  border-radius: 0;
   overflow: hidden;
-  box-shadow: 0 16px 30px -22px rgba(15, 23, 42, 0.42);
+  min-height: 380px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+  box-shadow: 0 18px 40px -28px rgba(15, 23, 42, 0.34);
+  cursor: pointer;
   transition:
     transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 280ms ease,
+    box-shadow 320ms ease,
     border-color 280ms ease;
-  transform: translateY(0);
   will-change: transform;
 }
 
-.imageTile:hover {
-  border-color: rgba(2, 132, 199, 0.35);
-  box-shadow: 0 20px 36px -22px rgba(15, 23, 42, 0.58);
+.card:hover {
   transform: translateY(-3px);
+  border-color: rgba(37, 99, 235, 0.18);
+  box-shadow: 0 24px 50px -34px rgba(15, 23, 42, 0.42);
 }
 
-.media {
+.mediaShell {
   position: absolute;
   inset: 0;
-  z-index: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mediaStage {
+  position: relative;
+  flex: 1;
+  min-height: 250px;
+  overflow: hidden;
+  background: #eef2f7;
+}
+
+.mediaLayerBefore,
+.mediaLayerAfter {
+  position: absolute;
+  inset: 0;
+  transition:
+    opacity 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 520ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 360ms ease;
+}
+
+.mediaLayerBefore {
+  z-index: 1;
+  opacity: 1;
+  transform: scale(1);
+}
+
+.mediaLayerAfter {
+  z-index: 2;
+  transform: scale(1.015);
+  filter: saturate(1.04) contrast(1.03);
+  clip-path: inset(0 0 0 var(--reveal-x, 50%));
+  will-change: clip-path;
 }
 
 .mediaImage {
   object-fit: cover;
   object-position: center;
-  filter: saturate(1.02);
-  transform: scale(1);
-  transition: transform 380ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.imageTile:hover .mediaImage {
-  transform: scale(1.06);
-}
-
-.imageTile::before {
+.mediaStage::after {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 1;
-  background: linear-gradient(
-    180deg,
-    rgba(2, 6, 23, 0.2) 0%,
-    rgba(2, 6, 23, 0.12) 38%,
-    rgba(2, 6, 23, 0.42) 100%
-  );
-}
-
-.tileTitle {
-  position: relative;
-  z-index: 2;
-  color: #ffffff;
-  font-size: clamp(1.2rem, 2vw, 1.7rem);
-  line-height: 1.1;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  text-shadow: 0 10px 24px rgba(2, 6, 23, 0.7);
-  text-align: center;
-}
-
-.soonBadge {
-  position: absolute;
-  right: 10px;
-  top: 10px;
   z-index: 3;
+  background:
+    linear-gradient(180deg, rgba(2, 6, 23, 0.02) 0%, rgba(2, 6, 23, 0.01) 42%, rgba(2, 6, 23, 0.38) 100%);
+  transition: background 320ms ease;
+}
+
+.card:hover .mediaStage::after {
+  background:
+    linear-gradient(180deg, rgba(2, 6, 23, 0.01) 0%, rgba(2, 6, 23, 0.01) 36%, rgba(2, 6, 23, 0.5) 100%);
+}
+
+.revealLine {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--reveal-x, 50%);
+  z-index: 4;
+  width: 2px;
+  transform: translateX(-1px);
+  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.95), transparent);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.28),
+    0 0 18px rgba(255, 255, 255, 0.24);
+  opacity: 0.85;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+  will-change: opacity;
+}
+
+.shine {
+  display: none;
+}
+
+.titleBadge {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  z-index: 5;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  opacity: 1;
+  transition:
+    opacity 520ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 520ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 520ms ease;
+  will-change: opacity, transform, filter;
+}
+
+.titleBadgeText {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 5px 10px;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.9);
   color: #ffffff;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  font-size: clamp(1rem, 2.1vw, 1.55rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
   line-height: 1;
+  text-shadow:
+    0 2px 10px rgba(15, 23, 42, 0.55),
+    0 0 18px rgba(15, 23, 42, 0.24);
 }
 
-.imageTileDisabled {
-  cursor: not-allowed;
-  opacity: 0.82;
+.card:hover .titleBadge,
+.card:focus-visible .titleBadge,
+.card[data-reveal-active="true"] .titleBadge {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.985);
+  filter: blur(1px);
 }
 
 @media (max-width: 1100px) {
   .grid {
     grid-template-columns: repeat(3, minmax(180px, 1fr));
   }
+
+  .card {
+    min-height: 350px;
+  }
 }
 
 @media (max-width: 900px) {
   .intro {
-    gap: 0;
+    gap: 4px;
   }
 
   .kicker,
@@ -155,13 +198,18 @@
     display: none;
   }
 
+  .card {
+    cursor: default;
+  }
+
   .grid {
     grid-template-columns: repeat(2, minmax(180px, 1fr));
     gap: 12px;
   }
 
-  .imageTile {
-    aspect-ratio: 16 / 12;
+  .card {
+    min-height: 330px;
+    border-radius: 0;
   }
 }
 
@@ -171,11 +219,11 @@
     max-width: 100%;
   }
 
-  .imageTile {
-    aspect-ratio: 16 / 11;
+  .card {
+    min-height: 300px;
   }
 
-  .tileTitle {
-    font-size: 1.1rem;
+  .titleBadgeText {
+    font-size: 0.98rem;
   }
 }
