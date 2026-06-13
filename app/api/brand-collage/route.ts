@@ -3,6 +3,7 @@ import { fetchMetrikApi, parseJsonSafe } from "@/app/lib/metrikServer";
 
 type BrandCollageEntry = {
   image_url?: string | null;
+  href?: string | null;
 };
 
 function getApiBaseUrl(): string | null {
@@ -36,6 +37,7 @@ export async function GET() {
       (acc, [key, value]) => {
         acc[key] = {
           image_url: resolveAssetUrl(baseUrl, value?.image_url),
+          href: typeof value?.href === "string" ? value.href.trim() : undefined,
         };
         return acc;
       },

@@ -6,6 +6,7 @@ import Reveal from "./Reveal";
 
 type BrandCollageEntry = {
   image_url?: string | null;
+  href?: string | null;
 };
 
 type BrandCollageResponse = Record<string, BrandCollageEntry>;
@@ -75,6 +76,7 @@ export default function HomeBrandCollage() {
         return {
           ...item,
           image: configured?.image_url?.trim() || item.image,
+          href: configured?.href?.trim() || item.href,
         };
       }),
     [brandCollage]
