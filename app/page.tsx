@@ -295,7 +295,7 @@ function isInstrumentProduct(product: WebCatalogProductCard) {
   );
 }
 
-function shuffleProducts(items: WebCatalogProductCard[]) {
+function shuffleProducts<T>(items: T[]) {
   const shuffled = [...items];
 
   for (let index = shuffled.length - 1; index > 0; index -= 1) {
@@ -306,7 +306,7 @@ function shuffleProducts(items: WebCatalogProductCard[]) {
   return shuffled;
 }
 
-function seededShuffleProducts(items: WebCatalogProductCard[], seed: number) {
+function seededShuffleProducts<T>(items: T[], seed: number) {
   const shuffled = [...items];
   let state = (Math.abs(seed) + 1) % 2147483647;
   if (state <= 0) state += 2147483646;
