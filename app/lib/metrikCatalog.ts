@@ -73,6 +73,7 @@ export type WebCatalogCombo = {
   category_key: string | null;
   price: number;
   compare_price: number | null;
+  price_mode: "auto" | "fixed" | "discount";
   stock_mode: "manual" | "components";
   published: boolean;
   featured: boolean;
@@ -255,6 +256,7 @@ function normalizeCatalogComboItem(baseUrl: string, item: WebCatalogComboItem): 
 function normalizeCatalogCombo(baseUrl: string, combo: WebCatalogCombo): WebCatalogCombo {
   return {
     ...combo,
+    price_mode: combo.price_mode ?? "auto",
     image_url: resolveCatalogAssetUrl(baseUrl, combo.image_url),
     image_thumb_url: resolveCatalogAssetUrl(baseUrl, combo.image_thumb_url),
     gallery_urls: combo.gallery_urls.map((image) => resolveCatalogAssetUrl(baseUrl, image) || image),
