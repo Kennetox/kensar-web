@@ -42,6 +42,7 @@ type GuestCartItemInput = {
   stock_status?: WebCartItem["stock_status"];
   unit_price: number;
   compare_price?: number | null;
+  unit_price_override?: number | null;
 };
 
 type WebCartContextValue = {
@@ -345,17 +346,26 @@ export default function WebCartProvider({
         const nextItems = [...current.items];
         if (index >= 0) {
           const existing = nextItems[index];
-          const mergedQuantity = Math.min(CART_MAX_UNITS_PER_ITEM, existing.quantity + nextQuantity);
+          const allowedQuantity = Math.max(0, Math.min(nextQuantity, CART_MAX_UNITS_PER_ITEM - existing.quantity));
+          if (allowedQuantity <= 0) {
+            return current;
+          }
+          const mergedQuantity = existing.quantity + allowedQuantity;
+          const unitPriceOverride = Number(guestItem?.unit_price_override ?? guestItem?.unit_price) || 0;
+          const nextUnitPrice = unitPriceOverride > 0 ? unitPriceOverride : existing.unit_price;
+          const mergedTotal = existing.quantity * existing.unit_price + allowedQuantity * nextUnitPrice;
           nextItems[index] = {
             ...existing,
             quantity: mergedQuantity,
-            line_total: existing.unit_price * mergedQuantity,
+            unit_price: mergedQuantity > 0 ? mergedTotal / mergedQuantity : existing.unit_price,
+            line_total: mergedTotal,
           };
         } else {
           if (!guestItem) {
             throw new Error("No se pudo agregar este producto en modo invitado.");
           }
-          const unitPrice = Number(guestItem.unit_price) || 0;
+          const unitPriceOverride = Number(guestItem.unit_price_override ?? guestItem.unit_price) || 0;
+          const unitPrice = unitPriceOverride > 0 ? unitPriceOverride : Number(guestItem.unit_price) || 0;
           nextItems.unshift({
             id: productId,
             product_id: productId,
@@ -382,6 +392,10 @@ export default function WebCartProvider({
       const nextCart = await addWebCartItem({
         product_id: productId,
         quantity: Math.min(CART_MAX_UNITS_PER_ITEM, Math.max(1, Number(quantity) || 1)),
+        unit_price_snapshot:
+          typeof guestItem?.unit_price_override === "number" && guestItem.unit_price_override > 0
+            ? guestItem.unit_price_override
+            : undefined,
       });
       setCart(nextCart);
       setCouponSessionMarker(hasActiveCoupon(nextCart));

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Reveal from "./Reveal";
+import SkeletonBlock from "./skeleton/SkeletonBlock";
 
 type BrandCollageEntry = {
   image_url?: string | null;
@@ -52,6 +53,7 @@ const DEFAULT_BRAND_TILES: BrandTile[] = [
 
 export default function HomeBrandCollage() {
   const [brandCollage, setBrandCollage] = useState<BrandCollageResponse | null>(null);
+  const [collageReady, setCollageReady] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -63,6 +65,9 @@ export default function HomeBrandCollage() {
       })
       .catch(() => {
         if (active) setBrandCollage(null);
+      })
+      .finally(() => {
+        if (active) setCollageReady(true);
       });
     return () => {
       active = false;
@@ -89,22 +94,31 @@ export default function HomeBrandCollage() {
         <h2>Marcas que respaldan tu sonido</h2>
       </Reveal>
 
-      <div className="brand-collage-grid">
-        {resolvedTiles.map((tile) => (
-          <Link
-            key={tile.key}
-            href={tile.href}
-            className={`brand-tile ${tile.className}`}
-            aria-label={`Explorar ${tile.brand}`}
-          >
-            <div
-              className="brand-tile-image"
-              style={{ backgroundImage: `url('${tile.image}')` }}
-              aria-hidden="true"
-            />
-          </Link>
-        ))}
-      </div>
+      {!collageReady ? (
+        <div className="brand-collage-grid" aria-hidden="true">
+          <SkeletonBlock className="brand-tile brand-tile-main" radius="0" />
+          <SkeletonBlock className="brand-tile brand-tile-top-left" radius="0" />
+          <SkeletonBlock className="brand-tile brand-tile-top-right" radius="0" />
+          <SkeletonBlock className="brand-tile brand-tile-bottom" radius="0" />
+        </div>
+      ) : (
+        <div className="brand-collage-grid">
+          {resolvedTiles.map((tile) => (
+            <Link
+              key={tile.key}
+              href={tile.href}
+              className={`brand-tile ${tile.className}`}
+              aria-label={`Explorar ${tile.brand}`}
+            >
+              <div
+                className="brand-tile-image"
+                style={{ backgroundImage: `url('${tile.image}')` }}
+                aria-hidden="true"
+              />
+            </Link>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

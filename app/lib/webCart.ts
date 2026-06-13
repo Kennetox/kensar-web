@@ -215,6 +215,7 @@ export async function fetchWebCart(): Promise<WebCart> {
 export async function addWebCartItem(input: {
   product_id: number;
   quantity: number;
+  unit_price_snapshot?: number;
 }): Promise<WebCart> {
   const response = await fetch("/api/cart/items", {
     method: "POST",

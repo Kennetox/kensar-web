@@ -10,6 +10,7 @@ import Reveal from "@/app/components/Reveal";
 import { buildCatalogCategoryHref } from "@/app/lib/catalogRoutes";
 import {
   buildCatalogCategoryHrefFromSegments,
+  buildCatalogCategoryChildrenMap,
   buildCatalogCategoryMap,
   buildCatalogCategoryTrailFromKey,
 } from "@/app/lib/catalogCategoryTree";
@@ -20,8 +21,10 @@ import {
   getCatalogProduct,
   getCatalogProducts,
   getHomeSliders,
+  getHomeSectionsConfig,
   type WebCatalogCategory,
   type WebCatalogHomeSlider,
+  type WebCatalogHomeSectionsMode,
   type WebCatalogProductCard,
 } from "@/app/lib/metrikCatalog";
 
@@ -29,6 +32,7 @@ type HomeData = {
   categories: WebCatalogCategory[];
   products: WebCatalogProductCard[];
   sliders: WebCatalogHomeSlider[];
+  homeSectionsMode: WebCatalogHomeSectionsMode;
 };
 
 const fallbackCategories: WebCatalogCategory[] = [
@@ -187,22 +191,25 @@ const fallbackProducts: WebCatalogProductCard[] = [
 
 async function loadHomeData(): Promise<HomeData> {
   try {
-    const [categories, productList, sliders] = await Promise.all([
+    const [categories, productList, sliders, homeSectionsConfig] = await Promise.all([
       getCatalogCategoryHierarchy(),
       getCatalogProducts({ page: 1 }),
       getHomeSliders(),
+      getHomeSectionsConfig(),
     ]);
 
     return {
       categories: categories.length ? categories : fallbackCategories,
       products: productList.items.length ? productList.items : fallbackProducts,
       sliders,
+      homeSectionsMode: homeSectionsConfig?.web_home_sections_mode || "categories",
     };
   } catch {
     return {
       categories: fallbackCategories,
       products: fallbackProducts,
       sliders: [],
+      homeSectionsMode: "categories",
     };
   }
 }
@@ -273,6 +280,21 @@ function isHomeCategoryProduct(product: WebCatalogProductCard) {
   );
 }
 
+function isInstrumentProduct(product: WebCatalogProductCard) {
+  const categoryPath = normalizeCategoryValue(product.category_path);
+  const categoryName = normalizeCategoryValue(product.category_name);
+  return (
+    categoryPath.includes("instrumentos") ||
+    categoryPath.includes("guitarras") ||
+    categoryPath.includes("teclados") ||
+    categoryPath.includes("percusion") ||
+    categoryName.includes("instrumentos") ||
+    categoryName.includes("guitarras") ||
+    categoryName.includes("teclados") ||
+    categoryName.includes("percusion")
+  );
+}
+
 function shuffleProducts(items: WebCatalogProductCard[]) {
   const shuffled = [...items];
 
@@ -282,6 +304,70 @@ function shuffleProducts(items: WebCatalogProductCard[]) {
   }
 
   return shuffled;
+}
+
+function seededShuffleProducts(items: WebCatalogProductCard[], seed: number) {
+  const shuffled = [...items];
+  let state = (Math.abs(seed) + 1) % 2147483647;
+  if (state <= 0) state += 2147483646;
+
+  const nextRandom = () => {
+    state = (state * 48271) % 2147483647;
+    return state / 2147483647;
+  };
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(nextRandom() * (index + 1));
+    [shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]];
+  }
+
+  return shuffled;
+}
+
+function isInstrumentCategory(category: WebCatalogCategory) {
+  const path = normalizeCategoryValue(category.path);
+  const name = normalizeCategoryValue(category.name);
+  return path.includes("instrument") || name.includes("instrument");
+}
+
+function getInstrumentCategoryRoots(categories: WebCatalogCategory[]) {
+  return categories.filter((category) => !category.parent_path && isInstrumentCategory(category));
+}
+
+function getInstrumentCategoryChildren(categories: WebCatalogCategory[]) {
+  const categoryMap = buildCatalogCategoryMap(categories);
+  const childrenMap = buildCatalogCategoryChildrenMap(categories);
+  const roots = getInstrumentCategoryRoots(categories);
+  const collected = new Map<string, WebCatalogCategory>();
+  const queue = [...roots];
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    const currentKey = normalizeCategoryValue(current.path);
+    if (!currentKey || collected.has(currentKey)) continue;
+    collected.set(currentKey, current);
+
+    const children = childrenMap[currentKey] || [];
+    children.forEach((child) => {
+      const childKey = normalizeCategoryValue(child.path);
+      if (!childKey || collected.has(childKey)) return;
+      queue.push(child);
+    });
+  }
+
+  if (collected.size === 0) {
+    const fallbackRoot = categoryMap.instrumentos || categoryMap["instrumentos-musicales"];
+    if (fallbackRoot) {
+      collected.set(normalizeCategoryValue(fallbackRoot.path), fallbackRoot);
+    }
+  }
+
+  return [...collected.values()];
+}
+
+function buildTimeSeed() {
+  const bucketMs = 4 * 60 * 60 * 1000;
+  return Math.floor(Date.now() / bucketMs);
 }
 
 async function fetchCategoryProducts(category: string, targetCount = 10) {
@@ -326,6 +412,72 @@ async function loadHomeLivingProducts(seedProducts: WebCatalogProductCard[]) {
   return shuffleProducts([...mergedById.values()]).slice(0, 10);
 }
 
+async function loadHomeInstrumentProducts(
+  categories: WebCatalogCategory[],
+  seedProducts: WebCatalogProductCard[]
+) {
+  const mergedById = new Map<number, WebCatalogProductCard>();
+  const instrumentCategories = getInstrumentCategoryChildren(categories);
+  const seed = buildTimeSeed();
+
+  try {
+    const categoryBuckets = await Promise.all(
+      instrumentCategories.map(async (category, index) => {
+        const products = await fetchCategoryProducts(category.path, 8).catch(() => []);
+        const mixed = seededShuffleProducts(products, seed + index + category.path.length);
+        return { category, products: mixed };
+      })
+    );
+
+    const orderedBuckets = seededShuffleProducts(
+      categoryBuckets.filter((bucket) => bucket.products.length > 0).map((bucket) => bucket.category),
+      seed
+    ).map((category) => category.path);
+
+    const bucketMap = new Map(
+      categoryBuckets.map((bucket) => [bucket.category.path, bucket.products] as const)
+    );
+    const bucketPositions = new Map<string, number>();
+
+    const roundRobin: WebCatalogProductCard[] = [];
+    while (roundRobin.length < 12) {
+      let pushedThisRound = false;
+      for (const categoryPath of orderedBuckets) {
+        const bucket = bucketMap.get(categoryPath) || [];
+        const index = bucketPositions.get(categoryPath) || 0;
+        const nextProduct = bucket[index];
+        if (!nextProduct) continue;
+        bucketPositions.set(categoryPath, index + 1);
+        roundRobin.push(nextProduct);
+        pushedThisRound = true;
+        if (roundRobin.length >= 12) break;
+      }
+      if (!pushedThisRound) break;
+    }
+
+    roundRobin.forEach((product) => {
+      mergedById.set(product.id, product);
+    });
+  } catch {
+    // Si falla la consulta principal, usamos el fallback local.
+  }
+
+  if (mergedById.size < 10) {
+    seedProducts.filter(isInstrumentProduct).forEach((product) => {
+      mergedById.set(product.id, product);
+    });
+  }
+
+  if (mergedById.size < 10) {
+    const rootProducts = await fetchCategoryProducts("instrumentos", 12).catch(() => []);
+    seededShuffleProducts(rootProducts, seed + 99).forEach((product) => {
+      mergedById.set(product.id, product);
+    });
+  }
+
+  return seededShuffleProducts([...mergedById.values()], seed).slice(0, 10);
+}
+
 async function hydrateBestSellerProducts(items: WebCatalogProductCard[]) {
   const hydrated = await Promise.all(
     items.map(async (item) => {
@@ -364,10 +516,13 @@ async function hydrateBestSellerProducts(items: WebCatalogProductCard[]) {
 }
 
 export default async function HomePage() {
-  const { categories, products, sliders } = await loadHomeData();
+  const { categories, products, sliders, homeSectionsMode } = await loadHomeData();
   const categoryMap = buildCatalogCategoryMap(categories);
+  const showFeaturedCategories = homeSectionsMode === "categories" || homeSectionsMode === "both";
+  const showInstrumentCarousel = homeSectionsMode === "instruments" || homeSectionsMode === "both";
 
   const livingProducts = await loadHomeLivingProducts(products);
+  const instrumentProducts = await loadHomeInstrumentProducts(categories, products);
   const bestSellerProducts = await getCatalogBestSellers({ limit: 10, days: 90 })
     .then((result) => hydrateBestSellerProducts(result.items))
     .catch(() => []);
@@ -493,8 +648,44 @@ export default async function HomePage() {
   return (
     <div id="inicio" className="commerce-home home-anchor-section">
       <KoraPageContextBridge pageContext={{ pageType: "home" }} />
-      <CommerceSlider slides={sliderSlides} categories={featuredCategories} intervalMs={8000} />
-      <div className="commerce-categories-divider" aria-hidden="true" />
+      <CommerceSlider
+        slides={sliderSlides}
+        categories={featuredCategories}
+        showFeaturedCategories={showFeaturedCategories}
+        intervalMs={8000}
+      />
+      {showFeaturedCategories ? <div className="commerce-categories-divider" aria-hidden="true" /> : null}
+
+      {showInstrumentCarousel ? (
+        <section
+          className={`commerce-next-clean-section${showFeaturedCategories ? "" : " is-attached"}`}
+          aria-label="Instrumentos destacados"
+        >
+          {instrumentProducts.length > 0 ? (
+            <div className="commerce-home-living-products">
+              <Reveal className="commerce-home-living-intro">
+                <p className="commerce-section-kicker">Instrumentos Kensar</p>
+                <h2>Instrumentos destacados para impulsar tu sonido</h2>
+                <p className="commerce-home-living-copy">
+                  Descubre teclados, guitarras, percusión y más instrumentos con el mismo estilo del catálogo.
+                </p>
+              </Reveal>
+              <HomeProductCarousel ariaLabel="Carrusel de instrumentos destacados">
+                {instrumentProducts.map((product, index) => (
+                  <Reveal
+                    key={`instrument-${product.id}`}
+                    className="home-product-carousel-item"
+                    delayMs={Math.min(index * 70, 420)}
+                    speed="fast"
+                  >
+                    <CatalogProductCard product={product} />
+                  </Reveal>
+                ))}
+              </HomeProductCarousel>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
 
       <section className="commerce-discover" aria-label="Personaliza tus instrumentos">
         <HomePersonalizaHighlight />

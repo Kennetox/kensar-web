@@ -26,6 +26,7 @@ export default function TopNav({ categories, brands }: TopNavProps) {
   const pathname = usePathname();
   const isHomeActive = pathname === "/";
   const isCatalogActive = pathname === "/catalogo" || pathname.startsWith("/catalogo/");
+  const isCombosActive = pathname === "/combos" || pathname.startsWith("/combos/");
   const isCustomizeActive = pathname === "/personaliza" || pathname.startsWith("/personaliza/");
   const isContactActive = pathname === "/empresa" || pathname.startsWith("/empresa/");
   const hasBrands = brands.length > 0;
@@ -66,19 +67,23 @@ export default function TopNav({ categories, brands }: TopNavProps) {
       </Link>
 
       <div
-        className={`nav-item-dropdown${isCatalogActive ? " active" : ""}`}
+        className={`nav-item-dropdown${isCatalogActive || isCombosActive ? " active" : ""}`}
         onMouseEnter={() => setCatalogMenuOpen(true)}
         onMouseLeave={() => setCatalogMenuOpen(false)}
-      >
-        <span className={`nav-link nav-link-with-caret${isCatalogActive ? " active" : ""}`}>
-          Catalogo
-          <span className="nav-caret" aria-hidden="true">
-            <svg viewBox="0 0 14 14" fill="none">
-              <path d="M3 5.25 7 9l4-3.75" />
-            </svg>
+        >
+          <span className={`nav-link nav-link-with-caret${isCatalogActive || isCombosActive ? " active" : ""}`}>
+            Catalogo
+            <span className="nav-caret" aria-hidden="true">
+              <svg viewBox="0 0 14 14" fill="none">
+                <path d="M3 5.25 7 9l4-3.75" />
+              </svg>
+            </span>
           </span>
-        </span>
         <div className="nav-dropdown-panel" role="menu" aria-label="Categorias">
+          <Link href="/combos" className="nav-dropdown-link nav-dropdown-link-combos" role="menuitem">
+            Combos
+          </Link>
+          <span className="nav-dropdown-divider" aria-hidden="true" />
           {parentCategories.map((category) => {
             const subcategories = childrenByParent[category.path] || [];
             const hasSubcategories = subcategories.length > 0;

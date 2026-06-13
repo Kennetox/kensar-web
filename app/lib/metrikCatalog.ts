@@ -35,6 +35,57 @@ export type WebCatalogHomeSlider = {
   sort_order: number;
 };
 
+export type WebCatalogHomeSectionsMode = "categories" | "instruments" | "both";
+
+export type WebCatalogHomeSectionsConfig = {
+  web_home_sections_mode: WebCatalogHomeSectionsMode;
+};
+
+export type WebCatalogComboItem = {
+  id: number;
+  product_id: number;
+  quantity: number;
+  required: boolean;
+  sort_order: number;
+  product_price: number;
+  product_name: string;
+  product_sku: string | null;
+  product_slug: string | null;
+  product_image_url: string | null;
+  product_image_thumb_url: string | null;
+  product_brand: string | null;
+  stock_status: "in_stock" | "low_stock" | "out_of_stock" | "service" | "consultar";
+  created_at: string;
+  updated_at: string;
+};
+
+export type WebCatalogCombo = {
+  id: number;
+  name: string;
+  slug: string;
+  short_description: string | null;
+  long_description: string | null;
+  image_url: string | null;
+  image_thumb_url: string | null;
+  gallery_urls: string[];
+  video_url: string | null;
+  badge_text: string | null;
+  category_key: string | null;
+  price: number;
+  compare_price: number | null;
+  stock_mode: "manual" | "components";
+  published: boolean;
+  featured: boolean;
+  sort_order: number;
+  visible_when_out_of_stock: boolean;
+  active: boolean;
+  warranty_text: string | null;
+  technical_specs: { type: string; value: string }[];
+  items: WebCatalogComboItem[];
+  created_at: string;
+  updated_at: string;
+};
+
 export type WebCatalogFilterOption = {
   value: string;
   label: string;
@@ -193,6 +244,25 @@ function normalizeCatalogProductDetail(
   };
 }
 
+function normalizeCatalogComboItem(baseUrl: string, item: WebCatalogComboItem): WebCatalogComboItem {
+  return {
+    ...item,
+    product_image_url: resolveCatalogAssetUrl(baseUrl, item.product_image_url || null),
+    product_image_thumb_url: resolveCatalogAssetUrl(baseUrl, item.product_image_thumb_url || null),
+  };
+}
+
+function normalizeCatalogCombo(baseUrl: string, combo: WebCatalogCombo): WebCatalogCombo {
+  return {
+    ...combo,
+    image_url: resolveCatalogAssetUrl(baseUrl, combo.image_url),
+    image_thumb_url: resolveCatalogAssetUrl(baseUrl, combo.image_thumb_url),
+    gallery_urls: combo.gallery_urls.map((image) => resolveCatalogAssetUrl(baseUrl, image) || image),
+    video_url: resolveCatalogAssetUrl(baseUrl, combo.video_url || null),
+    items: combo.items.map((item) => normalizeCatalogComboItem(baseUrl, item)),
+  };
+}
+
 async function fetchCatalog<T>(path: string, params?: URLSearchParams): Promise<T> {
   const baseUrl = getApiBaseUrl();
   const query = params && params.toString() ? `?${params.toString()}` : "";
@@ -284,6 +354,17 @@ export async function getHomeSliders() {
     }));
 }
 
+export async function getHomeSectionsConfig() {
+  const baseUrl = getApiBaseUrl();
+  const response = await fetch(`${baseUrl}/web/catalog/home-sections`, {
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    throw new Error(`Catalog request failed: ${response.status}`);
+  }
+  return (await response.json()) as WebCatalogHomeSectionsConfig;
+}
+
 export async function getCatalogProducts(input: {
   q?: string;
   category?: string;
@@ -334,6 +415,21 @@ export async function getCatalogBestSellers(input?: { limit?: number; days?: num
     ...response,
     items: response.items.map((item) => normalizeCatalogProductCard(baseUrl, item)),
   };
+}
+
+export async function getCatalogCombos(input?: { q?: string }) {
+  const params = new URLSearchParams();
+  if (input?.q) params.set("q", input.q);
+  const baseUrl = getApiBaseUrl();
+  const response = await fetchCatalogFast<WebCatalogCombo[]>("/web/catalog/combos", params);
+  return response.map((combo) => normalizeCatalogCombo(baseUrl, combo));
+}
+
+export async function getCatalogCombo(slug: string) {
+  const normalizedSlug = slug.trim();
+  if (!normalizedSlug) return null;
+  const combos = await getCatalogCombos();
+  return combos.find((combo) => combo.slug === normalizedSlug) || null;
 }
 
 export async function getCatalogProduct(slug: string) {

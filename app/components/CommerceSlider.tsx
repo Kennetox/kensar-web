@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
@@ -24,17 +25,33 @@ type FeaturedCategory = {
 type CommerceSliderProps = {
   slides: SlideItem[];
   categories: FeaturedCategory[];
+  showFeaturedCategories?: boolean;
   intervalMs?: number;
 };
 
-export default function CommerceSlider({ slides, categories, intervalMs = 8000 }: CommerceSliderProps) {
+export default function CommerceSlider({
+  slides,
+  categories,
+  showFeaturedCategories = true,
+  intervalMs = 8000,
+}: CommerceSliderProps) {
   const hasLoop = slides.length > 1;
   const loopSlides = hasLoop ? [slides[slides.length - 1], ...slides, slides[0]] : slides;
   const [internalIndex, setInternalIndex] = useState(hasLoop ? 1 : 0);
   const [transitionEnabled, setTransitionEnabled] = useState(true);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [slideMediaReady, setSlideMediaReady] = useState<Record<string, boolean>>({});
+  const [categoryMediaReady, setCategoryMediaReady] = useState<Record<string, boolean>>({});
   const activeIndex = hasLoop ? (internalIndex - 1 + slides.length) % slides.length : 0;
+
+  const markSlideReady = useCallback((key: string) => {
+    setSlideMediaReady((current) => (current[key] ? current : { ...current, [key]: true }));
+  }, []);
+
+  const markCategoryReady = useCallback((key: string) => {
+    setCategoryMediaReady((current) => (current[key] ? current : { ...current, [key]: true }));
+  }, []);
 
   const goToNextSlide = useCallback(() => {
     if (!hasLoop || isAnimating) return;
@@ -94,6 +111,142 @@ export default function CommerceSlider({ slides, categories, intervalMs = 8000 }
     setIsAnimating(false);
   }
 
+  function renderSlideFrame(slide: SlideItem, index: number) {
+    const mediaSrc = isMobileViewport && slide.mobileImage ? slide.mobileImage : slide.image;
+    const mediaKey = `${slide.id}-${mediaSrc}`;
+    const mediaReady = Boolean(slideMediaReady[mediaKey]);
+    const hasPresetStyle = slide.id === "guitarras" || slide.id === "audio-main" || slide.id === "contacto";
+    const ctaPositionStyle = {
+      left: `${typeof slide.ctaXPercent === "number" ? slide.ctaXPercent : 50}%`,
+      top: `${typeof slide.ctaYPercent === "number" ? slide.ctaYPercent : 80}%`,
+    } as const;
+    const customCtaStyle = hasPresetStyle
+      ? undefined
+      : {
+          position: "relative" as const,
+          background: "rgba(255, 255, 255, 0.86)",
+          color: "#0f172a",
+          boxShadow: "0 12px 24px -16px rgba(15, 23, 42, 0.52)",
+          border: "1px solid rgba(255, 255, 255, 0.45)",
+        };
+
+    return (
+      <div
+        key={`${slide.id}-${index}`}
+        className={`commerce-slider-frame commerce-slider-frame-${slide.id}${!mediaReady ? " is-loading" : ""}${index === internalIndex ? " is-active" : ""}${
+          hasLoop && (index === 0 || index === loopSlides.length - 1) ? " is-clone" : ""
+        }`}
+      >
+        {slide.href ? <Link href={slide.href} className="commerce-slider-link" aria-label={slide.alt} /> : null}
+        <Image
+          src={mediaSrc}
+          alt=""
+          className="commerce-slider-preload"
+          width={1}
+          height={1}
+          unoptimized
+          aria-hidden="true"
+          onLoad={() => markSlideReady(mediaKey)}
+          onError={() => markSlideReady(mediaKey)}
+        />
+        <div
+          className="commerce-slider-layer"
+          style={{
+            backgroundImage: `url('${mediaSrc}')`,
+          }}
+          role="img"
+          aria-label={slide.alt}
+        />
+        {!mediaReady ? <div className="commerce-slider-frame-skeleton" aria-hidden="true" /> : null}
+        {!isMobileViewport && (slide.ctaLabel || "").trim() ? (
+          hasPresetStyle ? (
+            <div className="commerce-slider-cta-shell">
+              {slide.href ? (
+                <Link
+                  href={slide.href}
+                  className={`commerce-slider-cta commerce-slider-cta--${slide.id}`}
+                  aria-label={slide.ctaLabel || undefined}
+                >
+                  {slide.ctaLabel}
+                </Link>
+              ) : (
+                <span className={`commerce-slider-cta commerce-slider-cta--${slide.id}`} aria-hidden="true">
+                  {slide.ctaLabel}
+                </span>
+              )}
+            </div>
+          ) : (
+            <div
+              style={{
+                position: "absolute",
+                zIndex: 8,
+                ...ctaPositionStyle,
+                transform: "translate(-50%, -50%)",
+              }}
+            >
+              {slide.href ? (
+                <Link
+                  href={slide.href}
+                  className={`commerce-slider-cta commerce-slider-cta--${slide.id}`}
+                  aria-label={slide.ctaLabel || undefined}
+                  style={customCtaStyle}
+                >
+                  {slide.ctaLabel}
+                </Link>
+              ) : (
+                <span
+                  className={`commerce-slider-cta commerce-slider-cta--${slide.id}`}
+                  aria-hidden="true"
+                  style={customCtaStyle}
+                >
+                  {slide.ctaLabel}
+                </span>
+              )}
+            </div>
+          )
+        ) : null}
+      </div>
+    );
+  }
+
+  function renderCategoryCard(category: FeaturedCategory) {
+    const categoryKey = `${category.id}-${category.imageUrl || ""}`;
+    const categoryReady = !category.imageUrl || Boolean(categoryMediaReady[categoryKey]);
+
+    return (
+      <Link
+        key={`featured-${category.id}`}
+        href={category.href}
+        className={`commerce-featured-card${!categoryReady ? " is-loading" : ""}`}
+      >
+        {category.imageUrl ? (
+          <Image
+            src={category.imageUrl}
+            alt=""
+            className="commerce-featured-card-preload"
+            width={1}
+            height={1}
+            unoptimized
+            aria-hidden="true"
+            onLoad={() => markCategoryReady(categoryKey)}
+            onError={() => markCategoryReady(categoryKey)}
+          />
+        ) : null}
+        <div
+          className={`commerce-featured-card-image${category.imageUrl ? " has-image" : ""}`}
+          style={
+            category.imageUrl
+              ? { backgroundImage: `url('${category.imageUrl}')` }
+              : undefined
+          }
+          aria-hidden="true"
+        />
+        {!categoryReady ? <div className="commerce-featured-card-skeleton" aria-hidden="true" /> : null}
+        <h3>{category.name}</h3>
+      </Link>
+    );
+  }
+
   return (
     <section className="commerce-slider-block" aria-label="Slider principal">
       <div className="commerce-slider-placeholder">
@@ -106,95 +259,7 @@ export default function CommerceSlider({ slides, categories, intervalMs = 8000 }
           }}
           onTransitionEnd={handleTrackTransitionEnd}
         >
-          {loopSlides.map((slide, index) => (
-            (() => {
-              const hasPresetStyle =
-                slide.id === "guitarras" || slide.id === "audio-main" || slide.id === "contacto";
-              const ctaPositionStyle = {
-                left: `${typeof slide.ctaXPercent === "number" ? slide.ctaXPercent : 50}%`,
-                top: `${typeof slide.ctaYPercent === "number" ? slide.ctaYPercent : 80}%`,
-              } as const;
-              const customCtaStyle = hasPresetStyle
-                ? undefined
-                : {
-                    position: "relative" as const,
-                    background: "rgba(255, 255, 255, 0.86)",
-                    color: "#0f172a",
-                    boxShadow: "0 12px 24px -16px rgba(15, 23, 42, 0.52)",
-                    border: "1px solid rgba(255, 255, 255, 0.45)",
-                  };
-              return (
-            <div
-              key={`${slide.id}-${index}`}
-              className={`commerce-slider-frame commerce-slider-frame-${slide.id}${index === internalIndex ? " is-active" : ""}${
-                hasLoop && (index === 0 || index === loopSlides.length - 1) ? " is-clone" : ""
-              }`}
-            >
-              {slide.href ? <Link href={slide.href} className="commerce-slider-link" aria-label={slide.alt} /> : null}
-              <div
-                className="commerce-slider-layer"
-                style={{
-                  backgroundImage: `url('${
-                    isMobileViewport && slide.mobileImage ? slide.mobileImage : slide.image
-                  }')`,
-                }}
-                role="img"
-                aria-label={slide.alt}
-              />
-              {!isMobileViewport && (slide.ctaLabel || "").trim() ? (
-                hasPresetStyle ? (
-                  <div className="commerce-slider-cta-shell">
-                    {slide.href ? (
-                      <Link
-                        href={slide.href}
-                        className={`commerce-slider-cta commerce-slider-cta--${slide.id}`}
-                        aria-label={slide.ctaLabel || undefined}
-                      >
-                        {slide.ctaLabel}
-                      </Link>
-                    ) : (
-                      <span
-                        className={`commerce-slider-cta commerce-slider-cta--${slide.id}`}
-                        aria-hidden="true"
-                      >
-                        {slide.ctaLabel}
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <div
-                    style={{
-                      position: "absolute",
-                      zIndex: 8,
-                      ...ctaPositionStyle,
-                      transform: "translate(-50%, -50%)",
-                    }}
-                  >
-                    {slide.href ? (
-                      <Link
-                        href={slide.href}
-                        className={`commerce-slider-cta commerce-slider-cta--${slide.id}`}
-                        aria-label={slide.ctaLabel || undefined}
-                        style={customCtaStyle}
-                      >
-                        {slide.ctaLabel}
-                      </Link>
-                    ) : (
-                      <span
-                        className={`commerce-slider-cta commerce-slider-cta--${slide.id}`}
-                        aria-hidden="true"
-                        style={customCtaStyle}
-                      >
-                        {slide.ctaLabel}
-                      </span>
-                    )}
-                  </div>
-                )
-              ) : null}
-            </div>
-              );
-            })()
-          ))}
+          {loopSlides.map((slide, index) => renderSlideFrame(slide, index))}
         </div>
 
         {slides.length > 1 ? (
@@ -231,32 +296,21 @@ export default function CommerceSlider({ slides, categories, intervalMs = 8000 }
         ) : null}
       </div>
 
-      <div className="commerce-featured-shell">
-        <div className="commerce-featured-intro" aria-label="Accesos rapidos de categorias">
-          <div className="commerce-featured-intro-copy">
-            <p className="commerce-section-kicker">Categorias destacadas</p>
-            <h2>Explora por tipo de producto</h2>
-            <p>Elige una categoria y compra mas rapido.</p>
+      {showFeaturedCategories ? (
+        <div className="commerce-featured-shell">
+          <div className="commerce-featured-intro" aria-label="Accesos rapidos de categorias">
+            <div className="commerce-featured-intro-copy">
+              <p className="commerce-section-kicker">Categorias destacadas</p>
+              <h2>Explora por tipo de producto</h2>
+              <p>Elige una categoria y compra mas rapido.</p>
+            </div>
+          </div>
+
+          <div className="commerce-featured-categories" aria-label="Categorias principales">
+            {categories.map((category) => renderCategoryCard(category))}
           </div>
         </div>
-
-        <div className="commerce-featured-categories" aria-label="Categorias principales">
-          {categories.map((category) => (
-            <Link key={`featured-${category.id}`} href={category.href} className="commerce-featured-card">
-              <div
-                className={`commerce-featured-card-image${category.imageUrl ? " has-image" : ""}`}
-                style={
-                  category.imageUrl
-                    ? { backgroundImage: `url('${category.imageUrl}')` }
-                    : undefined
-                }
-                aria-hidden="true"
-              />
-              <h3>{category.name}</h3>
-            </Link>
-          ))}
-        </div>
-      </div>
+      ) : null}
     </section>
   );
 }

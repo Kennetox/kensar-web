@@ -29,6 +29,7 @@ export default function HeaderCatalogSearch() {
   const router = useRouter();
   const pathname = usePathname();
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const requestIdRef = useRef(0);
   const queryFromUrl = useMemo(() => searchParams.get("q") || "", [searchParams]);
 
   const [query, setQuery] = useState(queryFromUrl);
@@ -65,12 +66,14 @@ export default function HeaderCatalogSearch() {
   useEffect(() => {
     const term = query.trim();
     if (term.length < 2) {
+      requestIdRef.current += 1;
       setItems([]);
       setLoading(false);
       return;
     }
 
     const controller = new AbortController();
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     const timeoutId = window.setTimeout(async () => {
       try {
@@ -82,11 +85,17 @@ export default function HeaderCatalogSearch() {
           return;
         }
         const data = (await response.json()) as { items?: HeaderSearchItem[] };
-        setItems(Array.isArray(data.items) ? data.items : []);
+        if (requestId === requestIdRef.current) {
+          setItems(Array.isArray(data.items) ? data.items : []);
+        }
       } catch {
-        setItems([]);
+        if (requestId === requestIdRef.current && !controller.signal.aborted) {
+          setItems([]);
+        }
       } finally {
-        setLoading(false);
+        if (requestId === requestIdRef.current) {
+          setLoading(false);
+        }
       }
     }, 220);
 

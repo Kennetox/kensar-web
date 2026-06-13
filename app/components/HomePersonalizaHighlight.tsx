@@ -5,6 +5,7 @@ import type { CSSProperties, PointerEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import styles from "./HomePersonalizaHighlight.module.css";
+import SkeletonBlock from "./skeleton/SkeletonBlock";
 import { PERSONALIZABLE_PRODUCTS } from "@/app/personaliza/_config/presets";
 
 const DEFAULT_REVEAL_X = 50;
@@ -139,6 +140,7 @@ function PersonalizeCard({
 
 export default function HomePersonalizaHighlight() {
   const [homeImages, setHomeImages] = useState<HomePersonalizationImagesResponse | null>(null);
+  const [homeImagesReady, setHomeImagesReady] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -150,6 +152,9 @@ export default function HomePersonalizaHighlight() {
       })
       .catch(() => {
         if (active) setHomeImages(null);
+      })
+      .finally(() => {
+        if (active) setHomeImagesReady(true);
       });
     return () => {
       active = false;
@@ -176,11 +181,25 @@ export default function HomePersonalizaHighlight() {
         <h2>Antes y después, en una sola vista</h2>
       </div>
 
-      <div className={styles.grid}>
-        {resolvedFamilies.map((item) => (
-          <PersonalizeCard key={item.id} item={item} />
-        ))}
-      </div>
+      {!homeImagesReady ? (
+        <div className={styles.loadingGrid} aria-hidden="true">
+          {PERSONALIZABLE_FAMILIES.map((item) => (
+            <div key={`personaliza-loading-${item.id}`} className={styles.loadingCard}>
+              <SkeletonBlock className={styles.loadingMedia} radius="0" />
+              <div className={styles.loadingCopy}>
+                <SkeletonBlock className={styles.loadingBadge} radius="999px" />
+                <SkeletonBlock className={styles.loadingTitle} radius="8px" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className={styles.grid}>
+          {resolvedFamilies.map((item) => (
+            <PersonalizeCard key={item.id} item={item} />
+          ))}
+        </div>
+      )}
     </section>
   );
 }

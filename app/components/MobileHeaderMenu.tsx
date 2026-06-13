@@ -159,6 +159,9 @@ export default function MobileHeaderMenu({ categories }: MobileHeaderMenuProps) 
 
               <section className="mobile-menu-screen" aria-label="Categorias principales">
                 <div className="mobile-menu-nav">
+                  <Link href="/combos" onClick={closeMenu}>
+                    Combos
+                  </Link>
                   {parentCategories.map((category) => {
                     const hasChildren = (childrenByParent[category.path] || []).length > 0;
                     if (!hasChildren) {
