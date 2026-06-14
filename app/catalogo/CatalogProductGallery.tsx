@@ -4,6 +4,23 @@ import Link from "next/link";
 import type { PointerEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 
+function ArrowIcon({ direction }: { direction: "left" | "right" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="catalog-gallery-arrow-icon"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {direction === "left" ? (
+        <path d="M14.5 5.5L8.5 12l6 6.5" />
+      ) : (
+        <path d="M9.5 5.5l6 6.5-6 6.5" />
+      )}
+    </svg>
+  );
+}
+
 export default function CatalogProductGallery({
   detailHref,
   gallery,
@@ -96,7 +113,7 @@ export default function CatalogProductGallery({
             onPointerDown={(event) => handleArrowPointerDown(event, -1)}
             aria-label="Imagen anterior"
           >
-            <span aria-hidden="true">‹</span>
+            <ArrowIcon direction="left" />
           </button>
           <button
             type="button"
@@ -104,7 +121,7 @@ export default function CatalogProductGallery({
             onPointerDown={(event) => handleArrowPointerDown(event, 1)}
             aria-label="Imagen siguiente"
           >
-            <span aria-hidden="true">›</span>
+            <ArrowIcon direction="right" />
           </button>
         </>
       ) : null}
