@@ -244,6 +244,9 @@ function resolveSliderHref(
     if (!rawValue) return "/catalogo";
     return buildCategoryHref(rawValue, undefined, categoryMap);
   }
+  if (linkType === "combos") {
+    return "/combos";
+  }
   if (linkType === "subcategoria") {
     const [parentKey, childKey] = rawValue.split("::").map((item) => item.trim());
     if (!parentKey || !childKey) return "/catalogo";

@@ -16,6 +16,7 @@ export type WebCatalogCategory = {
 export type WebCatalogHomeSliderLinkType =
   | "sin_link"
   | "catalogo"
+  | "combos"
   | "categoria"
   | "subcategoria"
   | "personalizacion"
