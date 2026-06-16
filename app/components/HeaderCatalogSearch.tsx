@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 type HeaderSearchItem = {
+  kind?: "product" | "combo";
   id: number;
   slug: string;
   name: string;
@@ -110,8 +111,14 @@ export default function HeaderCatalogSearch() {
     return clean ? `/catalogo?q=${encodeURIComponent(clean)}` : "/catalogo";
   }
 
+  function buildCombosSearchHref(term: string): string {
+    const clean = term.trim();
+    return clean ? `/combos?q=${encodeURIComponent(clean)}` : "/combos";
+  }
+
   function goToCatalogSearch(term: string) {
-    const href = buildCatalogSearchHref(term);
+    const onlyComboMatches = items.length > 0 && items.every((item) => item.kind === "combo");
+    const href = onlyComboMatches ? buildCombosSearchHref(term) : buildCatalogSearchHref(term);
     setOpen(false);
     if (pathname === "/catalogo") {
       router.replace(href);
@@ -155,8 +162,8 @@ export default function HeaderCatalogSearch() {
           {!loading && items.length
             ? items.map((item) => (
                 <Link
-                  key={item.id}
-                  href={`/catalogo/${item.slug}`}
+                  key={`${item.kind || "product"}-${item.id}`}
+                  href={item.kind === "combo" ? `/combos/${item.slug}` : `/catalogo/${item.slug}`}
                   className="header-search-item"
                   onClick={() => {
                     setQuery("");
@@ -175,6 +182,7 @@ export default function HeaderCatalogSearch() {
                     aria-hidden="true"
                   />
                   <div className="header-search-item-copy">
+                    <small>{item.kind === "combo" ? "Combo" : "Producto"}</small>
                     <strong>{item.name}</strong>
                     <p>
                       {formatPrice(item.price)}
