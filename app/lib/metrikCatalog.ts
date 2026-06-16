@@ -71,6 +71,7 @@ export type WebCatalogCombo = {
   gallery_urls: string[];
   video_url: string | null;
   badge_text: string | null;
+  badge_color: string | null;
   category_key: string | null;
   price: number;
   compare_price: number | null;
@@ -262,6 +263,7 @@ function normalizeCatalogCombo(baseUrl: string, combo: WebCatalogCombo): WebCata
     image_thumb_url: resolveCatalogAssetUrl(baseUrl, combo.image_thumb_url),
     gallery_urls: combo.gallery_urls.map((image) => resolveCatalogAssetUrl(baseUrl, image) || image),
     video_url: resolveCatalogAssetUrl(baseUrl, combo.video_url || null),
+    badge_color: typeof combo.badge_color === "string" ? combo.badge_color : null,
     items: combo.items.map((item) => normalizeCatalogComboItem(baseUrl, item)),
   };
 }

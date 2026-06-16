@@ -22,6 +22,22 @@ function hasUnavailableComboItem(combo: WebCatalogCombo): boolean {
   );
 }
 
+const DEFAULT_COMBO_BADGE_COLOR = "#475569";
+
+function normalizeHexColor(value: string | null | undefined): string {
+  const trimmed = (value || "").trim();
+  return /^#([0-9a-fA-F]{6})$/.test(trimmed) ? trimmed : DEFAULT_COMBO_BADGE_COLOR;
+}
+
+function getReadableTextColor(hexColor: string): string {
+  const normalized = normalizeHexColor(hexColor).slice(1);
+  const red = Number.parseInt(normalized.slice(0, 2), 16);
+  const green = Number.parseInt(normalized.slice(2, 4), 16);
+  const blue = Number.parseInt(normalized.slice(4, 6), 16);
+  const luminance = (red * 299 + green * 587 + blue * 114) / 1000;
+  return luminance >= 150 ? "#111827" : "#ffffff";
+}
+
 export default function ComboCard({
   combo,
   viewMode = "grid",
@@ -37,6 +53,14 @@ export default function ComboCard({
   const comboUnavailable = hasUnavailableComboItem(combo);
   const comboStockLabel = comboUnavailable ? "Sin stock" : "Disponible";
   const comboStockToneClass = comboUnavailable ? "is-out-stock" : "is-in-stock";
+  const comboBadgeColor = normalizeHexColor(combo.badge_color);
+  const comboBadgeStyle = combo.badge_text
+    ? {
+        backgroundColor: comboBadgeColor,
+        borderColor: "rgba(255, 255, 255, 0.22)",
+        color: getReadableTextColor(comboBadgeColor),
+      }
+    : undefined;
   const mediaGallery = [combo.image_url, combo.image_thumb_url, ...combo.gallery_urls].filter(
     (value, index, list): value is string => Boolean(value) && list.indexOf(value) === index
   );
@@ -58,7 +82,11 @@ export default function ComboCard({
               ) : null}
               {combo.featured ? <span className="catalog-featured-badge">Destacado</span> : null}
               {discountBadge ? <span className="catalog-discount-badge">{discountBadge}</span> : null}
-              {combo.badge_text ? <span className="catalog-commercial-badge">{combo.badge_text}</span> : null}
+              {combo.badge_text ? (
+                <span className="catalog-commercial-badge" style={comboBadgeStyle}>
+                  {combo.badge_text}
+                </span>
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -109,7 +137,11 @@ export default function ComboCard({
             {comboUnavailable ? <span className="catalog-stock-badge stock-out_of_stock">Sin stock</span> : null}
             {combo.featured ? <span className="catalog-featured-badge">Destacado</span> : null}
             {discountBadge ? <span className="catalog-discount-badge">{discountBadge}</span> : null}
-            {combo.badge_text ? <span className="catalog-commercial-badge">{combo.badge_text}</span> : null}
+            {combo.badge_text ? (
+              <span className="catalog-commercial-badge" style={comboBadgeStyle}>
+                {combo.badge_text}
+              </span>
+            ) : null}
           </div>
         ) : null}
       </div>

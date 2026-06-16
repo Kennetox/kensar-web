@@ -41,6 +41,22 @@ function getDiscountBadgeText(combo: WebCatalogCombo): string | null {
   return percent > 0 ? `Descuento ${percent}%` : null;
 }
 
+const DEFAULT_COMBO_BADGE_COLOR = "#475569";
+
+function normalizeHexColor(value: string | null | undefined): string {
+  const trimmed = (value || "").trim();
+  return /^#([0-9a-fA-F]{6})$/.test(trimmed) ? trimmed : DEFAULT_COMBO_BADGE_COLOR;
+}
+
+function getReadableTextColor(hexColor: string): string {
+  const normalized = normalizeHexColor(hexColor).slice(1);
+  const red = Number.parseInt(normalized.slice(0, 2), 16);
+  const green = Number.parseInt(normalized.slice(2, 4), 16);
+  const blue = Number.parseInt(normalized.slice(4, 6), 16);
+  const luminance = (red * 299 + green * 587 + blue * 114) / 1000;
+  return luminance >= 150 ? "#111827" : "#ffffff";
+}
+
 type SuggestedItem =
   | { kind: "combo"; key: string; combo: WebCatalogCombo }
   | { kind: "product"; key: string; product: WebCatalogProductCard };
@@ -224,6 +240,14 @@ export default async function ComboDetailPage({ params }: ComboDetailPageProps) 
   const discountBadge = getDiscountBadgeText(combo);
   const categoryLabel = humanizeComboCategoryKey(combo.category_key || "");
   const itemsLabel = `${combo.items.length} producto${combo.items.length === 1 ? "" : "s"}`;
+  const comboBadgeColor = normalizeHexColor(combo.badge_color);
+  const comboBadgeStyle = combo.badge_text
+    ? {
+        backgroundColor: comboBadgeColor,
+        borderColor: "rgba(255, 255, 255, 0.22)",
+        color: getReadableTextColor(comboBadgeColor),
+      }
+    : undefined;
   const gallery = [combo.image_url, combo.image_thumb_url, ...combo.gallery_urls].filter(
     (image, index, list): image is string => Boolean(image) && list.indexOf(image) === index
   );
@@ -341,7 +365,11 @@ export default async function ComboDetailPage({ params }: ComboDetailPageProps) 
                       ) : null}
                       {combo.featured ? <span className="product-featured-badge">Destacado</span> : null}
                       {discountBadge ? <span className="product-discount-badge">{discountBadge}</span> : null}
-                      {combo.badge_text ? <span className="product-commercial-badge">{combo.badge_text}</span> : null}
+                      {combo.badge_text ? (
+                        <span className="product-commercial-badge" style={comboBadgeStyle}>
+                          {combo.badge_text}
+                        </span>
+                      ) : null}
                     </div>
                   ) : null}
                   <p className="product-info-meta">
