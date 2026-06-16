@@ -433,8 +433,9 @@ export async function getCatalogCombos(input?: { q?: string }) {
 export async function getCatalogCombo(slug: string) {
   const normalizedSlug = slug.trim();
   if (!normalizedSlug) return null;
-  const combos = await getCatalogCombos();
-  return combos.find((combo) => combo.slug === normalizedSlug) || null;
+  const baseUrl = getApiBaseUrl();
+  const response = await fetchCatalogOptionalFast<WebCatalogCombo>(`/web/catalog/combos/${normalizedSlug}`);
+  return response ? normalizeCatalogCombo(baseUrl, response) : null;
 }
 
 export async function getCatalogProduct(slug: string) {
