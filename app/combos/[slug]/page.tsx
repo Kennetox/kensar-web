@@ -388,6 +388,22 @@ export default async function ComboDetailPage({ params }: ComboDetailPageProps) 
                   Productos agrupados con precio final. <span>Los gastos de envío</span> se calcularán al momento de
                   confirmar la compra.
                 </p>
+                {combo.warranty_text?.trim() ? (
+                  <>
+                    <p className="product-warranty-copy">
+                      <span className="product-warranty-check" aria-hidden="true">
+                        ✓
+                      </span>
+                      <span>{combo.warranty_text.trim()}</span>
+                    </p>
+                    <Link
+                      href="/legal/cambios-devoluciones-garantias#garantias"
+                      className="product-warranty-policy-link"
+                    >
+                      Políticas de garantía
+                    </Link>
+                  </>
+                ) : null}
 
                 <div className="product-shipping-copy" aria-label="Condiciones de envío y contraentrega">
                   <p className="product-shipping-headline">
