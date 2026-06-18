@@ -342,14 +342,8 @@ export async function getCatalogCategoryHierarchy() {
 
 export async function getHomeSliders() {
   const baseUrl = getApiBaseUrl();
-  const response = await fetch(`${baseUrl}/web/catalog/home-sliders`, {
-    cache: "no-store",
-  });
-  if (!response.ok) {
-    throw new Error(`Catalog request failed: ${response.status}`);
-  }
-  const data = (await response.json()) as { items: WebCatalogHomeSlider[] };
-  return data.items
+  const response = await fetchCatalog<{ items: WebCatalogHomeSlider[] }>("/web/catalog/home-sliders");
+  return response.items
     .slice()
     .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || (a.slot || 0) - (b.slot || 0))
     .map((item) => ({
@@ -360,14 +354,7 @@ export async function getHomeSliders() {
 }
 
 export async function getHomeSectionsConfig() {
-  const baseUrl = getApiBaseUrl();
-  const response = await fetch(`${baseUrl}/web/catalog/home-sections`, {
-    cache: "no-store",
-  });
-  if (!response.ok) {
-    throw new Error(`Catalog request failed: ${response.status}`);
-  }
-  return (await response.json()) as WebCatalogHomeSectionsConfig;
+  return fetchCatalog<WebCatalogHomeSectionsConfig>("/web/catalog/home-sections");
 }
 
 export async function getCatalogProducts(input: {
