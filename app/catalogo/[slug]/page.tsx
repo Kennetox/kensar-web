@@ -22,7 +22,7 @@ import {
   type WebCatalogProductDetail,
 } from "@/app/lib/metrikCatalog";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 type CatalogProductDetailPageProps = {
   params: Promise<{ slug: string }>;

@@ -189,8 +189,8 @@ function getApiBaseUrl() {
   return baseUrl.replace(/\/$/, "");
 }
 
-const CATALOG_REVALIDATE_SECONDS = 60;
-const CATALOG_PRODUCTS_REVALIDATE_SECONDS = 10;
+const CATALOG_REVALIDATE_SECONDS = 300;
+const CATALOG_PRODUCTS_REVALIDATE_SECONDS = 300;
 
 function resolveCatalogAssetUrl(baseUrl: string, value: string | null): string | null {
   if (!value) return null;
