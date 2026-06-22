@@ -1,28 +1,22 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import CatalogProductCard from "@/app/catalogo/CatalogProductCard";
 import ProductBackToCatalogLink from "@/app/catalogo/ProductBackToCatalogLink";
 import ProductDetailGallery from "@/app/catalogo/ProductDetailGallery";
 import ProductPurchaseCta from "@/app/catalogo/ProductPurchaseCta";
 import ProductKoraAssistLink from "@/app/catalogo/ProductKoraAssistLink";
 import ProductViewTracker from "@/app/catalogo/ProductViewTracker";
-import ProductHorizontalDragScroll from "@/app/catalogo/ProductHorizontalDragScroll";
 import KoraPageContextBridge from "@/app/components/KoraPageContextBridge";
 import { buildCatalogCategoryHref } from "@/app/lib/catalogRoutes";
-import { buildCatalogCategoryHrefFromSegments, buildCatalogCategoryMap, buildCatalogCategoryTrailFromKey } from "@/app/lib/catalogCategoryTree";
 import { buildWhatsAppPrefill } from "@/app/lib/kora/whatsapp-handoff";
 import {
   formatCatalogPrice,
-  getCatalogCategoryHierarchy,
   getCatalogProduct,
-  getCatalogProducts,
   getStockLabel,
-  type WebCatalogProductCard,
   type WebCatalogProductDetail,
 } from "@/app/lib/metrikCatalog";
 
-export const revalidate = 300;
+export const revalidate = 900;
 
 type CatalogProductDetailPageProps = {
   params: Promise<{ slug: string }>;
@@ -96,27 +90,6 @@ export async function generateMetadata({ params, searchParams }: CatalogProductD
   };
 }
 
-async function getRelatedProducts(
-  currentProductId: number,
-  categoryPath?: string | null
-): Promise<WebCatalogProductCard[]> {
-  const RELATED_PRODUCTS_LIMIT = 5;
-
-  try {
-    const categoryRows = await getCatalogProducts({
-      category: categoryPath || undefined,
-      page: 1,
-      page_size: RELATED_PRODUCTS_LIMIT + 3,
-    });
-    const related = categoryRows.items
-      .filter((item) => item.id !== currentProductId)
-      .slice(0, RELATED_PRODUCTS_LIMIT);
-    return related;
-  } catch {
-    return [];
-  }
-}
-
 function getDetailDiscountBadgeText(product: WebCatalogProductDetail): string | null {
   if (product.price_mode !== "visible") return null;
   if (typeof product.price !== "number" || typeof product.compare_price !== "number") return null;
@@ -129,27 +102,19 @@ export default async function CatalogProductDetailPage({
   params,
 }: CatalogProductDetailPageProps) {
   const { slug } = await params;
-  const [product, categories] = await Promise.all([
-    getCatalogProduct(slug),
-    getCatalogCategoryHierarchy().catch(() => []),
-  ]);
+  const product = await getCatalogProduct(slug);
 
   if (!product) notFound();
 
   const gallery = [product.image_url, product.image_thumb_url, ...product.gallery].filter(
     (image, index, list): image is string => Boolean(image) && list.indexOf(image) === index
   );
-  const categoryMap = buildCatalogCategoryMap(categories);
-  const categoryTrail = buildCatalogCategoryTrailFromKey(product.category_path, categoryMap);
   const descriptionText = (product.long_description || product.short_description || "").trim();
-  const relatedProducts = await getRelatedProducts(product.id, product.category_path);
   const discountBadge = getDetailDiscountBadgeText(product);
   const commercialBadge = product.badge_text?.trim() || null;
   const fallbackCatalogHref = product.category_path
-    ? categoryTrail?.segments.length
-      ? buildCatalogCategoryHrefFromSegments(categoryTrail.segments)
-      : buildCatalogCategoryHref({ categoryPath: product.category_path })
-    : "/";
+    ? buildCatalogCategoryHref({ categoryPath: product.category_path })
+    : "/catalogo";
   const shippingWhatsAppHref = buildWhatsAppPrefill({
     origin: "product_page_whatsapp",
     need: "envio",
@@ -191,11 +156,7 @@ export default async function CatalogProductDetailPage({
       <section className="catalog-breadcrumbs">
         <ProductBackToCatalogLink fallbackHref={fallbackCatalogHref} />
         <span>Catálogo</span>
-        {categoryTrail?.trail.length
-          ? categoryTrail.trail.map((category) => <span key={category.id}>{category.name}</span>)
-          : product.category_path
-          ? <span>{product.category_name || "Categoría"}</span>
-          : null}
+        {product.category_path ? <span>{product.category_name || product.category_path}</span> : null}
         <span>{product.name}</span>
       </section>
 
@@ -365,16 +326,6 @@ export default async function CatalogProductDetailPage({
         )}
       </section>
 
-      {relatedProducts.length ? (
-        <section className="product-related-section product-related-mobile-scope">
-          <h2>También te podría interesar</h2>
-          <ProductHorizontalDragScroll className="catalog-product-grid storefront-grid product-related-grid product-related-mobile-carousel">
-            {relatedProducts.map((related) => (
-              <CatalogProductCard key={`related-${related.id}`} product={related} />
-            ))}
-          </ProductHorizontalDragScroll>
-        </section>
-      ) : null}
       <ProductViewTracker
         product={{
           id: product.id,
