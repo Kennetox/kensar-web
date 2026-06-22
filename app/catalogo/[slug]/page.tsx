@@ -106,20 +106,12 @@ async function getRelatedProducts(
     const categoryRows = await getCatalogProducts({
       category: categoryPath || undefined,
       page: 1,
+      page_size: RELATED_PRODUCTS_LIMIT + 3,
     });
     const related = categoryRows.items
       .filter((item) => item.id !== currentProductId)
       .slice(0, RELATED_PRODUCTS_LIMIT);
-    if (related.length >= RELATED_PRODUCTS_LIMIT) return related;
-
-    const fallbackRows = await getCatalogProducts({ page: 1 });
-    const merged = [...related];
-    for (const item of fallbackRows.items) {
-      if (item.id === currentProductId || merged.some((row) => row.id === item.id)) continue;
-      merged.push(item);
-      if (merged.length >= RELATED_PRODUCTS_LIMIT) break;
-    }
-    return merged;
+    return related;
   } catch {
     return [];
   }
@@ -137,14 +129,16 @@ export default async function CatalogProductDetailPage({
   params,
 }: CatalogProductDetailPageProps) {
   const { slug } = await params;
-  const product = await getCatalogProduct(slug);
+  const [product, categories] = await Promise.all([
+    getCatalogProduct(slug),
+    getCatalogCategoryHierarchy().catch(() => []),
+  ]);
 
   if (!product) notFound();
 
   const gallery = [product.image_url, product.image_thumb_url, ...product.gallery].filter(
     (image, index, list): image is string => Boolean(image) && list.indexOf(image) === index
   );
-  const categories = await getCatalogCategoryHierarchy().catch(() => []);
   const categoryMap = buildCatalogCategoryMap(categories);
   const categoryTrail = buildCatalogCategoryTrailFromKey(product.category_path, categoryMap);
   const descriptionText = (product.long_description || product.short_description || "").trim();

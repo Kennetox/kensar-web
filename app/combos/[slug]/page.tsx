@@ -24,7 +24,7 @@ import {
 } from "@/app/lib/metrikCatalog";
 import { humanizeComboCategoryKey, normalizeComboFilterKey } from "../comboUtils";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 type ComboDetailPageProps = {
   params: Promise<{ slug: string }>;
@@ -111,6 +111,11 @@ async function getSuggestedProductsFromComboItems(currentCombo: WebCatalogCombo)
         .filter((value): value is string => Boolean(value))
     )
   );
+  const categoryPaths = Array.from(
+    new Set(
+      [currentCombo.category_key?.trim(), ...seedCategories].filter((value): value is string => Boolean(value))
+    )
+  ).slice(0, 3);
 
   const queries = Array.from(
     new Set(
@@ -135,8 +140,8 @@ async function getSuggestedProductsFromComboItems(currentCombo: WebCatalogCombo)
   };
 
   const categoryBuckets = await Promise.all(
-    seedCategories.map((categoryPath) =>
-      getCatalogProducts({ category: categoryPath, page: 1, page_size: 8 }).catch(() => ({ items: [] }))
+    categoryPaths.map((categoryPath) =>
+      getCatalogProducts({ category: categoryPath, page: 1, page_size: 6 }).catch(() => ({ items: [] }))
     )
   );
   for (const bucket of categoryBuckets) {
@@ -145,7 +150,7 @@ async function getSuggestedProductsFromComboItems(currentCombo: WebCatalogCombo)
   }
 
   const queryBuckets = await Promise.all(
-    queries.map((query) => getCatalogProducts({ q: query, page: 1, page_size: 8 }).catch(() => ({ items: [] })))
+    queries.slice(0, 2).map((query) => getCatalogProducts({ q: query, page: 1, page_size: 6 }).catch(() => ({ items: [] })))
   );
   for (const bucket of queryBuckets) {
     appendProducts(bucket.items);

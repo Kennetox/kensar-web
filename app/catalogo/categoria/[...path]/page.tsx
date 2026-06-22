@@ -36,6 +36,5 @@ export default async function CategoryCatalogPage({ params, searchParams }: Cate
       ...query,
       category: resolved.category.path,
     }),
-    categoryPathSegments: resolved.segments,
   });
 }

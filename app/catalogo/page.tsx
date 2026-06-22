@@ -9,7 +9,6 @@ import {
   buildCatalogCategoryChildrenMap,
   buildCatalogCategoryMap,
   buildCatalogCategoryTrailFromKey,
-  resolveCatalogCategoryBySegments,
   type CatalogCategoryTrailNode,
 } from "@/app/lib/catalogCategoryTree";
 import {
@@ -32,7 +31,6 @@ type CatalogPageProps = {
     page?: string;
     view?: string;
   }>;
-  categoryPathSegments?: string[];
 };
 
 type PaginationToken = number | "ellipsis";
@@ -214,7 +212,7 @@ async function loadCatalogData(input: {
   }
 }
 
-export default async function CatalogoPage({ searchParams, categoryPathSegments }: CatalogPageProps) {
+async function renderCatalogPage({ searchParams }: CatalogPageProps) {
   const CATALOG_PAGE_SIZE = 24;
   const params = (await searchParams) ?? {};
   const rawSort = (params.sort || "").trim();
@@ -256,7 +254,7 @@ export default async function CatalogoPage({ searchParams, categoryPathSegments 
     redirect("/");
   }
 
-  const { categories, productList, hasError } = await loadCatalogData({
+  const { categories: loadedCategories, productList, hasError } = await loadCatalogData({
     q: effectiveQ,
     category,
     brands: normalizedSelectedBrands,
@@ -267,10 +265,8 @@ export default async function CatalogoPage({ searchParams, categoryPathSegments 
     page_size: CATALOG_PAGE_SIZE,
   });
 
-  const categoryMap = buildCatalogCategoryMap(categories);
-  const resolvedCategoryTrail: CatalogCategoryTrailNode | null = categoryPathSegments?.length
-    ? resolveCatalogCategoryBySegments(categories, categoryPathSegments)
-    : category
+  const categoryMap = buildCatalogCategoryMap(loadedCategories);
+  const resolvedCategoryTrail: CatalogCategoryTrailNode | null = category
     ? buildCatalogCategoryTrailFromKey(category, categoryMap)
     : null;
   const selectedCategoryNode = resolvedCategoryTrail?.category || null;
@@ -309,7 +305,7 @@ export default async function CatalogoPage({ searchParams, categoryPathSegments 
   }
 
   const fallbackCategories = buildFallbackCategories();
-  const visibleCategories = categories.length ? categories : fallbackCategories;
+  const visibleCategories = loadedCategories.length ? loadedCategories : fallbackCategories;
   const visibleBrandsMap = new Map<string, WebCatalogFilterOption>();
   productList.filters.brands.forEach((item) => {
     const value = item.value.trim();
@@ -654,4 +650,8 @@ export default async function CatalogoPage({ searchParams, categoryPathSegments 
       </section>
     </main>
   );
+}
+
+export default async function CatalogoPage(props: CatalogPageProps) {
+  return renderCatalogPage(props);
 }

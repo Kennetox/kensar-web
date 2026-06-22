@@ -228,6 +228,17 @@ export default function CombosFiltersSidebar({
   );
 
   useEffect(() => {
+    const nextQuery = localQuery.trim();
+    if (nextQuery === query.trim()) return;
+
+    const timer = window.setTimeout(() => {
+      applyFilters({ query: localQuery });
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [localQuery, query, applyFilters]);
+
+  useEffect(() => {
     if (!priceDirty) return;
     const timer = window.setTimeout(() => {
       applyFilters({
@@ -256,9 +267,7 @@ export default function CombosFiltersSidebar({
             type="search"
             value={localQuery}
             onChange={(event) => {
-              const nextQuery = event.target.value;
-              setLocalQuery(nextQuery);
-              applyFilters({ query: nextQuery });
+              setLocalQuery(event.target.value);
             }}
             className="catalog-sidebar-search-input"
             placeholder="Buscar en esta sección..."
