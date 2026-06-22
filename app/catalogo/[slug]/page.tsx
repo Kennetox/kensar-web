@@ -50,12 +50,7 @@ export async function generateMetadata({ params, searchParams }: CatalogProductD
   const productUrl = metadataUrl.toString();
   const description = (product.short_description || product.long_description || "").trim();
   const fallbackDescription = "Producto disponible en Kensar Electronic.";
-  const previewImageUrl = (() => {
-    const url = new URL("/api/og/product-image", siteUrl);
-    url.searchParams.set("slug", product.slug);
-    if (shareVersion) url.searchParams.set("v", shareVersion);
-    return url.toString();
-  })();
+  const previewImageUrl = product.image_thumb_url || product.image_url || `${siteUrl}/api/og/product-image?slug=${encodeURIComponent(product.slug)}`;
   const imageSet = previewImageUrl
     ? [
         {
