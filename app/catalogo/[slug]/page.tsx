@@ -1,12 +1,15 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import ProductBackToCatalogLink from "@/app/catalogo/ProductBackToCatalogLink";
 import ProductDetailGallery from "@/app/catalogo/ProductDetailGallery";
 import ProductPurchaseCta from "@/app/catalogo/ProductPurchaseCta";
 import ProductKoraAssistLink from "@/app/catalogo/ProductKoraAssistLink";
+import ProductRelatedProductsSection from "@/app/catalogo/ProductRelatedProductsSection";
 import ProductViewTracker from "@/app/catalogo/ProductViewTracker";
 import KoraPageContextBridge from "@/app/components/KoraPageContextBridge";
+import RelatedProductsSkeleton from "@/app/components/skeleton/RelatedProductsSkeleton";
 import { buildCatalogCategoryHref } from "@/app/lib/catalogRoutes";
 import { buildWhatsAppPrefill } from "@/app/lib/kora/whatsapp-handoff";
 import {
@@ -320,6 +323,15 @@ export default async function CatalogProductDetailPage({
           </p>
         )}
       </section>
+
+      <Suspense fallback={<RelatedProductsSkeleton />}>
+        <ProductRelatedProductsSection
+          currentProductId={product.id}
+          currentProductSlug={product.slug}
+          categoryPath={product.category_path}
+          brand={product.brand}
+        />
+      </Suspense>
 
       <ProductViewTracker
         product={{
