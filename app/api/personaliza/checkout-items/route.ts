@@ -8,6 +8,7 @@ import {
 
 type CheckoutItemsPayload = {
   base_slug?: string;
+  base_sku?: string;
   personalization_sku?: string;
 };
 
@@ -40,23 +41,29 @@ function mapCatalogCardToCheckoutItem(product: WebCatalogProductCard): CheckoutI
 export async function POST(request: Request) {
   const payload = (await request.json().catch(() => ({}))) as CheckoutItemsPayload;
   const baseSlug = (payload.base_slug || "").trim();
+  const baseSku = (payload.base_sku || "").trim();
   const personalizationSku = (payload.personalization_sku || "").trim();
 
-  if (!baseSlug || !personalizationSku) {
+  if ((!baseSlug && !baseSku) || !personalizationSku) {
     return NextResponse.json(
       { detail: "Faltan datos para resolver los productos de personalización." },
       { status: 400 }
     );
   }
 
-  const [baseProduct, searchBySku] = await Promise.all([
-    getCatalogProduct(baseSlug),
+  const [baseBySlug, baseBySku, searchBySku] = await Promise.all([
+    baseSlug ? getCatalogProduct(baseSlug) : Promise.resolve(null),
+    baseSku ? getCatalogProducts({ q: baseSku, page_size: 60 }) : Promise.resolve(null),
     getCatalogProducts({ q: personalizationSku, page_size: 60 }),
   ]);
 
+  const baseProduct =
+    baseBySlug ||
+    (baseBySku ? baseBySku.items.find((item) => (item.sku || "").trim() === baseSku) || null : null);
+
   if (!baseProduct) {
     return NextResponse.json(
-      { detail: `No encontramos el producto base (${baseSlug}) en catálogo web.` },
+      { detail: `No encontramos el producto base (${baseSlug || baseSku}) en catálogo web.` },
       { status: 404 }
     );
   }

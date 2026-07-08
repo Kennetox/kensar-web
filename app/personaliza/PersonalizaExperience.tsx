@@ -304,6 +304,7 @@ function readPersonalizaCheckoutContext(): Record<string, unknown> | null {
 }
 
 async function fetchPersonalizationCheckoutQuote(binding: {
+  productSku: string;
   productSlug: string;
   personalizationSku: string;
 }): Promise<{ base: CheckoutItemLookup; personalization: CheckoutItemLookup } | null> {
@@ -312,6 +313,7 @@ async function fetchPersonalizationCheckoutQuote(binding: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       base_slug: binding.productSlug,
+      base_sku: binding.productSku,
       personalization_sku: binding.personalizationSku,
     }),
   });

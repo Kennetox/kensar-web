@@ -126,7 +126,7 @@ export function resolvePersonalizableCheckoutBinding(
   const productSku = (fromBackend.product_sku || "").trim();
   const productSlug = (fromBackend.product_slug || "").trim();
   const personalizationSku = (fromBackend.service_sku || "").trim();
-  if (!productSku || !productSlug || !personalizationSku) return null;
+  if (!productSku || !personalizationSku) return null;
   return { productSku, productSlug, personalizationSku };
 }
 
