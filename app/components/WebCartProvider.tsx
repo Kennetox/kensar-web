@@ -46,6 +46,30 @@ function mergeComboContext(
   return merged.length > 0 ? merged.map((entry) => ({ ...entry })) : null;
 }
 
+function extractComboGroupIds(value?: WebComboContext[] | null): string[] {
+  if (!Array.isArray(value) || value.length === 0) return [];
+  return Array.from(
+    new Set(
+      value
+        .map((entry) => (entry?.combo_group_id || "").trim())
+        .filter((groupId): groupId is string => Boolean(groupId))
+    )
+  );
+}
+
+function isComboCartItem(item: WebCartItem) {
+  return extractComboGroupIds(item.combo_context_json).length > 0;
+}
+
+function removeGuestItemsByComboGroupIds(items: WebCartItem[], comboGroupIds: string[]) {
+  if (!comboGroupIds.length) return items;
+  const blocked = new Set(comboGroupIds);
+  return items.filter((item) => {
+    const itemGroupIds = extractComboGroupIds(item.combo_context_json);
+    return !itemGroupIds.some((groupId) => blocked.has(groupId));
+  });
+}
+
 type GuestCartItemInput = {
   product_name: string;
   product_slug: string;
@@ -426,18 +450,35 @@ export default function WebCartProvider({
   const updateItem = useCallback(async (productId: number, quantity: number) => {
     if (!authenticated) {
       const current = parseGuestStorage();
-      const nextItems = current.items
-        .map((item) => {
-          if (item.product_id !== productId) return item;
-          if (quantity <= 0) return null;
-          const nextQuantity = Math.min(CART_MAX_UNITS_PER_ITEM, Math.max(1, Number(quantity) || 1));
-          return {
-            ...item,
-            quantity: nextQuantity,
-            line_total: item.unit_price * nextQuantity,
-          };
-        })
-        .filter((item): item is WebCartItem => Boolean(item));
+      const target = current.items.find((item) => item.product_id === productId);
+      if (!target) {
+        return current;
+      }
+
+      let nextItems: WebCartItem[];
+      if (isComboCartItem(target)) {
+        const comboGroupIds = extractComboGroupIds(target.combo_context_json);
+        if (quantity <= 0) {
+          nextItems = removeGuestItemsByComboGroupIds(current.items, comboGroupIds);
+        } else if (Math.abs(Number(quantity) - Number(target.quantity || 0)) <= 0.0001) {
+          nextItems = [...current.items];
+        } else {
+          throw new Error("Los productos de un combo no se pueden editar por separado. Elimina el combo completo.");
+        }
+      } else {
+        nextItems = current.items
+          .map((item) => {
+            if (item.product_id !== productId) return item;
+            if (quantity <= 0) return null;
+            const nextQuantity = Math.min(CART_MAX_UNITS_PER_ITEM, Math.max(1, Number(quantity) || 1));
+            return {
+              ...item,
+              quantity: nextQuantity,
+              line_total: item.unit_price * nextQuantity,
+            };
+          })
+          .filter((item): item is WebCartItem => Boolean(item));
+      }
 
       const nextCart = recalculateGuestCart(nextItems);
       setCart(nextCart);
@@ -459,7 +500,10 @@ export default function WebCartProvider({
   const removeItem = useCallback(async (productId: number) => {
     if (!authenticated) {
       const current = parseGuestStorage();
-      const nextItems = current.items.filter((item) => item.product_id !== productId);
+      const target = current.items.find((item) => item.product_id === productId);
+      const nextItems = target && isComboCartItem(target)
+        ? removeGuestItemsByComboGroupIds(current.items, extractComboGroupIds(target.combo_context_json))
+        : current.items.filter((item) => item.product_id !== productId);
       const nextCart = recalculateGuestCart(nextItems);
       setCart(nextCart);
       persistGuestCart(nextCart);

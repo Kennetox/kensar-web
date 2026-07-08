@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState, useTransition } from "react";
 import { useWebCart } from "@/app/components/WebCartProvider";
 import { useWebCustomer } from "@/app/components/WebCustomerProvider";
+import { getComboContextLabel } from "@/app/lib/webCart";
 
 const CART_NOTES_MAX_CHARS = 220;
 const CART_MAX_UNITS_PER_ITEM = 3;
@@ -230,59 +231,64 @@ function CarritoPageContent() {
               </div>
             ) : (
               <div className="cart-item-list">
-                {sortedItems.map((item) => (
-                  <div key={item.id} className="cart-item-row">
-                    <div className="cart-item-main">
-                      <div
-                        className={`cart-item-media${item.image_url ? " has-image" : ""}`}
-                        style={item.image_url ? { backgroundImage: `url('${item.image_url}')` } : undefined}
-                        aria-hidden="true"
-                      />
-                      <div className="cart-item-copy">
-                        <h3>{item.product_name}</h3>
-                        <p>
-                          {item.product_sku || "Sin SKU"} · {item.brand || "Kensar"}
-                        </p>
-                        <strong className="cart-item-price-row">
-                          <span>{formatMoney(item.line_total)}</span>
-                          {typeof item.compare_price === "number" && item.compare_price > item.unit_price ? (
-                            <small>{formatMoney(item.compare_price * item.quantity)}</small>
-                          ) : null}
-                        </strong>
+                {sortedItems.map((item) => {
+                  const comboLocked = Boolean(item.combo_context_json?.length);
+                  const comboLabel = getComboContextLabel(item.combo_context_json);
+                  return (
+                    <div key={item.id} className="cart-item-row">
+                      <div className="cart-item-main">
+                        <div
+                          className={`cart-item-media${item.image_url ? " has-image" : ""}`}
+                          style={item.image_url ? { backgroundImage: `url('${item.image_url}')` } : undefined}
+                          aria-hidden="true"
+                        />
+                        <div className="cart-item-copy">
+                          <h3>{item.product_name}</h3>
+                          {comboLabel ? <p className="mini-cart-item-combo-note">{comboLabel}</p> : null}
+                          <p>
+                            {item.product_sku || "Sin SKU"} · {item.brand || "Kensar"}
+                          </p>
+                          <strong className="cart-item-price-row">
+                            <span>{formatMoney(item.line_total)}</span>
+                            {typeof item.compare_price === "number" && item.compare_price > item.unit_price ? (
+                              <small>{formatMoney(item.compare_price * item.quantity)}</small>
+                            ) : null}
+                          </strong>
+                        </div>
                       </div>
-                    </div>
-                    <div className="cart-item-actions">
-                      <div className="cart-qty-box">
+                      <div className="cart-item-actions">
+                        <div className="cart-qty-box">
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
+                            disabled={isPending || comboLocked}
+                          >
+                            -
+                          </button>
+                          <span>{item.quantity}</span>
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
+                            disabled={isPending || comboLocked || item.quantity >= CART_MAX_UNITS_PER_ITEM}
+                          >
+                            +
+                          </button>
+                        </div>
                         <button
                           type="button"
-                          onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
+                          className="cart-remove-btn"
+                          onClick={() => updateQuantity(item.product_id, 0)}
                           disabled={isPending}
                         >
-                          -
-                        </button>
-                        <span>{item.quantity}</span>
-                        <button
-                          type="button"
-                          onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
-                          disabled={isPending || item.quantity >= CART_MAX_UNITS_PER_ITEM}
-                        >
-                          +
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M9 3.5h6l.7 1.5H20v2H4v-2h4.3L9 3.5Zm-2 6h2v8H7v-8Zm4 0h2v8h-2v-8Zm4 0h2v8h-2v-8Z" />
+                          </svg>
+                          <span>{comboLocked ? "Eliminar combo" : "Eliminar"}</span>
                         </button>
                       </div>
-                      <button
-                        type="button"
-                        className="cart-remove-btn"
-                        onClick={() => updateQuantity(item.product_id, 0)}
-                        disabled={isPending}
-                      >
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                          <path d="M9 3.5h6l.7 1.5H20v2H4v-2h4.3L9 3.5Zm-2 6h2v8H7v-8Zm4 0h2v8h-2v-8Zm4 0h2v8h-2v-8Z" />
-                        </svg>
-                        <span>Eliminar</span>
-                      </button>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </article>

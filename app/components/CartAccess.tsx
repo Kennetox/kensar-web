@@ -294,6 +294,7 @@ export default function CartAccess() {
                     <div className="mini-cart-items">
                       {items.map((item) => {
                         const comboLabel = getComboContextLabel(item.combo_context_json);
+                        const comboLocked = Boolean(item.combo_context_json?.length);
                         return (
                           <article key={item.id} className="mini-cart-item">
                             <div
@@ -320,7 +321,7 @@ export default function CartAccess() {
                                 <div className="mini-cart-qty">
                                   <button
                                     type="button"
-                                    disabled={busy}
+                                    disabled={busy || comboLocked}
                                     onClick={() => void handleQuantity(item.product_id, item.quantity - 1)}
                                   >
                                     -
@@ -328,7 +329,7 @@ export default function CartAccess() {
                                   <span>{item.quantity}</span>
                                   <button
                                     type="button"
-                                    disabled={busy || item.quantity >= CART_MAX_UNITS_PER_ITEM}
+                                    disabled={busy || comboLocked || item.quantity >= CART_MAX_UNITS_PER_ITEM}
                                     onClick={() => void handleQuantity(item.product_id, item.quantity + 1)}
                                   >
                                     +
@@ -340,7 +341,7 @@ export default function CartAccess() {
                                   disabled={busy}
                                   onClick={() => void handleQuantity(item.product_id, 0)}
                                 >
-                                  Eliminar
+                                  {comboLocked ? "Eliminar combo" : "Eliminar"}
                                 </button>
                               </div>
                             </div>
