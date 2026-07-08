@@ -268,6 +268,14 @@ function cleanTraceLine(value: string): string {
   return line;
 }
 
+function formatMoney(value: number): string {
+  return value.toLocaleString("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0,
+  });
+}
+
 function getDefaultRotationByFace(face: TextFace): number {
   if (face === "maraca_left" || face === "maraca_right") return MARACA_LOCKED_ROTATION;
   return face === "left" || face === "right" ? -90 : 0;
@@ -293,6 +301,35 @@ function readPersonalizaCheckoutContext(): Record<string, unknown> | null {
   } catch {
     return null;
   }
+}
+
+async function fetchPersonalizationCheckoutQuote(binding: {
+  productSlug: string;
+  personalizationSku: string;
+}): Promise<{ base: CheckoutItemLookup; personalization: CheckoutItemLookup } | null> {
+  const response = await fetch("/api/personaliza/checkout-items", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      base_slug: binding.productSlug,
+      personalization_sku: binding.personalizationSku,
+    }),
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as {
+    detail?: string;
+    base?: CheckoutItemLookup;
+    personalization?: CheckoutItemLookup;
+  };
+
+  if (!response.ok || !payload.base || !payload.personalization) {
+    return null;
+  }
+
+  return {
+    base: payload.base,
+    personalization: payload.personalization,
+  };
 }
 
 export default function PersonalizaExperience() {
@@ -353,6 +390,11 @@ export default function PersonalizaExperience() {
   const [isCurrentDesignInCart, setIsCurrentDesignInCart] = useState(false);
   const [designBaselineSignature, setDesignBaselineSignature] = useState<string | null>(null);
   const [checkoutBindingsMap, setCheckoutBindingsMap] = useState<PersonalizationBindingsMap | null>(null);
+  const [checkoutQuote, setCheckoutQuote] = useState<{
+    base: CheckoutItemLookup;
+    personalization: CheckoutItemLookup;
+  } | null>(null);
+  const [checkoutQuoteLoading, setCheckoutQuoteLoading] = useState(false);
   const [historyPast, setHistoryPast] = useState<EditorSnapshot[]>([]);
   const [historyFuture, setHistoryFuture] = useState<EditorSnapshot[]>([]);
   const selectorGridRef = useRef<HTMLElement | null>(null);
@@ -650,6 +692,37 @@ export default function PersonalizaExperience() {
       }),
     [checkoutBindingsMap, product, selectedCampanaType, selectedSize.id]
   );
+  useEffect(() => {
+    if (!selectedCheckoutBinding) {
+      setCheckoutQuote(null);
+      setCheckoutQuoteLoading(false);
+      return;
+    }
+
+    let active = true;
+    setCheckoutQuoteLoading(true);
+    void fetchPersonalizationCheckoutQuote(selectedCheckoutBinding)
+      .then((quote) => {
+        if (!active) return;
+        setCheckoutQuote(quote);
+      })
+      .catch(() => {
+        if (!active) return;
+        setCheckoutQuote(null);
+      })
+      .finally(() => {
+        if (!active) return;
+        setCheckoutQuoteLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedCheckoutBinding]);
+  const checkoutTotal = useMemo(() => {
+    if (!checkoutQuote) return null;
+    return (Number(checkoutQuote.base.price) || 0) + (Number(checkoutQuote.personalization.price) || 0);
+  }, [checkoutQuote]);
   const availableSolidPresets = useMemo(
     () => (isCromadaVariant ? CROMADA_TINT_PRESETS : SOLID_STYLE_PRESETS),
     [isCromadaVariant]
@@ -1644,23 +1717,10 @@ export default function PersonalizaExperience() {
       throw new Error("Este instrumento aún no tiene conexión de checkout configurada.");
     }
 
-    const response = await fetch("/api/personaliza/checkout-items", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        base_slug: selectedCheckoutBinding.productSlug,
-        personalization_sku: selectedCheckoutBinding.personalizationSku,
-      }),
-    });
+    const payload = await fetchPersonalizationCheckoutQuote(selectedCheckoutBinding);
 
-    const payload = (await response.json().catch(() => ({}))) as {
-      detail?: string;
-      base?: CheckoutItemLookup;
-      personalization?: CheckoutItemLookup;
-    };
-
-    if (!response.ok || !payload.base || !payload.personalization) {
-      throw new Error(payload.detail || "No pudimos preparar los productos para el checkout.");
+    if (!payload) {
+      throw new Error("No pudimos preparar los productos para el checkout.");
     }
 
     await addItem(payload.base.id, 1, {
@@ -2815,6 +2875,12 @@ export default function PersonalizaExperience() {
         aria-label="Acciones de compra"
       >
         <div className={styles.checkoutActionsInner}>
+          <div className={styles.checkoutActionsSummary} aria-live="polite">
+            <span className={styles.checkoutActionsSummaryLabel}>Total estimado</span>
+            <strong className={styles.checkoutActionsSummaryValue}>
+              {checkoutQuoteLoading ? "Calculando..." : checkoutTotal !== null ? formatMoney(checkoutTotal) : "—"}
+            </strong>
+          </div>
           {!selectedCheckoutBinding ? (
             <p className={styles.checkoutLockedNotice}>
               Este instrumento no está habilitado para compra: falta configuración de vinculación en Metrik.
