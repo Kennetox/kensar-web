@@ -2927,10 +2927,45 @@ export default function PersonalizaExperience() {
       >
         <div className={styles.checkoutActionsInner}>
           <div className={styles.checkoutActionsSummary} aria-live="polite">
-            <span className={styles.checkoutActionsSummaryLabel}>Total estimado</span>
-            <strong className={styles.checkoutActionsSummaryValue}>
-              {checkoutQuoteLoading ? "Calculando..." : checkoutTotal !== null ? formatMoney(checkoutTotal) : "—"}
-            </strong>
+            <div className={styles.checkoutActionsSummaryHeader}>
+              <span className={styles.checkoutActionsSummaryLabel}>Total estimado</span>
+              <strong className={styles.checkoutActionsSummaryValue}>
+                {checkoutQuoteLoading
+                  ? "Calculando..."
+                  : checkoutTotal !== null
+                    ? formatMoney(checkoutTotal)
+                    : "—"}
+              </strong>
+            </div>
+            <div className={styles.checkoutActionsSummaryBreakdown}>
+              <span className={styles.checkoutActionsSummaryBreakdownItem}>
+                Instrumento{" "}
+                <strong>
+                  {checkoutQuoteLoading
+                    ? "..."
+                    : formatMoney(
+                        checkoutQuote?.base.price ??
+                          selectedCheckoutBinding?.productPrice ??
+                          0
+                      )}
+                </strong>
+              </span>
+              <span className={styles.checkoutActionsSummaryBreakdownDivider} aria-hidden>
+                ·
+              </span>
+              <span className={styles.checkoutActionsSummaryBreakdownItem}>
+                Personalización{" "}
+                <strong>
+                  {checkoutQuoteLoading
+                    ? "..."
+                    : formatMoney(
+                        checkoutQuote?.personalization.price ??
+                          selectedCheckoutBinding?.personalizationPrice ??
+                          0
+                      )}
+                </strong>
+              </span>
+            </div>
           </div>
           {!selectedCheckoutBinding ? (
             <p className={styles.checkoutLockedNotice}>

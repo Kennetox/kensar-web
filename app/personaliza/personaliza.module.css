@@ -691,13 +691,19 @@
 .checkoutActionsSummary {
   grid-column: 1 / -1;
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+  flex-direction: column;
+  gap: 4px;
   border: 1px solid rgba(15, 23, 42, 0.12);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.95);
-  padding: 12px 16px;
+  padding: 11px 16px 10px;
+}
+
+.checkoutActionsSummaryHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .checkoutActionsSummaryLabel {
@@ -712,6 +718,33 @@
   font-size: 1.2rem;
   line-height: 1.1;
   color: #0f172a;
+}
+
+.checkoutActionsSummaryBreakdown {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  color: #64748b;
+}
+
+.checkoutActionsSummaryBreakdownItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.checkoutActionsSummaryBreakdownItem strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.checkoutActionsSummaryBreakdownDivider {
+  font-size: 0.7rem;
+  color: #cbd5e1;
 }
 
 .checkoutLockedNotice {
