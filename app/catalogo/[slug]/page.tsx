@@ -10,10 +10,15 @@ import ProductRelatedProductsSection from "@/app/catalogo/ProductRelatedProducts
 import ProductViewTracker from "@/app/catalogo/ProductViewTracker";
 import KoraPageContextBridge from "@/app/components/KoraPageContextBridge";
 import RelatedProductsSkeleton from "@/app/components/skeleton/RelatedProductsSkeleton";
-import { buildCatalogCategoryHref } from "@/app/lib/catalogRoutes";
+import {
+  buildCatalogCategoryHrefFromSegments,
+  buildCatalogCategoryMap,
+  buildCatalogCategoryTrailFromKey,
+} from "@/app/lib/catalogCategoryTree";
 import { buildWhatsAppPrefill } from "@/app/lib/kora/whatsapp-handoff";
 import {
   formatCatalogPrice,
+  getCatalogCategoryHierarchy,
   getCatalogProduct,
   getStockLabel,
   type WebCatalogProductDetail,
@@ -100,18 +105,25 @@ export default async function CatalogProductDetailPage({
   params,
 }: CatalogProductDetailPageProps) {
   const { slug } = await params;
-  const product = await getCatalogProduct(slug);
+  const [product, categories] = await Promise.all([
+    getCatalogProduct(slug),
+    getCatalogCategoryHierarchy().catch(() => []),
+  ]);
 
   if (!product) notFound();
 
+  const categoryMap = buildCatalogCategoryMap(categories);
+  const categoryTrail = product.category_path
+    ? buildCatalogCategoryTrailFromKey(product.category_path, categoryMap)
+    : null;
   const gallery = [product.image_url, product.image_thumb_url, ...product.gallery].filter(
     (image, index, list): image is string => Boolean(image) && list.indexOf(image) === index
   );
   const descriptionText = (product.long_description || product.short_description || "").trim();
   const discountBadge = getDetailDiscountBadgeText(product);
   const commercialBadge = product.badge_text?.trim() || null;
-  const fallbackCatalogHref = product.category_path
-    ? buildCatalogCategoryHref({ categoryPath: product.category_path })
+  const fallbackCatalogHref = categoryTrail
+    ? buildCatalogCategoryHrefFromSegments(categoryTrail.segments)
     : "/catalogo";
   const shippingWhatsAppHref = buildWhatsAppPrefill({
     origin: "product_page_whatsapp",
