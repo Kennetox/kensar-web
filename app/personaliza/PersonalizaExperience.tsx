@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./personaliza.module.css";
 import ModelPreview3D, { type ModelPreview3DHandle, type PaintConfig } from "./ModelPreview3D";
 import { useWebCart } from "@/app/components/WebCartProvider";
+import type { WebComboContext } from "@/app/lib/webCart";
 import { buildWhatsAppPrefill } from "@/app/lib/kora/whatsapp-handoff";
 import {
   CUSTOM_TEXT_MAX_LENGTH,
@@ -375,6 +376,65 @@ function buildFallbackCheckoutQuote(binding: {
           : null,
     },
   };
+}
+
+function createPersonalizationGroupId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `personaliza_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function buildPersonalizationComboContext(params: {
+  groupId: string;
+  comboName: string;
+  comboPrice: number;
+  base: {
+    id: number;
+    name: string;
+    quantity: number;
+    lineTotal: number;
+    index: number;
+  };
+  personalization: {
+    id: number;
+    name: string;
+    quantity: number;
+    lineTotal: number;
+    index: number;
+  };
+}): { baseContext: WebComboContext[]; personalizationContext: WebComboContext[] } {
+  const baseContext = [
+    {
+      combo_group_id: params.groupId,
+      combo_id: params.base.id,
+      combo_slug: params.groupId,
+      combo_name: params.comboName,
+      combo_price: params.comboPrice,
+      combo_item_count: 2,
+      combo_component_product_id: params.base.id,
+      combo_component_product_name: params.base.name,
+      combo_component_quantity: params.base.quantity,
+      combo_component_line_total: params.base.lineTotal,
+      combo_component_index: params.base.index,
+    },
+  ] as WebComboContext[];
+  const personalizationContext = [
+    {
+      combo_group_id: params.groupId,
+      combo_id: params.personalization.id,
+      combo_slug: params.groupId,
+      combo_name: params.comboName,
+      combo_price: params.comboPrice,
+      combo_item_count: 2,
+      combo_component_product_id: params.personalization.id,
+      combo_component_product_name: params.personalization.name,
+      combo_component_quantity: params.personalization.quantity,
+      combo_component_line_total: params.personalization.lineTotal,
+      combo_component_index: params.personalization.index,
+    },
+  ] as WebComboContext[];
+  return { baseContext, personalizationContext };
 }
 
 export default function PersonalizaExperience() {
@@ -1773,6 +1833,27 @@ export default function PersonalizaExperience() {
     const payload =
       (await fetchPersonalizationCheckoutQuote(selectedCheckoutBinding)) ||
       buildFallbackCheckoutQuote(selectedCheckoutBinding);
+    const comboGroupId = createPersonalizationGroupId();
+    const comboName = `Personalización de ${selectedProduct.name}`;
+    const comboContext = buildPersonalizationComboContext({
+      groupId: comboGroupId,
+      comboName,
+      comboPrice: (Number(payload.base.price) || 0) + (Number(payload.personalization.price) || 0),
+      base: {
+        id: payload.base.id,
+        name: payload.base.name,
+        quantity: 1,
+        lineTotal: Number(payload.base.price) || 0,
+        index: 0,
+      },
+      personalization: {
+        id: payload.personalization.id,
+        name: payload.personalization.name,
+        quantity: 1,
+        lineTotal: Number(payload.personalization.price) || 0,
+        index: 1,
+      },
+    });
 
     await addItem(payload.base.id, 1, {
       product_name: payload.base.name,
@@ -1783,6 +1864,7 @@ export default function PersonalizaExperience() {
       stock_status: payload.base.stock_status,
       unit_price: payload.base.price,
       compare_price: payload.base.compare_price,
+      combo_context_json: comboContext.baseContext,
     });
 
     await addItem(payload.personalization.id, 1, {
@@ -1794,6 +1876,7 @@ export default function PersonalizaExperience() {
       stock_status: payload.personalization.stock_status,
       unit_price: payload.personalization.price,
       compare_price: payload.personalization.compare_price,
+      combo_context_json: comboContext.personalizationContext,
     });
 
     let personalizationPreviewImages: Record<string, string> | null = null;
