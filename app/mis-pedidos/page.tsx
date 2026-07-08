@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import AccountSectionTabs from "@/app/components/AccountSectionTabs";
 import { useWebCart } from "@/app/components/WebCartProvider";
 import { useWebCustomer } from "@/app/components/WebCustomerProvider";
-import { fetchWebOrder, type WebOrderDetail, type WebOrderSummary } from "@/app/lib/webCart";
+import { fetchWebOrder, getComboContextLabel, type WebOrderDetail, type WebOrderSummary } from "@/app/lib/webCart";
 
 function formatMoney(value: number) {
   return new Intl.NumberFormat("es-CO", {
@@ -215,15 +215,19 @@ export default function MisPedidosPage() {
                     <p className="account-section-copy">Esta orden no tiene productos registrados.</p>
                   ) : (
                     <ul>
-                      {selectedOrderDetail.items.map((item) => (
-                        <li key={item.id}>
-                          <div>
-                            <strong>{item.product_name}</strong>
-                            <span>Cantidad: {item.quantity}</span>
-                          </div>
-                          <p>{formatMoney(item.line_total)}</p>
-                        </li>
-                      ))}
+                      {selectedOrderDetail.items.map((item) => {
+                        const comboLabel = getComboContextLabel(item.combo_context_json);
+                        return (
+                          <li key={item.id}>
+                            <div>
+                              <strong>{item.product_name}</strong>
+                              {comboLabel ? <span className="mini-cart-item-combo-note">{comboLabel}</span> : null}
+                              <span>Cantidad: {item.quantity}</span>
+                            </div>
+                            <p>{formatMoney(item.line_total)}</p>
+                          </li>
+                        );
+                      })}
                     </ul>
                   )}
                 </div>

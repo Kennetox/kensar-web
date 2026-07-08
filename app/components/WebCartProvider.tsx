@@ -19,6 +19,7 @@ import {
   fetchWebCart,
   removeWebCartItem,
   updateWebCartItem,
+  type WebComboContext,
   type WebCart,
   type WebCartItem,
   type WebOrderSummary,
@@ -33,6 +34,18 @@ const CHECKOUT_COMPLETED_EVENT_NAME = "kensar:checkout-completed";
 const CHECKOUT_CLEARED_ORDER_PREFIX = "kensar_web_checkout_cleared_order_";
 const CART_REFRESH_THROTTLE_MS = 2000;
 
+function cloneComboContext(value?: WebComboContext[] | null): WebComboContext[] | null {
+  if (!Array.isArray(value) || value.length === 0) return null;
+  return value.map((entry) => ({ ...entry }));
+}
+
+function mergeComboContext(
+  ...values: Array<WebComboContext[] | null | undefined>
+): WebComboContext[] | null {
+  const merged = values.flatMap((value) => (Array.isArray(value) ? value : []));
+  return merged.length > 0 ? merged.map((entry) => ({ ...entry })) : null;
+}
+
 type GuestCartItemInput = {
   product_name: string;
   product_slug: string;
@@ -43,6 +56,7 @@ type GuestCartItemInput = {
   unit_price: number;
   compare_price?: number | null;
   unit_price_override?: number | null;
+  combo_context_json?: WebComboContext[] | null;
 };
 
 type WebCartContextValue = {
@@ -127,6 +141,7 @@ function parseGuestStorage(): WebCart {
           unit_price: unitPrice,
           compare_price: typeof item.compare_price === "number" ? item.compare_price : null,
           line_total: lineTotal,
+          combo_context_json: cloneComboContext(item.combo_context_json),
         } as WebCartItem;
       })
       .filter((item) => item.product_id > 0);
@@ -359,6 +374,7 @@ export default function WebCartProvider({
             quantity: mergedQuantity,
             unit_price: mergedQuantity > 0 ? mergedTotal / mergedQuantity : existing.unit_price,
             line_total: mergedTotal,
+            combo_context_json: mergeComboContext(existing.combo_context_json, guestItem?.combo_context_json),
           };
         } else {
           if (!guestItem) {
@@ -379,6 +395,7 @@ export default function WebCartProvider({
             unit_price: unitPrice,
             compare_price: typeof guestItem.compare_price === "number" ? guestItem.compare_price : null,
             line_total: unitPrice * nextQuantity,
+            combo_context_json: cloneComboContext(guestItem.combo_context_json),
           });
         }
 
@@ -396,6 +413,7 @@ export default function WebCartProvider({
           typeof guestItem?.unit_price_override === "number" && guestItem.unit_price_override > 0
             ? guestItem.unit_price_override
             : undefined,
+        combo_context_json: cloneComboContext(guestItem?.combo_context_json) || undefined,
       });
       setCart(nextCart);
       setCouponSessionMarker(hasActiveCoupon(nextCart));

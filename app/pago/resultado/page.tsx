@@ -5,6 +5,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   fetchCheckoutOrderPaymentStatus,
+  getComboContextLabel,
   type WebCheckoutOrderPaymentStatus,
 } from "@/app/lib/webCart";
 import { gaPurchase } from "@/app/lib/ga4";
@@ -27,6 +28,7 @@ type CheckoutResultContext = {
     quantity: number;
     unit_price: number;
     line_total: number;
+    combo_context_json?: Array<{ combo_name?: string | null }> | null;
   }>;
   subtotal?: number;
   total?: number;
@@ -457,6 +459,7 @@ function CheckoutResultContent() {
       unit_price: Number(item.unit_price) || 0,
       line_discount_value: 0,
       line_total: Number(item.line_total) || 0,
+      combo_context_json: item.combo_context_json || null,
     })) || [];
   const summaryItems = status?.items?.length ? status.items : fallbackSummaryItems;
   const hasSummaryItems = summaryItems.length > 0;
@@ -629,6 +632,7 @@ function CheckoutResultContent() {
             {summaryItems.length ? (
               summaryItems.map((item) => {
                 const resolvedImageUrl = normalizeImageUrl(item.image_url);
+                const comboLabel = getComboContextLabel(item.combo_context_json);
                 return (
                 <article key={item.id} className="checkout-summary-item">
                   <div
@@ -640,6 +644,7 @@ function CheckoutResultContent() {
                   </div>
                   <div className="checkout-summary-item-copy">
                     <p>{item.product_name}</p>
+                    {comboLabel ? <small className="mini-cart-item-combo-note">{comboLabel}</small> : null}
                     <small>Cantidad {Math.max(1, Math.round(Number(item.quantity) || 1))}</small>
                   </div>
                   <div className="checkout-summary-item-price">

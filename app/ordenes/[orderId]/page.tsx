@@ -7,6 +7,7 @@ import { getManualPaymentInstructions } from "@/app/lib/paymentInstructions";
 import { buildWhatsAppPrefill } from "@/app/lib/kora/whatsapp-handoff";
 import {
   fetchWebOrder,
+  getComboContextLabel,
   submitManualPaymentForOrder,
   type WebOrderDetail,
 } from "@/app/lib/webCart";
@@ -223,18 +224,22 @@ export default function WebOrderDetailPage() {
               </div>
 
               <div className="cart-item-list">
-                {order.items.map((item) => (
-                  <div key={item.id} className="cart-item-row">
-                    <div className="cart-item-copy">
-                      <h3>{item.product_name}</h3>
-                      <p>
-                        {item.product_sku || "Sin SKU"} · {item.quantity} unidad
-                        {item.quantity === 1 ? "" : "es"}
-                      </p>
-                      <strong>{formatMoney(item.line_total)}</strong>
+                {order.items.map((item) => {
+                  const comboLabel = getComboContextLabel(item.combo_context_json);
+                  return (
+                    <div key={item.id} className="cart-item-row">
+                      <div className="cart-item-copy">
+                        <h3>{item.product_name}</h3>
+                        {comboLabel ? <p className="mini-cart-item-combo-note">{comboLabel}</p> : null}
+                        <p>
+                          {item.product_sku || "Sin SKU"} · {item.quantity} unidad
+                          {item.quantity === 1 ? "" : "es"}
+                        </p>
+                        <strong>{formatMoney(item.line_total)}</strong>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="order-timeline">

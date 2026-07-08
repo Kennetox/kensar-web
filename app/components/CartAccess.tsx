@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useWebCart } from "@/app/components/WebCartProvider";
 import { useWebCustomer } from "@/app/components/WebCustomerProvider";
+import { getComboContextLabel } from "@/app/lib/webCart";
 
 function formatMoney(value: number) {
   return new Intl.NumberFormat("es-CO", {
@@ -291,57 +292,61 @@ export default function CartAccess() {
                 ) : (
                   <>
                     <div className="mini-cart-items">
-                      {items.map((item) => (
-                        <article key={item.id} className="mini-cart-item">
-                          <div
-                            className={`mini-cart-item-media${item.image_url ? " has-image" : ""}`}
-                            style={
-                              item.image_url
-                                ? { backgroundImage: `url('${item.image_url}')` }
-                                : undefined
-                            }
-                            aria-hidden="true"
-                          />
-                          <div className="mini-cart-item-main">
-                            <div className="mini-cart-item-copy">
-                              <h4>{item.product_name}</h4>
-                              <p>
-                                <span>{formatMoney(item.line_total)}</span>
-                                {typeof item.compare_price === "number" && item.compare_price > item.unit_price ? (
-                                  <small>{formatMoney(item.compare_price * item.quantity)}</small>
-                                ) : null}
-                              </p>
-                            </div>
-                            <div className="mini-cart-item-actions">
-                              <div className="mini-cart-qty">
+                      {items.map((item) => {
+                        const comboLabel = getComboContextLabel(item.combo_context_json);
+                        return (
+                          <article key={item.id} className="mini-cart-item">
+                            <div
+                              className={`mini-cart-item-media${item.image_url ? " has-image" : ""}`}
+                              style={
+                                item.image_url
+                                  ? { backgroundImage: `url('${item.image_url}')` }
+                                  : undefined
+                              }
+                              aria-hidden="true"
+                            />
+                            <div className="mini-cart-item-main">
+                              <div className="mini-cart-item-copy">
+                                <h4>{item.product_name}</h4>
+                                {comboLabel ? <p className="mini-cart-item-combo-note">{comboLabel}</p> : null}
+                                <p>
+                                  <span>{formatMoney(item.line_total)}</span>
+                                  {typeof item.compare_price === "number" && item.compare_price > item.unit_price ? (
+                                    <small>{formatMoney(item.compare_price * item.quantity)}</small>
+                                  ) : null}
+                                </p>
+                              </div>
+                              <div className="mini-cart-item-actions">
+                                <div className="mini-cart-qty">
+                                  <button
+                                    type="button"
+                                    disabled={busy}
+                                    onClick={() => void handleQuantity(item.product_id, item.quantity - 1)}
+                                  >
+                                    -
+                                  </button>
+                                  <span>{item.quantity}</span>
+                                  <button
+                                    type="button"
+                                    disabled={busy || item.quantity >= CART_MAX_UNITS_PER_ITEM}
+                                    onClick={() => void handleQuantity(item.product_id, item.quantity + 1)}
+                                  >
+                                    +
+                                  </button>
+                                </div>
                                 <button
                                   type="button"
+                                  className="mini-cart-remove"
                                   disabled={busy}
-                                  onClick={() => void handleQuantity(item.product_id, item.quantity - 1)}
+                                  onClick={() => void handleQuantity(item.product_id, 0)}
                                 >
-                                  -
-                                </button>
-                                <span>{item.quantity}</span>
-                                <button
-                                  type="button"
-                                  disabled={busy || item.quantity >= CART_MAX_UNITS_PER_ITEM}
-                                  onClick={() => void handleQuantity(item.product_id, item.quantity + 1)}
-                                >
-                                  +
+                                  Eliminar
                                 </button>
                               </div>
-                              <button
-                                type="button"
-                                className="mini-cart-remove"
-                                disabled={busy}
-                                onClick={() => void handleQuantity(item.product_id, 0)}
-                              >
-                                Eliminar
-                              </button>
                             </div>
-                          </div>
-                        </article>
-                      ))}
+                          </article>
+                        );
+                      })}
                     </div>
 
                     <div className="mini-cart-footer">

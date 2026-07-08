@@ -10,6 +10,7 @@ import { useWebCustomer } from "@/app/components/WebCustomerProvider";
 import { gaBeginCheckout } from "@/app/lib/ga4";
 import { initiateCheckout } from "@/app/lib/meta-pixel";
 import {
+  getComboContextLabel,
   createMercadoPagoGuestCheckout,
   previewWebGuestCoupon,
   createUnifiedCheckout,
@@ -101,6 +102,7 @@ type CheckoutResultContext = {
     quantity: number;
     unit_price: number;
     line_total: number;
+    combo_context_json?: Array<{ combo_name?: string | null }> | null;
   }>;
   subtotal: number;
   total: number;
@@ -894,6 +896,7 @@ function PagoPageContent() {
         quantity: Math.max(1, Number(item.quantity) || 1),
         unit_price: Number(item.unit_price) || 0,
         line_total: Number(item.line_total) || 0,
+        combo_context_json: item.combo_context_json || null,
       })),
       subtotal,
       total: totalWithCoupon,
@@ -1613,27 +1616,31 @@ function PagoPageContent() {
             <aside ref={summaryCardRef} className="checkout-summary-card">
               <h2>Resumen de tu compra</h2>
               <div className="checkout-summary-items">
-                {items.map((item) => (
-                  <article key={item.id} className="checkout-summary-item">
-                    <div
-                      className={`checkout-summary-thumb${item.image_url ? " has-image" : ""}`}
-                      style={item.image_url ? { backgroundImage: `url('${item.image_url}')` } : undefined}
-                      aria-hidden="true"
-                    >
-                      <span className="checkout-summary-thumb-badge">{item.quantity}</span>
-                    </div>
-                    <div className="checkout-summary-item-copy">
-                      <p>{item.product_name}</p>
-                      <small>Cantidad {item.quantity}</small>
-                    </div>
-                    <div className="checkout-summary-item-price">
-                      <strong>{formatMoney(item.line_total)}</strong>
-                      {typeof item.compare_price === "number" && item.compare_price > item.unit_price ? (
-                        <small>{formatMoney(item.compare_price * item.quantity)}</small>
-                      ) : null}
-                    </div>
-                  </article>
-                ))}
+            {items.map((item) => {
+              const comboLabel = getComboContextLabel(item.combo_context_json);
+              return (
+                <article key={item.id} className="checkout-summary-item">
+                  <div
+                    className={`checkout-summary-thumb${item.image_url ? " has-image" : ""}`}
+                    style={item.image_url ? { backgroundImage: `url('${item.image_url}')` } : undefined}
+                    aria-hidden="true"
+                  >
+                    <span className="checkout-summary-thumb-badge">{item.quantity}</span>
+                  </div>
+                  <div className="checkout-summary-item-copy">
+                    <p>{item.product_name}</p>
+                    {comboLabel ? <small className="mini-cart-item-combo-note">{comboLabel}</small> : null}
+                    <small>Cantidad {item.quantity}</small>
+                  </div>
+                  <div className="checkout-summary-item-price">
+                    <strong>{formatMoney(item.line_total)}</strong>
+                    {typeof item.compare_price === "number" && item.compare_price > item.unit_price ? (
+                      <small>{formatMoney(item.compare_price * item.quantity)}</small>
+                    ) : null}
+                  </div>
+                </article>
+              );
+            })}
               </div>
 
               <div className="checkout-summary-line">

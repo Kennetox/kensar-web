@@ -14,6 +14,13 @@ function hasUnavailableComboItem(combo: WebCatalogCombo): boolean {
   );
 }
 
+function createComboGroupId(combo: WebCatalogCombo): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `combo_${combo.id}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export default function ComboPurchaseCta({
   combo,
   checkoutHref,
@@ -45,6 +52,7 @@ export default function ComboPurchaseCta({
     try {
       setAdding(true);
       setMessage(null);
+      const comboGroupId = createComboGroupId(combo);
       const allocationByProductId = new Map<
         number,
         { quantity: number; lineTotal: number; baseLineTotal: number }
@@ -65,6 +73,21 @@ export default function ComboPurchaseCta({
         const comboItem = combo.items.find((item) => item.product_id === productId);
         if (!comboItem) continue;
         const unitPriceOverride = allocation.quantity > 0 ? allocation.lineTotal / allocation.quantity : comboItem.product_price;
+        const comboContext = [
+          {
+            combo_group_id: comboGroupId,
+            combo_id: combo.id,
+            combo_slug: combo.slug,
+            combo_name: combo.name,
+            combo_price: combo.price,
+            combo_item_count: combo.items.length,
+            combo_component_product_id: comboItem.product_id,
+            combo_component_product_name: comboItem.product_name,
+            combo_component_quantity: allocation.quantity,
+            combo_component_line_total: allocation.lineTotal,
+            combo_component_index: comboItem.sort_order,
+          },
+        ];
         await addItem(comboItem.product_id, allocation.quantity, {
           product_name: comboItem.product_name,
           product_slug: comboItem.product_slug || "",
@@ -74,6 +97,7 @@ export default function ComboPurchaseCta({
           stock_status: "consultar",
           unit_price: comboItem.product_price,
           unit_price_override: unitPriceOverride,
+          combo_context_json: comboContext,
         });
         addToCart(
           {

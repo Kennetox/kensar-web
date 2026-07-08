@@ -1,3 +1,34 @@
+export type WebComboContext = {
+  combo_group_id: string;
+  combo_id: number;
+  combo_slug: string;
+  combo_name: string;
+  combo_price: number;
+  combo_item_count: number;
+  combo_component_product_id: number;
+  combo_component_product_name: string;
+  combo_component_quantity: number;
+  combo_component_line_total: number;
+  combo_component_index: number;
+};
+
+export function getComboContextLabel(
+  contexts?: Array<{ combo_name?: string | null }> | null
+): string | null {
+  if (!Array.isArray(contexts) || contexts.length === 0) return null;
+  const names = Array.from(
+    new Set(
+      contexts
+        .map((context) => context.combo_name?.trim())
+        .filter((value): value is string => Boolean(value))
+    )
+  );
+  if (!names.length) return null;
+  const preview = names.slice(0, 2).join(", ");
+  const suffix = names.length > 2 ? ` +${names.length - 2}` : "";
+  return `Parte del combo: ${preview}${suffix}`;
+}
+
 export type WebCartItem = {
   id: number;
   product_id: number;
@@ -11,6 +42,7 @@ export type WebCartItem = {
   unit_price: number;
   compare_price?: number | null;
   line_total: number;
+  combo_context_json?: WebComboContext[] | null;
 };
 
 export type WebCart = {
@@ -75,6 +107,7 @@ export type WebOrderItem = {
   unit_price: number;
   line_discount_value: number;
   line_total: number;
+  combo_context_json?: WebComboContext[] | null;
 };
 
 export type WebOrderPayment = {
@@ -216,6 +249,7 @@ export async function addWebCartItem(input: {
   product_id: number;
   quantity: number;
   unit_price_snapshot?: number;
+  combo_context_json?: WebComboContext[];
 }): Promise<WebCart> {
   const response = await fetch("/api/cart/items", {
     method: "POST",
