@@ -72,9 +72,17 @@ export const PERSONALIZABLE_SIZES: Array<{ id: PersonalizableSize; label: string
 ];
 
 export type PersonalizableCheckoutBinding = {
+  productId: string;
+  productName: string;
   productSku: string;
   productSlug: string;
+  productPrice: number | null;
+  productComparePrice: number | null;
+  personalizationId: string;
+  personalizationName: string;
   personalizationSku: string;
+  personalizationPrice: number | null;
+  personalizationComparePrice: number | null;
 };
 
 export type PersonalizationBindingVariantKey =
@@ -88,10 +96,16 @@ export type PersonalizationBindingVariantKey =
 
 export type PersonalizationBindingVariant = {
   product_id?: string | null;
+  product_name?: string | null;
   product_sku?: string | null;
   product_slug?: string | null;
+  product_price?: number | null;
+  product_compare_price?: number | null;
   service_id?: string | null;
+  service_name?: string | null;
   service_sku?: string | null;
+  service_price?: number | null;
+  service_compare_price?: number | null;
 };
 
 export type PersonalizationBindingsMap = Partial<
@@ -123,11 +137,37 @@ export function resolvePersonalizableCheckoutBinding(
   const variantKey = resolveVariantKey(product, size, options?.campanaType);
   const fromBackend = variantKey ? options?.bindingsMap?.[variantKey] : null;
   if (!fromBackend) return null;
+  const productId = (fromBackend.product_id || "").trim();
+  const productName = (fromBackend.product_name || "").trim();
   const productSku = (fromBackend.product_sku || "").trim();
   const productSlug = (fromBackend.product_slug || "").trim();
+  const productPrice =
+    typeof fromBackend.product_price === "number" ? fromBackend.product_price : null;
+  const productComparePrice =
+    typeof fromBackend.product_compare_price === "number" ? fromBackend.product_compare_price : null;
+  const personalizationId = (fromBackend.service_id || "").trim();
+  const personalizationName = (fromBackend.service_name || "").trim();
   const personalizationSku = (fromBackend.service_sku || "").trim();
-  if (!productSku || !personalizationSku) return null;
-  return { productSku, productSlug, personalizationSku };
+  const personalizationPrice =
+    typeof fromBackend.service_price === "number" ? fromBackend.service_price : null;
+  const personalizationComparePrice =
+    typeof fromBackend.service_compare_price === "number"
+      ? fromBackend.service_compare_price
+      : null;
+  if (!productId || !productSku || !personalizationId || !personalizationSku) return null;
+  return {
+    productId,
+    productName,
+    productSku,
+    productSlug,
+    productPrice,
+    productComparePrice,
+    personalizationId,
+    personalizationName,
+    personalizationSku,
+    personalizationPrice,
+    personalizationComparePrice,
+  };
 }
 
 export const STYLE_PRESETS: StylePreset[] = [

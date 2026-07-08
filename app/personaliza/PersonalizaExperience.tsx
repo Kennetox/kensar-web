@@ -334,6 +334,49 @@ async function fetchPersonalizationCheckoutQuote(binding: {
   };
 }
 
+function buildFallbackCheckoutQuote(binding: {
+  productId: string;
+  productName: string;
+  productSku: string;
+  productSlug: string;
+  productPrice: number | null;
+  productComparePrice: number | null;
+  personalizationId: string;
+  personalizationName: string;
+  personalizationSku: string;
+  personalizationPrice: number | null;
+  personalizationComparePrice: number | null;
+}) {
+  return {
+    base: {
+      id: Number(binding.productId) || 0,
+      name: binding.productName || "Producto",
+      slug: binding.productSlug || "",
+      sku: binding.productSku || null,
+      image_url: null,
+      brand: null,
+      stock_status: "in_stock" as const,
+      price: Number(binding.productPrice) || 0,
+      compare_price:
+        typeof binding.productComparePrice === "number" ? binding.productComparePrice : null,
+    },
+    personalization: {
+      id: Number(binding.personalizationId) || 0,
+      name: binding.personalizationName || "Personalización",
+      slug: "",
+      sku: binding.personalizationSku || null,
+      image_url: null,
+      brand: null,
+      stock_status: "service" as const,
+      price: Number(binding.personalizationPrice) || 0,
+      compare_price:
+        typeof binding.personalizationComparePrice === "number"
+          ? binding.personalizationComparePrice
+          : null,
+    },
+  };
+}
+
 export default function PersonalizaExperience() {
   const router = useRouter();
   const pathname = usePathname();
@@ -703,14 +746,15 @@ export default function PersonalizaExperience() {
 
     let active = true;
     setCheckoutQuoteLoading(true);
+    setCheckoutQuote(buildFallbackCheckoutQuote(selectedCheckoutBinding));
     void fetchPersonalizationCheckoutQuote(selectedCheckoutBinding)
       .then((quote) => {
         if (!active) return;
-        setCheckoutQuote(quote);
+        setCheckoutQuote(quote || buildFallbackCheckoutQuote(selectedCheckoutBinding));
       })
       .catch(() => {
         if (!active) return;
-        setCheckoutQuote(null);
+        setCheckoutQuote(buildFallbackCheckoutQuote(selectedCheckoutBinding));
       })
       .finally(() => {
         if (!active) return;
@@ -722,9 +766,16 @@ export default function PersonalizaExperience() {
     };
   }, [selectedCheckoutBinding]);
   const checkoutTotal = useMemo(() => {
-    if (!checkoutQuote) return null;
-    return (Number(checkoutQuote.base.price) || 0) + (Number(checkoutQuote.personalization.price) || 0);
-  }, [checkoutQuote]);
+    if (checkoutQuote) {
+      return (Number(checkoutQuote.base.price) || 0) + (Number(checkoutQuote.personalization.price) || 0);
+    }
+    if (selectedCheckoutBinding) {
+      return (Number(selectedCheckoutBinding.productPrice) || 0) + (
+        Number(selectedCheckoutBinding.personalizationPrice) || 0
+      );
+    }
+    return null;
+  }, [checkoutQuote, selectedCheckoutBinding]);
   const availableSolidPresets = useMemo(
     () => (isCromadaVariant ? CROMADA_TINT_PRESETS : SOLID_STYLE_PRESETS),
     [isCromadaVariant]
@@ -1719,11 +1770,9 @@ export default function PersonalizaExperience() {
       throw new Error("Este instrumento aún no tiene conexión de checkout configurada.");
     }
 
-    const payload = await fetchPersonalizationCheckoutQuote(selectedCheckoutBinding);
-
-    if (!payload) {
-      throw new Error("No pudimos preparar los productos para el checkout.");
-    }
+    const payload =
+      (await fetchPersonalizationCheckoutQuote(selectedCheckoutBinding)) ||
+      buildFallbackCheckoutQuote(selectedCheckoutBinding);
 
     await addItem(payload.base.id, 1, {
       product_name: payload.base.name,
