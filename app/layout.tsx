@@ -214,7 +214,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
                   <div className="social-links" aria-label="Redes sociales">
                     <a
-                      href="https://instagram.com/"
+                      href="https://www.instagram.com/kensarelectronic/"
                       target="_blank"
                       rel="noreferrer"
                       className="social-icon-link"

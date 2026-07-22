@@ -36,6 +36,13 @@ export type WebCatalogHomeSlider = {
   sort_order: number;
 };
 
+export type WebCatalogHomeVideo = {
+  slot: number;
+  video_url: string;
+  sort_order: number;
+  is_new: boolean;
+};
+
 export type WebCatalogHomeSectionsMode = "categories" | "instruments" | "both";
 
 export type WebCatalogHomeSectionsConfig = {
@@ -191,6 +198,7 @@ function getApiBaseUrl() {
 
 const CATALOG_REVALIDATE_SECONDS = 300;
 const CATALOG_PRODUCTS_REVALIDATE_SECONDS = 300;
+const HOME_VIDEOS_REVALIDATE_SECONDS = 60;
 
 function resolveCatalogAssetUrl(baseUrl: string, value: string | null): string | null {
   if (!value) return null;
@@ -350,6 +358,24 @@ export async function getHomeSliders() {
       ...item,
       image_url: resolveCatalogAssetUrl(baseUrl, item.image_url),
       mobile_image_url: resolveCatalogAssetUrl(baseUrl, item.mobile_image_url || null),
+    }));
+}
+
+export async function getHomeVideos() {
+  const baseUrl = getApiBaseUrl();
+  const response = await fetch(`${baseUrl}/web/catalog/home-videos`, {
+    next: { revalidate: HOME_VIDEOS_REVALIDATE_SECONDS },
+  });
+  if (!response.ok) {
+    throw new Error(`Catalog request failed: ${response.status}`);
+  }
+  const payload = (await response.json()) as { items: WebCatalogHomeVideo[] };
+  return payload.items
+    .slice()
+    .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || (a.slot || 0) - (b.slot || 0))
+    .map((item) => ({
+      ...item,
+      video_url: resolveCatalogAssetUrl(baseUrl, item.video_url) || item.video_url,
     }));
 }
 

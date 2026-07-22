@@ -4,6 +4,7 @@ import CatalogProductCard from "@/app/catalogo/CatalogProductCard";
 import CommerceSlider from "@/app/components/CommerceSlider";
 import HomeBrandCollage from "@/app/components/HomeBrandCollage";
 import HomeProductCarousel from "@/app/components/HomeProductCarousel";
+import HomeSocialVideos from "@/app/components/HomeSocialVideos";
 import HomePersonalizaHighlight from "@/app/components/HomePersonalizaHighlight";
 import KoraPageContextBridge from "@/app/components/KoraPageContextBridge";
 import Reveal from "@/app/components/Reveal";
@@ -21,9 +22,11 @@ import {
   getCatalogProduct,
   getCatalogProducts,
   getHomeSliders,
+  getHomeVideos,
   getHomeSectionsConfig,
   type WebCatalogCategory,
   type WebCatalogHomeSlider,
+  type WebCatalogHomeVideo,
   type WebCatalogHomeSectionsMode,
   type WebCatalogProductCard,
 } from "@/app/lib/metrikCatalog";
@@ -32,6 +35,7 @@ type HomeData = {
   categories: WebCatalogCategory[];
   products: WebCatalogProductCard[];
   sliders: WebCatalogHomeSlider[];
+  videos: WebCatalogHomeVideo[];
   homeSectionsMode: WebCatalogHomeSectionsMode;
 };
 
@@ -191,10 +195,11 @@ const fallbackProducts: WebCatalogProductCard[] = [
 
 async function loadHomeData(): Promise<HomeData> {
   try {
-    const [categories, productList, sliders, homeSectionsConfig] = await Promise.all([
+    const [categories, productList, sliders, videos, homeSectionsConfig] = await Promise.all([
       getCatalogCategoryHierarchy(),
       getCatalogProducts({ page: 1 }),
       getHomeSliders(),
+      getHomeVideos().catch(() => []),
       getHomeSectionsConfig(),
     ]);
 
@@ -202,6 +207,7 @@ async function loadHomeData(): Promise<HomeData> {
       categories: categories.length ? categories : fallbackCategories,
       products: productList.items.length ? productList.items : fallbackProducts,
       sliders,
+      videos,
       homeSectionsMode: homeSectionsConfig?.web_home_sections_mode || "categories",
     };
   } catch {
@@ -209,6 +215,7 @@ async function loadHomeData(): Promise<HomeData> {
       categories: fallbackCategories,
       products: fallbackProducts,
       sliders: [],
+      videos: [],
       homeSectionsMode: "categories",
     };
   }
@@ -519,7 +526,7 @@ async function hydrateBestSellerProducts(items: WebCatalogProductCard[]) {
 }
 
 export default async function HomePage() {
-  const { categories, products, sliders, homeSectionsMode } = await loadHomeData();
+  const { categories, products, sliders, videos, homeSectionsMode } = await loadHomeData();
   const categoryMap = buildCatalogCategoryMap(categories);
   const showFeaturedCategories = homeSectionsMode === "categories" || homeSectionsMode === "both";
   const showInstrumentCarousel = homeSectionsMode === "instruments" || homeSectionsMode === "both";
@@ -622,7 +629,7 @@ export default async function HomePage() {
     {
       id: "instagram",
       label: "Instagram",
-      href: "https://instagram.com/",
+      href: "https://www.instagram.com/kensarelectronic/",
     },
     {
       id: "facebook",
@@ -689,6 +696,8 @@ export default async function HomePage() {
           ) : null}
         </section>
       ) : null}
+
+      {videos.length > 0 ? <HomeSocialVideos videos={videos} /> : null}
 
       <section className="commerce-discover" aria-label="Personaliza tus instrumentos">
         <HomePersonalizaHighlight />
