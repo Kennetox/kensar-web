@@ -22,6 +22,10 @@ import {
   type KoraPostRecommendationInterpretation,
   type KoraRecommendationState,
 } from "@/app/lib/kora/recommendation-state";
+import {
+  classifyAvailabilityCandidate,
+  parseCatalogAvailabilityQuestion,
+} from "@/app/lib/kora/catalog-availability";
 
 type AskRequest = {
   query?: string;
@@ -1400,6 +1404,171 @@ async function resolveProductsResponse(
   };
 }
 
+function availabilitySubjectLabel(subject: string) {
+  const labels: Record<string, string> = {
+    audifonos: "audífonos",
+    microfonos: "micrófonos",
+    camaras: "cámaras",
+  };
+  return labels[subject] || subject;
+}
+
+async function resolveCatalogAvailabilityResponse(query: string): Promise<AskResponse | null> {
+  const availability = parseCatalogAvailabilityQuestion(query);
+  if (!availability) return null;
+
+  const searches = await Promise.all(
+    availability.search_terms.map((term) =>
+      getCatalogProducts({ q: term, page: 1, page_size: 10 }).catch(() => null)
+    )
+  );
+  const successfulSearches = searches.filter(
+    (result): result is NonNullable<typeof result> => result !== null
+  );
+  if (!successfulSearches.length) {
+    return {
+      handled: false,
+      intent: "products",
+      answer: "No pude consultar el catálogo en este momento. Prefiero no decirte que tenemos o no tenemos el producto sin verificarlo.",
+      actions: [
+        { id: "availability-retry", label: "Intentar nuevamente", type: "prompt", value: query },
+        { id: "availability-advisor", label: "Consultar con asesor", type: "whatsapp", value: "consulta_disponibilidad", icon: "📞" },
+      ],
+      suggestions: [],
+      emotion: "neutral",
+      companion_mode: false,
+      confidence_score: 0.5,
+      resolution_kind: "fallback",
+    };
+  }
+
+  type AvailabilityProduct = (typeof successfulSearches)[number]["items"][number];
+  const seen = new Map<number, AvailabilityProduct>();
+  successfulSearches.forEach((result) => result.items.forEach((product) => seen.set(product.id, product)));
+  const ranked = Array.from(seen.values())
+    .map((product) => {
+      const knowledge = buildProductKnowledgeProfile({
+        id: product.id,
+        slug: product.slug,
+        sku: product.sku,
+        name: product.name,
+        category_path: product.category_path,
+        category_name: product.category_name,
+        short_description: product.short_description,
+        long_description: product.long_description,
+      });
+      return {
+        product,
+        ...classifyAvailabilityCandidate(availability, {
+          ...product,
+          commercial_role: knowledge.classification.role.value,
+        }),
+      };
+    })
+    .filter((row) => row.match !== "none")
+    .sort((a, b) => b.score - a.score || a.product.name.localeCompare(b.product.name, "es"));
+  const direct = ranked.filter((row) => row.match === "direct");
+  const related = ranked.filter((row) => row.match === "related");
+  const selected = (direct.length ? direct : related).slice(0, 5);
+  const subject = availabilitySubjectLabel(availability.subject);
+
+  if (!selected.length) {
+    return {
+      handled: true,
+      intent: "products",
+      answer: `No, en este momento no veo ${subject} publicados en nuestro catálogo. Si quieres, puedo buscar otro producto o ayudarte a consultar disponibilidad con un asesor.`,
+      actions: [
+        { id: "availability-other", label: "Buscar otro producto", type: "prompt", value: "Quiero buscar otro producto" },
+        { id: "availability-check", label: "Consultar disponibilidad", type: "whatsapp", value: `disponibilidad_${availability.normalized_subject}`, icon: "📞" },
+      ],
+      suggestions: [],
+      emotion: "neutral",
+      companion_mode: false,
+      confidence_score: 0.92,
+      resolution_kind: "direct",
+      memory_patch: {
+        last_recommendation_query: availability.normalized_subject,
+        last_recommendation_type: "availability_none",
+        recommendation_state: null,
+      },
+    };
+  }
+
+  const products = selected.map(({ product, score }) => ({
+    id: product.id,
+    slug: product.slug,
+    name: product.name,
+    price: product.price,
+    category_path: product.category_path,
+    category_name: product.category_name,
+    brand: product.brand || null,
+    score,
+  }));
+  const first = selected[0].product;
+  const firstKnowledge = buildProductKnowledgeProfile({
+    id: first.id,
+    slug: first.slug,
+    sku: first.sku,
+    name: first.name,
+    category_path: first.category_path,
+    category_name: first.category_name,
+    short_description: first.short_description,
+    long_description: first.long_description,
+  });
+  const family = firstKnowledge.classification.family.value === "unknown"
+    ? null
+    : firstKnowledge.classification.family.value;
+  const recommendationState: KoraRecommendationState = {
+    schema_version: "kora-recommendation-v1",
+    family,
+    base_query: availability.normalized_subject,
+    active_constraints: [],
+    shown_product_ids: products.map((product) => product.id),
+    current_results: products,
+    selected_product_ids: [],
+    rejected_product_ids: [],
+    comparison_product_ids: [],
+    round: 1,
+  };
+  const hasDirect = direct.length > 0;
+
+  return {
+    handled: true,
+    intent: "products",
+    answer: hasDirect
+      ? `Sí. Encontré ${selected.length === 1 ? "esta opción" : `${selected.length} opciones`} de ${subject} publicada${selected.length === 1 ? "" : "s"} en el catálogo.`
+      : `No encontré ${subject} exactos, pero sí encontré estas opciones relacionadas. Te las muestro separadas para no hacerte creer que son el mismo producto.`,
+    actions: [
+      { id: "availability-catalog", label: "Ver en el catálogo", type: "link", value: `/catalogo?q=${encodeURIComponent(availability.normalized_subject)}` },
+      { id: "availability-advice", label: "Ayúdame a elegir", type: "prompt", value: `Ayúdame a elegir entre estas opciones de ${availability.normalized_subject}` },
+    ],
+    suggestions: ["Muéstrame otras opciones", "¿Cuál me conviene?"],
+    emotion: "neutral",
+    companion_mode: false,
+    confidence_score: hasDirect ? 0.94 : 0.78,
+    resolution_kind: "direct",
+    memory_patch: {
+      last_recommended_products: products,
+      last_recommendation_query: availability.normalized_subject,
+      last_recommendation_category: products[0]?.category_path || null,
+      last_recommendation_type: hasDirect ? "availability_direct" : "availability_related",
+      recommendation_state: recommendationState,
+    },
+    product_cards: selected.map(({ product, match }) => ({
+      id: product.id,
+      slug: product.slug,
+      name: product.name,
+      price: product.price,
+      price_mode: product.price_mode,
+      brand: product.brand || null,
+      category_name: product.category_name || null,
+      image_url: product.image_thumb_url || product.image_url || null,
+      reason: match === "direct" ? `Coincide con tu búsqueda de ${subject}` : `Producto relacionado con ${subject}`,
+      url: `/catalogo/${product.slug}`,
+    })),
+  };
+}
+
 async function resolveProductPageAssistantResponse(
   query: string,
   currentPath: string | undefined,
@@ -2096,6 +2265,21 @@ export async function POST(request: Request) {
   if (businessReply) {
     return NextResponse.json<AskResponse>(
       finalizeResponse(businessReply, { emotion, tone, goal, companionMode, nluDebug, contextualSellingDebug: null }),
+      { status: 200 }
+    );
+  }
+
+  const availabilityReply = await resolveCatalogAvailabilityResponse(query);
+  if (availabilityReply) {
+    return NextResponse.json<AskResponse>(
+      finalizeResponse(availabilityReply, {
+        emotion,
+        tone,
+        goal,
+        companionMode,
+        nluDebug,
+        contextualSellingDebug: null,
+      }),
       { status: 200 }
     );
   }
