@@ -129,9 +129,8 @@ export default function ProductDetailGallery({
                     className="product-gallery-video-thumb-media"
                     muted
                     playsInline
-                    autoPlay
                     loop
-                    preload="auto"
+                    preload="metadata"
                   />
                   <span className="product-gallery-video-thumb-icon">▶</span>
                   <span className="product-gallery-video-thumb-label">Video</span>

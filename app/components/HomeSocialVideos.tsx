@@ -149,7 +149,7 @@ export default function HomeSocialVideos({ videos }: HomeSocialVideosProps) {
                       src={`${item.video_url}#t=0.5`}
                       muted={soundSlot !== item.slot}
                       playsInline
-                      preload="auto"
+                      preload={activeIndex === index ? "auto" : "metadata"}
                       onEnded={(event) => handleVideoEnded(index, event.currentTarget)}
                       onLoadedMetadata={(event) => {
                         const video = event.currentTarget;
