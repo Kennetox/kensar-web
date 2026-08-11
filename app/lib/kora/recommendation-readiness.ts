@@ -238,6 +238,62 @@ function guitarClarification(text: string, nlu: KoraNluResult | null): Recommend
     };
   }
 
+  if (hasSubtype) {
+    const subtype = includesAny(text, ["electroacustica"])
+      ? "electroacústica"
+      : includesAny(text, ["electrica"])
+        ? "eléctrica"
+        : includesAny(text, ["clasica"])
+          ? "clásica"
+          : "acústica";
+    return {
+      family: "guitarras",
+      answer:
+        `Perfecto, entonces nos enfocamos en una guitarra ${subtype}. ` +
+        "¿Es para comenzar a aprender o ya tienes experiencia? Con eso te muestro opciones que realmente se ajusten a ti.",
+      actions: [
+        {
+          id: "clarify-guitar-subtype-beginner",
+          label: "Estoy empezando",
+          type: "prompt",
+          value: "Estoy empezando y la quiero para aprender en casa",
+        },
+        {
+          id: "clarify-guitar-subtype-experienced",
+          label: "Ya sé tocar",
+          type: "prompt",
+          value: "Ya sé tocar y la quiero para ensayar, reuniones o presentaciones",
+        },
+      ],
+      suggestions: ["¿Qué presupuesto tienes?", "¿La usarás en casa o presentaciones?"],
+      missing_dimensions: ["uso_nivel", "presupuesto"],
+    };
+  }
+
+  if (hasUse) {
+    return {
+      family: "guitarras",
+      answer:
+        "Ya entiendo para qué la necesitas. Ahora dime qué sonido prefieres: una acústica o clásica para tocar sin amplificador, o una eléctrica para conectarla a un amplificador.",
+      actions: [
+        {
+          id: "clarify-guitar-use-acoustic",
+          label: "Acústica o clásica",
+          type: "prompt",
+          value: "Prefiero una guitarra acústica o clásica",
+        },
+        {
+          id: "clarify-guitar-use-electric",
+          label: "Eléctrica",
+          type: "prompt",
+          value: "Prefiero una guitarra eléctrica para usar con amplificador",
+        },
+      ],
+      suggestions: ["¿Necesitas amplificador?", "¿Qué presupuesto tienes?"],
+      missing_dimensions: ["subtipo", "presupuesto"],
+    };
+  }
+
   return {
     family: "guitarras",
     answer:

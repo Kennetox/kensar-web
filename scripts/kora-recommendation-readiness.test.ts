@@ -23,6 +23,31 @@ test("allows an explicit electric guitar use", () => {
   assert.equal(clarify("Busco una guitarra eléctrica para tocar rock"), null);
 });
 
+test("remembers an acoustic subtype and asks only for the missing use", () => {
+  const memory = {
+    last_recommendation_type: "qualification",
+    last_recommendation_query: "Estoy buscando una guitarra",
+  };
+  const subtypeReply = buildRecommendationQualificationQuery("una guitarra acústica", memory);
+  const nextQuestion = clarify(subtypeReply);
+
+  assert.equal(subtypeReply, "una guitarra acústica");
+  assert.match(nextQuestion?.answer || "", /nos enfocamos en una guitarra acústica/i);
+  assert.match(nextQuestion?.answer || "", /comenzar a aprender o ya tienes experiencia/i);
+  assert.deepEqual(nextQuestion?.actions.map((action) => action.label), ["Estoy empezando", "Ya sé tocar"]);
+  assert.doesNotMatch(nextQuestion?.answer || "", /dime cuál se acerca más a tu idea/i);
+});
+
+test("advances to recommendations after answering the progressive guitar question", () => {
+  const memory = {
+    last_recommendation_type: "qualification",
+    last_recommendation_query: "una guitarra acústica",
+  };
+  const useReply = buildRecommendationQualificationQuery("Estoy empezando y la quiero para aprender en casa", memory);
+
+  assert.equal(clarify(useReply), null);
+});
+
 test("asks before recommending a generic cabinet", () => {
   assert.equal(clarify("Quiero una cabina")?.family, "cabinas");
 });

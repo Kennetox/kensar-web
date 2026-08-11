@@ -19,6 +19,7 @@
     "kora:actions:test": "tsc scripts/kora-chat-action-policy.test.ts app/lib/kora/chat-action-policy.ts --target ES2022 --module commonjs --moduleResolution node --esModuleInterop --skipLibCheck --outDir .tmp/kora-actions && node --test .tmp/kora-actions/scripts/kora-chat-action-policy.test.js",
     "kora:nudges:test": "tsc scripts/kora-nudge-messages.test.ts app/lib/kora/nudge-messages.ts app/lib/kora/knowledge-types.ts --target ES2022 --module commonjs --moduleResolution node --esModuleInterop --skipLibCheck --outDir .tmp/kora-nudges && node --test .tmp/kora-nudges/scripts/kora-nudge-messages.test.js",
     "kora:followups:test": "tsc scripts/kora-followup-nudges.test.ts app/lib/kora/followup-nudges.ts app/lib/kora/knowledge-types.ts --target ES2022 --module commonjs --moduleResolution node --esModuleInterop --skipLibCheck --outDir .tmp/kora-followups && node --test .tmp/kora-followups/scripts/kora-followup-nudges.test.js",
+    "kora:query:test": "tsc scripts/kora-query-normalizer.test.ts app/lib/kora/query-normalizer.ts --target ES2022 --module commonjs --moduleResolution node --esModuleInterop --skipLibCheck --outDir .tmp/kora-query && node --test .tmp/kora-query/scripts/kora-query-normalizer.test.js",
     "kora:telemetry:summary": "tsc scripts/kora-telemetry-summary.ts --target ES2022 --module commonjs --esModuleInterop --skipLibCheck --outDir .tmp && node .tmp/kora-telemetry-summary.js"
   },
   "dependencies": {

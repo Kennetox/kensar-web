@@ -98,6 +98,13 @@ export function normalizeKoraCatalogQuery(input: string): NormalizedKoraQuery {
   const appliedAliases: string[] = [];
   const expansions = new Set<string>();
 
+  const explicitGuitarSubtype = normalized.match(
+    /\bguitarra\s+(acustica|clasica|electrica|electroacustica)\b/
+  );
+  if (explicitGuitarSubtype?.[0]) {
+    expansions.add(explicitGuitarSubtype[0]);
+  }
+
   for (const rule of ALIAS_RULES) {
     const source = normalize(rule.from);
     const target = normalize(rule.to);
