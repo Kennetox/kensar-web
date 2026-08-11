@@ -16,6 +16,11 @@ import {
   knowledgeFitScore,
   productMeetsKnowledgeConstraints,
 } from "./sales-advisor";
+import {
+  mergeRecommendationConstraints,
+  type KoraPostRecommendationInterpretation,
+  type KoraRecommendationState,
+} from "./recommendation-state";
 
 type RecommenderMemory = {
   preferred_category?: string | null;
@@ -36,6 +41,7 @@ type RecommenderMemory = {
   last_recommendation_attributes?: string[];
   last_usage_context?: string | null;
   last_recommendation_type?: string | null;
+  recommendation_state?: KoraRecommendationState | null;
 };
 
 type RecommenderAction = {
@@ -86,6 +92,7 @@ export type KoraRecommenderResponse = {
     last_recommendation_attributes?: string[];
     last_usage_context?: string | null;
     last_recommendation_type?: string | null;
+    recommendation_state?: KoraRecommendationState | null;
   };
   recommendation_debug?: {
     normalized_query: string;
@@ -405,11 +412,11 @@ function applyUsageContextScore(
   return { ...row, score };
 }
 
-async function searchCatalog(q: string, category?: string) {
+async function searchCatalog(q: string, category?: string, page = 1) {
   return getCatalogProducts({
     q: q || undefined,
     category: category || undefined,
-    page: 1,
+    page,
     page_size: MAX_FETCH,
   }).catch(() => null);
 }
@@ -428,15 +435,70 @@ async function getCatalogProductForKnowledge(slug: string) {
   }
 }
 
+function stripReplacedConstraintTerms(query: string, dimensions: Set<string>) {
+  let result = normalize(query);
+  const patterns: Partial<Record<string, RegExp>> = {
+    price: /\b(barat[oa]s?|economic[oa]s?|premium|gama alta|precio|costos[oa]s?)\b/g,
+    power: /\b(potente|potencia|suene duro|buen bajo)\b/g,
+    size: /\b(pequen[oa]s?|median[oa]s?|grandes?|compact[oa]s?)\b/g,
+    portability: /\b(portatil|livian[oa]s?|transportar|cargar)\b/g,
+    subtype: /\b(acustica|clasica|electrica|electroacustica|dinamico|condensador|activa|pasiva)\b/g,
+    quality: /\b(profesional|premium|gama alta|calidad)\b/g,
+  };
+  dimensions.forEach((dimension) => {
+    const pattern = patterns[dimension];
+    if (pattern) result = result.replace(pattern, " ");
+  });
+  return result.replace(/\s+/g, " ").trim();
+}
+
+function constraintToSearchText(constraint: KoraRecommendationState["active_constraints"][number]) {
+  if (constraint.mode === "exclude") return "";
+  const values: Partial<Record<typeof constraint.dimension, Record<string, string>>> = {
+    price: { lower: "economico", premium: "premium profesional" },
+    power: { higher: "potente buen bajo" },
+    size: { smaller: "compacto pequeno", medium: "mediano", larger: "grande" },
+    portability: { important: "portatil liviano" },
+    quality: { professional: "profesional" },
+    input_count: { higher: "mas entradas mas canales" },
+    environment: { outdoor: "exterior aire libre", indoor: "interior" },
+    experience: { beginner: "principiante" },
+  };
+  const mapped = values[constraint.dimension]?.[String(constraint.value)];
+  if (mapped) return mapped;
+  if (constraint.dimension === "brand" || constraint.dimension === "feature" || constraint.dimension === "subtype" || constraint.dimension === "use") {
+    return String(constraint.value);
+  }
+  return constraint.evidence;
+}
+
 export async function resolveKoraCatalogRecommendation(input: {
   query: string;
   nlu: KoraNluResult | null;
   memory?: RecommenderMemory;
+  postRecommendation?: KoraPostRecommendationInterpretation | null;
 }): Promise<KoraRecommenderResponse | null> {
-  const isFollowup = input.nlu?.followup_type === "cheaper" || input.nlu?.followup_type === "more_powerful" || input.nlu?.followup_type === "similar";
-  const baseQuery = isFollowup && (input.memory?.last_recommendation_query || input.memory?.last_query)
-    ? `${input.memory?.last_recommendation_query || input.memory?.last_query} ${input.query}`
-    : input.query;
+  const postOperation = input.postRecommendation?.operation;
+  const isPostFollowup = postOperation === "more_options" || postOperation === "refine" || postOperation === "reject";
+  const isFollowup = isPostFollowup || input.nlu?.followup_type === "cheaper" || input.nlu?.followup_type === "more_powerful" || input.nlu?.followup_type === "similar";
+  const priorState = input.memory?.recommendation_state || null;
+  const activeConstraints = mergeRecommendationConstraints(
+    priorState?.active_constraints || [],
+    input.postRecommendation?.constraints || []
+  );
+  const updatedDimensions = new Set((input.postRecommendation?.constraints || []).map((constraint) => constraint.dimension));
+  const rawRememberedBase = priorState?.base_query || input.memory?.last_recommendation_query || input.memory?.last_query || "";
+  const rememberedBase = stripReplacedConstraintTerms(rawRememberedBase, updatedDimensions);
+  const constraintQuery = activeConstraints.map(constraintToSearchText).filter(Boolean).join(" ");
+  const anchorQuery = priorState?.current_results
+    .filter((product) => input.postRecommendation?.referenced_product_ids.includes(product.id))
+    .map((product) => product.name)
+    .join(" ") || "";
+  const baseQuery = isPostFollowup
+    ? `${rememberedBase} ${anchorQuery} ${constraintQuery}`.trim()
+    : isFollowup && rememberedBase
+      ? `${rememberedBase} ${input.query}`
+      : input.query;
   const { normalizedQuery, expandedQueries, appliedAliases } = normalizeKoraCatalogQuery(baseQuery);
   const budget = detectBudget(input.query, input.memory?.budget_cop ?? null);
   const hints = detectCategoryHints(
@@ -473,6 +535,15 @@ export async function resolveKoraCatalogRecommendation(input: {
       for (const item of result?.items || []) seen.set(item.id, item);
       if (seen.size >= 12) break;
     }
+  }
+
+  if (isPostFollowup && hints.categories.length) {
+    const broaderPages = await Promise.all(
+      hints.categories.slice(0, 2).flatMap((category) => [1, 2].map((page) => searchCatalog("", category, page)))
+    );
+    broaderPages.forEach((result) => {
+      for (const item of result?.items || []) seen.set(item.id, item);
+    });
   }
 
   const all = Array.from(seen.values());
@@ -515,7 +586,11 @@ export async function resolveKoraCatalogRecommendation(input: {
     );
   });
   const filteredByBudget = budget ? familySafe.filter((item) => item.price === null || item.price <= budget) : familySafe;
-  const previousIds = new Set((input.memory?.last_recommended_products || []).map((item) => item.id));
+  const previousIds = new Set([
+    ...(input.memory?.last_recommended_products || []).map((item) => item.id),
+    ...(priorState?.shown_product_ids || []),
+    ...(priorState?.rejected_product_ids || []),
+  ]);
   let rows = filteredByBudget.map((product) => {
     const knowledge = knowledgeById.get(product.id) as ProductKnowledgeProfile;
     const { score, reasons } = scoreProduct(product, knowledge, normalizedQuery, hints.categories, hints.families, input.nlu);
@@ -523,6 +598,15 @@ export async function resolveKoraCatalogRecommendation(input: {
   });
   rows = rows.map((row) => applyUsageContextScore(row, input.nlu?.usage_context || null));
   rows = applyAttributeOrdering(rows, input.nlu).filter((row) => row.score >= 14);
+
+  const excludedBrands = activeConstraints
+    .filter((item) => item.dimension === "brand" && item.mode === "exclude")
+    .flatMap((item) => String(item.value).split(","))
+    .map(normalize)
+    .filter(Boolean);
+  if (excludedBrands.length) {
+    rows = rows.filter((row) => !excludedBrands.includes(normalize(row.product.brand || "")));
+  }
 
   if (previousIds.size) {
     rows = rows
@@ -533,7 +617,7 @@ export async function resolveKoraCatalogRecommendation(input: {
       .sort((a, b) => b.score - a.score || a.product.name.localeCompare(b.product.name));
   }
 
-  if (input.nlu?.followup_type === "more_powerful") {
+  if (input.nlu?.followup_type === "more_powerful" || activeConstraints.some((item) => item.dimension === "power" && item.value === "higher")) {
     rows = rows
       .map((row) => {
         const full = normalize(`${row.product.name} ${row.product.long_description || ""} ${row.product.short_description || ""}`);
@@ -542,28 +626,38 @@ export async function resolveKoraCatalogRecommendation(input: {
       })
       .sort((a, b) => b.score - a.score || a.product.name.localeCompare(b.product.name));
   }
-  if (input.nlu?.followup_type === "cheaper") {
+  if (input.nlu?.followup_type === "cheaper" || activeConstraints.some((item) => item.dimension === "price" && item.value === "lower")) {
     rows = rows.sort((a, b) => (a.product.price ?? Number.MAX_SAFE_INTEGER) - (b.product.price ?? Number.MAX_SAFE_INTEGER));
   }
-  if (isFollowup && previousIds.size > 0) {
+  if ((postOperation === "more_options" || postOperation === "reject") && previousIds.size > 0) {
+    rows = rows.filter((row) => !previousIds.has(row.product.id));
+  } else if (isFollowup && previousIds.size > 0) {
     const nonRepeated = rows.filter((row) => !previousIds.has(row.product.id));
     if (nonRepeated.length >= 1) rows = nonRepeated;
   }
 
   const top = rows.slice(0, 5).map((row) => row.product);
   if (!top.length) {
+    const exhaustedFollowup = postOperation === "more_options" || postOperation === "reject";
     return {
-      handled: false,
+      handled: exhaustedFollowup,
       intent: "products",
-      answer: "No encontré opciones claras con esa búsqueda, pero puedo ayudarte a revisar el catálogo o pasarte con un asesor.",
-      actions: [
-        { id: "rec-fallback-catalog", label: "Ver catálogo", type: "link", value: "/catalogo" },
-        { id: "rec-fallback-advisor", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor_general", icon: "📞" },
-        { id: "rec-fallback-retry", label: "Intentar otra búsqueda", type: "prompt", value: "Quiero buscar otra opción" },
-      ],
-      suggestions: ["Quiero algo económico", "Muéstrame cabinas", "Muéstrame guitarras"],
+      answer: exhaustedFollowup
+        ? "No encontré más productos nuevos que cumplan bien con los criterios actuales; ya te mostré las opciones válidas disponibles. Podemos ampliar un criterio o comparar las que vimos."
+        : "No encontré opciones claras con esa búsqueda, pero puedo ayudarte a revisar el catálogo o pasarte con un asesor.",
+      actions: exhaustedFollowup
+        ? [
+            { id: "rec-exhausted-broaden", label: "Ampliar criterios", type: "prompt", value: "Ayúdame a ampliar los criterios sin perder lo más importante" },
+            { id: "rec-exhausted-compare", label: "Comparar las anteriores", type: "prompt", value: "Compara las dos mejores opciones que vimos" },
+          ]
+        : [
+            { id: "rec-fallback-catalog", label: "Ver catálogo", type: "link", value: "/catalogo" },
+            { id: "rec-fallback-advisor", label: "Hablar por WhatsApp", type: "whatsapp", value: "advisor_general", icon: "📞" },
+            { id: "rec-fallback-retry", label: "Intentar otra búsqueda", type: "prompt", value: "Quiero buscar otra opción" },
+          ],
+      suggestions: exhaustedFollowup ? ["Acepto una opción un poco más grande", "Cambia el rango de precio"] : ["Quiero algo económico", "Muéstrame cabinas", "Muéstrame guitarras"],
       confidence_score: 0.58,
-      resolution_kind: "fallback",
+      resolution_kind: exhaustedFollowup ? "direct" : "fallback",
       memory_updates: {
         preferred_category: hints.categories[0] || input.memory?.preferred_category || null,
         budget_cop: budget ?? input.memory?.budget_cop ?? null,
@@ -575,6 +669,7 @@ export async function resolveKoraCatalogRecommendation(input: {
         last_recommendation_attributes: input.nlu?.attributes || [],
         last_usage_context: input.nlu?.usage_context || null,
         last_recommendation_type: isFollowup ? "followup" : "fallback",
+        recommendation_state: priorState,
       },
       recommendation_debug: {
         normalized_query: normalizedQuery,
@@ -615,10 +710,37 @@ export async function resolveKoraCatalogRecommendation(input: {
     reasonByProduct.set(row.product.id, firstReason ? reasonToPhrase(firstReason) : "Buena relación precio/categoría");
   });
 
+  const recommendationProducts = rows.slice(0, 5).map((row) => ({
+    id: row.product.id,
+    slug: row.product.slug,
+    name: row.product.name,
+    price: row.product.price,
+    category_path: row.product.category_path,
+    category_name: row.product.category_name,
+    brand: row.product.brand || null,
+    score: Number(row.score.toFixed(2)),
+  }));
+  const recommendationState: KoraRecommendationState = {
+    schema_version: "kora-recommendation-v1",
+    family: hints.families[0] || priorState?.family || null,
+    base_query: isPostFollowup ? rememberedBase : normalizedQuery,
+    active_constraints: activeConstraints,
+    shown_product_ids: Array.from(new Set([...(priorState?.shown_product_ids || []), ...recommendationProducts.map((item) => item.id)])).slice(-60),
+    current_results: recommendationProducts,
+    selected_product_ids: priorState?.selected_product_ids || [],
+    rejected_product_ids: priorState?.rejected_product_ids || [],
+    comparison_product_ids: [],
+    round: isPostFollowup ? Math.min((priorState?.round || 1) + 1, 50) : 1,
+  };
+
   return {
     handled: true,
     intent: "products",
-    answer: salesNarrative.answer,
+    answer: postOperation === "more_options"
+      ? `Claro. Te muestro opciones nuevas manteniendo lo que ya me dijiste.\n\n${salesNarrative.answer}`
+      : postOperation === "refine"
+        ? `Ajusté la búsqueda con ese criterio.\n\n${salesNarrative.answer}`
+        : salesNarrative.answer,
     actions: actions.slice(0, 7),
     suggestions: [
       "Dame opciones económicas",
@@ -633,21 +755,13 @@ export async function resolveKoraCatalogRecommendation(input: {
       last_query: normalizedQuery,
     },
     memory_patch: {
-      last_recommended_products: rows.slice(0, 5).map((row) => ({
-        id: row.product.id,
-        slug: row.product.slug,
-        name: row.product.name,
-        price: row.product.price,
-        category_path: row.product.category_path,
-        category_name: row.product.category_name,
-        brand: row.product.brand || null,
-        score: Number(row.score.toFixed(2)),
-      })),
+      last_recommended_products: recommendationProducts,
       last_recommendation_query: normalizedQuery,
       last_recommendation_category: top[0]?.category_path || hints.categories[0] || input.memory?.preferred_category || null,
       last_recommendation_attributes: input.nlu?.attributes || [],
       last_usage_context: input.nlu?.usage_context || null,
       last_recommendation_type: isFollowup ? "followup" : input.nlu?.intent || "product_search",
+      recommendation_state: recommendationState,
     },
     recommendation_debug: {
       normalized_query: normalizedQuery,

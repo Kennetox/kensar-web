@@ -13,6 +13,15 @@ import {
 } from "@/app/lib/kora/recommendation-readiness";
 import type { KoraContextualSellingDebug, KoraPageContext } from "@/app/lib/kora/knowledge-types";
 import type { KoraProductFamily } from "@/app/lib/kora/product-family-guards";
+import type { KoraQualificationState } from "@/app/lib/kora/qualification-state";
+import { buildProductKnowledgeProfile } from "@/app/lib/kora/product-knowledge";
+import {
+  interpretPostRecommendationTurn,
+  mergeRecommendationConstraints,
+  sanitizeRecommendationState,
+  type KoraPostRecommendationInterpretation,
+  type KoraRecommendationState,
+} from "@/app/lib/kora/recommendation-state";
 
 type AskRequest = {
   query?: string;
@@ -48,6 +57,8 @@ type AskRequest = {
     last_qualification_missing_dimensions?: string[];
     last_qualification_attempts?: number | null;
     last_qualification_answer?: string | null;
+    qualification_state?: KoraQualificationState | null;
+    recommendation_state?: KoraRecommendationState | null;
     last_intent?:
       | "products"
       | "payments"
@@ -169,6 +180,8 @@ type AskResponse = {
     last_qualification_missing_dimensions?: string[];
     last_qualification_attempts?: number | null;
     last_qualification_answer?: string | null;
+    qualification_state?: KoraQualificationState | null;
+    recommendation_state?: KoraRecommendationState | null;
     last_intent?:
       | "products"
       | "payments"
@@ -226,6 +239,8 @@ type AskResponse = {
     last_qualification_missing_dimensions?: string[];
     last_qualification_attempts?: number | null;
     last_qualification_answer?: string | null;
+    qualification_state?: KoraQualificationState | null;
+    recommendation_state?: KoraRecommendationState | null;
     last_intent?:
       | "products"
       | "payments"
@@ -1586,6 +1601,261 @@ async function resolveMemoryProductFollowup(
   };
 }
 
+type PostRecommendationOutcome = {
+  interpretation: KoraPostRecommendationInterpretation;
+  state: KoraRecommendationState | null;
+  response: AskResponse | null;
+  continueRecommendation: boolean;
+};
+
+function findRecommendationProducts(state: KoraRecommendationState, ids: number[]) {
+  return ids
+    .map((id) => state.current_results.find((product) => product.id === id))
+    .filter((product): product is KoraRecommendationState["current_results"][number] => Boolean(product));
+}
+
+function compactVerifiedSpecs(specs: Record<string, string> | undefined, limit = 3) {
+  return Object.entries(specs || {})
+    .filter(([key, value]) => key.trim() && String(value).trim())
+    .slice(0, limit)
+    .map(([key, value]) => `${key}: ${value}`);
+}
+
+async function getCatalogProductForConversation(slug: string) {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      getCatalogProduct(slug).catch(() => null),
+      new Promise<null>((resolve) => {
+        timeout = setTimeout(() => resolve(null), 2800);
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
+async function resolvePostRecommendationConversation(input: {
+  query: string;
+  state: KoraRecommendationState;
+}): Promise<PostRecommendationOutcome> {
+  const interpretation = interpretPostRecommendationTurn(input);
+  const currentIds = input.state.current_results.map((product) => product.id);
+  const nextState: KoraRecommendationState = {
+    ...input.state,
+    active_constraints: mergeRecommendationConstraints(input.state.active_constraints, interpretation.constraints),
+  };
+
+  if (interpretation.operation === "none") {
+    return { interpretation, state: input.state, response: null, continueRecommendation: false };
+  }
+  if (interpretation.operation === "new_family") {
+    return { interpretation, state: null, response: null, continueRecommendation: true };
+  }
+  if (interpretation.operation === "more_options" || interpretation.operation === "refine") {
+    if (interpretation.referenced_product_ids.length) {
+      nextState.selected_product_ids = Array.from(
+        new Set([...nextState.selected_product_ids, ...interpretation.referenced_product_ids])
+      ).slice(-8);
+    }
+    return { interpretation, state: nextState, response: null, continueRecommendation: true };
+  }
+  if (interpretation.operation === "reject") {
+    nextState.rejected_product_ids = Array.from(new Set([...nextState.rejected_product_ids, ...currentIds])).slice(-30);
+    const explicitlyRequestsMore = /\b(dame|muestra|muestrame|quiero|hay)\b.{0,20}\b(otra|otras|otros|opciones|modelos)\b/i.test(input.query);
+    if (interpretation.constraints.length || explicitlyRequestsMore) {
+      return { interpretation, state: nextState, response: null, continueRecommendation: true };
+    }
+    return {
+      interpretation,
+      state: nextState,
+      continueRecommendation: false,
+      response: {
+        handled: true,
+        intent: "products",
+        answer: "Entendido, descarto esas opciones y no te las vuelvo a mostrar. ¿Qué fue lo principal que no te convenció?",
+        actions: [
+          { id: "post-reject-price", label: "Busco menor precio", type: "prompt", value: "No me convencieron por el precio; muéstrame opciones más económicas" },
+          { id: "post-reject-fit", label: "Busco otras características", type: "prompt", value: "No tenían las características que necesito" },
+        ],
+        suggestions: ["Eran muy grandes", "Prefiero otra marca"],
+        emotion: "neutral",
+        companion_mode: false,
+        memory_patch: { recommendation_state: nextState },
+      },
+    };
+  }
+
+  let referencedIds = interpretation.referenced_product_ids;
+  if (interpretation.operation === "compare" && referencedIds.length < 2) {
+    referencedIds = Array.from(new Set([...referencedIds, ...nextState.selected_product_ids, ...currentIds])).slice(0, 2);
+  }
+  if ((interpretation.operation === "select" || interpretation.operation === "product_question") && !referencedIds.length) {
+    referencedIds = [nextState.selected_product_ids.at(-1) || currentIds[0]].filter(Boolean) as number[];
+  }
+  const products = findRecommendationProducts(nextState, referencedIds);
+  const details = new Map(
+    await Promise.all(
+      products.map(async (product) => [product.id, await getCatalogProductForConversation(product.slug)] as const)
+    )
+  );
+
+  if (interpretation.operation === "compare") {
+    if (products.length < 2) {
+      return {
+        interpretation,
+        state: nextState,
+        continueRecommendation: false,
+        response: {
+          handled: true,
+          intent: "products",
+          answer: "Claro. Dime cuáles dos quieres comparar; puedes decirme, por ejemplo, “la primera y la segunda” o mencionar la marca.",
+          actions: nextState.current_results.slice(0, 2).map((product, index) => ({
+            id: `post-compare-pick-${product.id}`,
+            label: `${index + 1}. ${product.name}`,
+            type: "prompt" as const,
+            value: `Compara ${product.name} con la otra opción`,
+          })),
+          suggestions: [],
+          emotion: "neutral",
+          companion_mode: false,
+          memory_patch: { recommendation_state: nextState },
+        },
+      };
+    }
+    const compared = products.slice(0, 2);
+    nextState.comparison_product_ids = compared.map((product) => product.id);
+    const sections = compared.map((product, index) => {
+      const detail = details.get(product.id);
+      const profile = buildProductKnowledgeProfile({
+        id: product.id,
+        slug: product.slug,
+        sku: detail?.sku,
+        name: detail?.name || product.name,
+        category_path: detail?.category_path || product.category_path,
+        category_name: detail?.category_name || product.category_name,
+        short_description: detail?.short_description,
+        long_description: detail?.long_description,
+        specs: detail?.specs,
+      });
+      const facts = compactVerifiedSpecs(detail?.specs, 3);
+      const verifiedUse = profile.intended_uses[0]?.value;
+      return `${index + 1}. ${product.name}: ${formatCatalogPrice(product.price)}${product.brand ? ` · ${product.brand}` : ""}${facts.length ? ` · ${facts.join(" · ")}` : ""}${verifiedUse ? ` · Uso: ${verifiedUse.replaceAll("_", " ")}` : ""}.`;
+    });
+    const asksForChoice = /\b(cual|cuál|conviene|mejor|quedo)\b/i.test(input.query);
+    const wantsLowerPrice = nextState.active_constraints.some((item) => item.dimension === "price" && item.value === "lower");
+    const wantsSmaller = nextState.active_constraints.some((item) => item.dimension === "size" && item.value === "smaller");
+    const sizeFromName = (name: string) => Number(name.match(/\b(\d+(?:[.,]\d+)?)\s*(?:"|pulg)/i)?.[1]?.replace(",", ".")) || null;
+    const preferred = [...compared].sort((a, b) => {
+      if (wantsLowerPrice && a.price !== null && b.price !== null) return a.price - b.price;
+      const aSize = sizeFromName(a.name);
+      const bSize = sizeFromName(b.name);
+      if (wantsSmaller && aSize !== null && bSize !== null) return aSize - bSize;
+      return (b.score || 0) - (a.score || 0);
+    })[0];
+    const other = compared.find((item) => item.id !== preferred.id);
+    const verifiedDifference = other && preferred.price !== null && other.price !== null
+      ? ` Además, cuesta ${formatCatalogPrice(Math.abs(other.price - preferred.price))} ${preferred.price <= other.price ? "menos" : "más"} que la otra opción.`
+      : "";
+    const choice = asksForChoice
+      ? `\n\nPara lo que vienes buscando, elegiría ${preferred.name}, porque conserva el mejor ajuste con los criterios que me diste.${verifiedDifference}`
+      : "";
+    return {
+      interpretation,
+      state: nextState,
+      continueRecommendation: false,
+      response: {
+        handled: true,
+        intent: "products",
+        answer: `Te las comparo con la información publicada:\n\n${sections.join("\n\n")}${choice}`,
+        actions: compared.map((product) => ({
+          id: `post-compare-open-${product.id}`,
+          label: `Ver ${product.name}`,
+          type: "link" as const,
+          value: `/catalogo/${product.slug}`,
+        })),
+        suggestions: ["¿Cuál me conviene más?", "Muéstrame otras opciones"],
+        emotion: "neutral",
+        companion_mode: false,
+        memory_patch: { recommendation_state: nextState },
+      },
+    };
+  }
+
+  const product = products[0];
+  if (!product) return { interpretation, state: nextState, response: null, continueRecommendation: false };
+  const detail = details.get(product.id);
+  if (interpretation.operation === "select") {
+    nextState.selected_product_ids = Array.from(new Set([...nextState.selected_product_ids, product.id])).slice(-8);
+    const actions: ChatActionOut[] = [];
+    if (detail) {
+      const add = buildAddToCartAction(detail, "post-select");
+      if (add) actions.push(add);
+    }
+    actions.push({ id: `post-select-open-${product.id}`, label: "Ver producto", type: "link", value: `/catalogo/${product.slug}` });
+    return {
+      interpretation,
+      state: nextState,
+      continueRecommendation: false,
+      response: {
+        handled: true,
+        intent: "products",
+        answer: `Buena elección. ${product.name}${product.price !== null ? ` cuesta ${formatCatalogPrice(product.price)}` : " tiene precio por consultar"}.${detail?.short_description ? ` ${detail.short_description.trim()}` : ""} ¿Quieres avanzar con este o resolver una duda antes?`,
+        actions: actions.slice(0, 2),
+        suggestions: ["¿Qué necesito para usarlo?", "Compáralo con otra opción"],
+        emotion: "happy",
+        companion_mode: false,
+        memory_updates: {
+          last_product_slug: product.slug,
+          last_product_name: product.name,
+        },
+        memory_patch: { recommendation_state: nextState },
+      },
+    };
+  }
+
+  const profile = buildProductKnowledgeProfile({
+    id: product.id,
+    slug: product.slug,
+    sku: detail?.sku,
+    name: detail?.name || product.name,
+    category_path: detail?.category_path || product.category_path,
+    category_name: detail?.category_name || product.category_name,
+    short_description: detail?.short_description,
+    long_description: detail?.long_description,
+    specs: detail?.specs,
+  });
+  const normalizedQuestion = normalize(input.query);
+  let groundedFacts: string[] = [];
+  if (/\b(material|hecho|fabricado)\b/.test(normalizedQuestion)) groundedFacts = profile.materials.map((item) => item.value);
+  else if (/\b(compatible|conectar|conexion|funciona con|necesito)\b/.test(normalizedQuestion)) groundedFacts = [...profile.requirements, ...profile.complements].map((item) => item.value);
+  else if (/\b(tiene|trae|incluye|caracteristica)\b/.test(normalizedQuestion)) groundedFacts = profile.features.map((item) => item.value);
+  else groundedFacts = [...profile.intended_uses, ...profile.features].map((item) => item.value);
+  const specFacts = compactVerifiedSpecs(detail?.specs, 4);
+  const facts = Array.from(new Set([...groundedFacts.map((item) => item.replaceAll("_", " ")), ...specFacts])).slice(0, 5);
+  const answer = facts.length
+    ? `Sobre ${product.name}, la información verificada indica: ${facts.join("; ")}.`
+    : `Sobre ${product.name}, no tengo publicada esa especificación con suficiente claridad. Prefiero no inventarla; puedo ayudarte a confirmarla con un asesor.`;
+  return {
+    interpretation,
+    state: nextState,
+    continueRecommendation: false,
+    response: {
+      handled: true,
+      intent: "products",
+      answer,
+      actions: [
+        { id: `post-question-open-${product.id}`, label: "Ver ficha del producto", type: "link", value: `/catalogo/${product.slug}` },
+        { id: "post-question-advisor", label: "Confirmar con asesor", type: "whatsapp", value: "consulta_producto", icon: "📞" },
+      ],
+      suggestions: ["Compáralo con otra opción", "Me gusta este"],
+      emotion: "neutral",
+      companion_mode: false,
+      memory_patch: { recommendation_state: nextState },
+    },
+  };
+}
+
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as AskRequest | null;
   const query = String(body?.query || "").trim();
@@ -1628,6 +1898,9 @@ export async function POST(request: Request) {
   }
 
   const intent = detectIntent(normalized);
+  let recommendationStateForTurn = sanitizeRecommendationState(body?.memory?.recommendation_state);
+  let postRecommendationInterpretation: KoraPostRecommendationInterpretation | null = null;
+  let continuePostRecommendation = false;
 
   if (isCapabilityHelpIntent(normalized)) {
     return NextResponse.json<AskResponse>(
@@ -1729,6 +2002,29 @@ export async function POST(request: Request) {
     );
   }
 
+  if (recommendationStateForTurn?.current_results.length) {
+    const postRecommendation = await resolvePostRecommendationConversation({
+      query,
+      state: recommendationStateForTurn,
+    });
+    postRecommendationInterpretation = postRecommendation.interpretation;
+    recommendationStateForTurn = postRecommendation.state;
+    continuePostRecommendation = postRecommendation.continueRecommendation;
+    if (postRecommendation.response) {
+      return NextResponse.json<AskResponse>(
+        finalizeResponse(postRecommendation.response, {
+          emotion,
+          tone,
+          goal,
+          companionMode,
+          nluDebug,
+          contextualSellingDebug: null,
+        }),
+        { status: 200 }
+      );
+    }
+  }
+
   const supportKnowledge = resolveKoraSupportAnswer({
     query,
     nluIntent: nluDebug?.intent || null,
@@ -1797,7 +2093,7 @@ export async function POST(request: Request) {
     },
     pageContext,
   });
-  if (contextualSelling && (explanatoryFirst || ambiguousGuidanceFirst || learningGuidanceFirst || churchAudioGuidanceFirst)) {
+  if (!continuePostRecommendation && contextualSelling && (explanatoryFirst || ambiguousGuidanceFirst || learningGuidanceFirst || churchAudioGuidanceFirst)) {
     return NextResponse.json<AskResponse>(
       finalizeResponse(
         {
@@ -1820,22 +2116,22 @@ export async function POST(request: Request) {
   });
   const continuesQualification = qualificationQuery !== query;
   const qualificationNlu = continuesQualification ? extractKoraEntities(qualificationQuery) : nluDebug;
-
   const recommendationClarification = resolveRecommendationClarification({
     query: qualificationQuery,
     latestQuery: query,
     nlu: qualificationNlu,
     memory: {
-      preferred_category: body?.memory?.preferred_category,
-      last_recommendation_category: body?.memory?.last_recommendation_category,
+      preferred_category: recommendationStateForTurn ? body?.memory?.preferred_category : null,
+      last_recommendation_category: recommendationStateForTurn ? body?.memory?.last_recommendation_category : null,
       last_recommendation_query: body?.memory?.last_recommendation_query,
       last_query: body?.memory?.last_query,
-      last_recommended_products: body?.memory?.last_recommended_products,
+      last_recommended_products: recommendationStateForTurn ? body?.memory?.last_recommended_products : undefined,
       last_recommendation_type: body?.memory?.last_recommendation_type,
       last_qualification_family: body?.memory?.last_qualification_family,
       last_qualification_missing_dimensions: body?.memory?.last_qualification_missing_dimensions,
       last_qualification_attempts: body?.memory?.last_qualification_attempts,
       last_qualification_answer: body?.memory?.last_qualification_answer,
+      qualification_state: body?.memory?.qualification_state,
     },
   });
   if (recommendationClarification) {
@@ -1860,6 +2156,9 @@ export async function POST(request: Request) {
                 ? Math.min((Number(body?.memory?.last_qualification_attempts) || 0) + 1, 3)
                 : 1,
             last_qualification_answer: recommendationClarification.answer,
+            qualification_state: recommendationClarification.qualification_state,
+            recommendation_state:
+              postRecommendationInterpretation?.operation === "new_family" ? null : recommendationStateForTurn,
           },
         },
         { emotion, tone, goal, companionMode, nluDebug, contextualSellingDebug: null }
@@ -1870,6 +2169,14 @@ export async function POST(request: Request) {
 
   let nluForRecommendation = qualificationNlu;
   let queryForRecommendation = qualificationQuery;
+  if (continuePostRecommendation && postRecommendationInterpretation?.operation !== "new_family") {
+    nluForRecommendation = {
+      ...(qualificationNlu || extractKoraEntities(query)),
+      intent: "product_recommendation",
+      confidence: Math.max(qualificationNlu?.confidence || 0.6, 0.86),
+    };
+    queryForRecommendation = query;
+  }
   if (isShortAttributeRefinement(normalized, nluDebug, body?.memory)) {
     nluForRecommendation = {
       ...(nluDebug as KoraNluResult),
@@ -1889,16 +2196,18 @@ export async function POST(request: Request) {
       query: queryForRecommendation,
       nlu: nluForRecommendation,
       memory: {
-        preferred_category: body?.memory?.preferred_category,
+        preferred_category: recommendationStateForTurn ? body?.memory?.preferred_category : null,
         budget_cop: body?.memory?.budget_cop,
         last_query: body?.memory?.last_query,
-        last_recommended_products: body?.memory?.last_recommended_products,
+        last_recommended_products: recommendationStateForTurn ? body?.memory?.last_recommended_products : undefined,
         last_recommendation_query: body?.memory?.last_recommendation_query,
-        last_recommendation_category: body?.memory?.last_recommendation_category,
-        last_recommendation_attributes: body?.memory?.last_recommendation_attributes,
-        last_usage_context: body?.memory?.last_usage_context,
+        last_recommendation_category: recommendationStateForTurn ? body?.memory?.last_recommendation_category : null,
+        last_recommendation_attributes: recommendationStateForTurn ? body?.memory?.last_recommendation_attributes : [],
+        last_usage_context: recommendationStateForTurn ? body?.memory?.last_usage_context : null,
         last_recommendation_type: body?.memory?.last_recommendation_type,
+        recommendation_state: recommendationStateForTurn,
       },
+      postRecommendation: postRecommendationInterpretation,
     });
     if (recommendation) {
       if (nluForRecommendation.attributes?.length) {

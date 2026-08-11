@@ -66,6 +66,14 @@ function hasWord(text: string, word: string) {
   return (` ${text} `).includes(` ${normalize(word)} `);
 }
 
+function extractCabinetInches(product: FamilyGuardProduct) {
+  const raw = `${product.name || ""} ${product.short_description || ""}`.toLowerCase();
+  const match = raw.match(/\b(6(?:[.,]5)?|8|10|12|15|18)\s*(?:["”]|pulg(?:adas?)?)(?!\w)/);
+  if (!match) return null;
+  const value = Number(match[1].replace(",", "."));
+  return Number.isFinite(value) ? value : null;
+}
+
 export function productMatchesFamily(product: FamilyGuardProduct, family: KoraProductFamily) {
   const { name, identity, searchable } = productTexts(product);
   const exclusions = MAIN_PRODUCT_EXCLUSIONS[family] || [];
@@ -134,6 +142,9 @@ export function productMatchesExplicitConstraints(
     if (hasWord(query, "activa") && !hasWord(searchable, "activa")) return false;
     if (hasWord(query, "pasiva") && !hasWord(searchable, "pasiva")) return false;
     if (hasWord(query, "recargable") && !hasWord(searchable, "recargable") && !hasWord(searchable, "bateria")) return false;
+    const asksForCompact = includesAny(query, ["pequena", "pequeno", "compacta", "compacto", "facil de transportar"]);
+    const cabinetInches = extractCabinetInches(product);
+    if (asksForCompact && cabinetInches !== null && cabinetInches > 10) return false;
   }
 
   if (families.includes("seguridad")) {

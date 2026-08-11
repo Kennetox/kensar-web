@@ -61,6 +61,14 @@ test("asks before recommending a generic cabinet", () => {
   assert.equal(clarify("Quiero una cabina")?.family, "cabinas");
 });
 
+test("clarifies what small means instead of repeating the generic cabinet question", () => {
+  const next = clarify("Quiero una cabina pequeña");
+
+  assert.match(next?.answer || "", /compacta para transportarla|casa y reuniones pequeñas/i);
+  assert.deepEqual(next?.actions.map((action) => action.label), ["Compacta y portátil", "Casa o reuniones"]);
+  assert.equal(next?.qualification_state?.known.physical_size?.value, "small");
+});
+
 test("allows a cabinet query with use and relevant feature", () => {
   assert.equal(clarify("Quiero una cabina potente para una fiesta"), null);
 });

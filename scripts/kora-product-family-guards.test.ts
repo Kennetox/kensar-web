@@ -56,6 +56,14 @@ test("respects active and passive cabinet constraints", () => {
   assert.equal(productMatchesExplicitConstraints({ name: "Cabina 15 Pasiva" }, "cabina activa", ["cabinas"]), false);
 });
 
+test("keeps compact cabinets and rejects clearly oversized cabinets", () => {
+  const compact = { name: "Cabina 8\" Activa Recargable", category_path: "cabinas-activas" };
+  const large = { name: "Cabina 15\" Activa 3000 watts", category_path: "cabinas-activas" };
+
+  assert.equal(productMatchesExplicitConstraints(compact, "quiero una cabina pequeña y compacta", ["cabinas"]), true);
+  assert.equal(productMatchesExplicitConstraints(large, "quiero una cabina pequeña y compacta", ["cabinas"]), false);
+});
+
 test("recognizes the newly covered main product families", () => {
   const cases = [
     [{ name: "Amplificador American Sound AK-616UB", category_path: "amplificadores" }, "amplificadores"],

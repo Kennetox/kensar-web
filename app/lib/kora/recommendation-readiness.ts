@@ -1,5 +1,8 @@
 import type { KoraNluResult } from "./entities";
 import type { KoraProductFamily } from "./product-family-guards";
+import type { KoraQualificationState } from "./qualification-state";
+import { interpretKoraQualificationUtterance } from "./utterance-interpreter";
+import { decideKoraQualificationTurn } from "./qualification-dialogue-policy";
 
 type ReadinessMemory = {
   last_recommendation_category?: string | null;
@@ -12,6 +15,7 @@ type ReadinessMemory = {
   last_qualification_missing_dimensions?: string[];
   last_qualification_attempts?: number | null;
   last_qualification_answer?: string | null;
+  qualification_state?: KoraQualificationState | null;
 };
 
 export type RecommendationClarification = {
@@ -20,6 +24,7 @@ export type RecommendationClarification = {
   actions: Array<{ id: string; label: string; type: "prompt"; value: string }>;
   suggestions: string[];
   missing_dimensions: string[];
+  qualification_state?: KoraQualificationState;
 };
 
 function normalize(value: string) {
@@ -690,11 +695,11 @@ export function resolveRecommendationClarification(input: {
 
   const family = detectFamily(text);
   if (!family) return null;
-  const attempts =
+  const legacyAttempts =
     input.memory?.last_qualification_family === family
       ? Number(input.memory.last_qualification_attempts) || 0
       : 0;
-  if (attempts >= 2) return null;
+  if (!input.memory?.qualification_state && legacyAttempts >= 2) return null;
 
   let clarification: RecommendationClarification | null = null;
   if (family === "guitarras") clarification = guitarClarification(text, input.nlu);
@@ -710,5 +715,25 @@ export function resolveRecommendationClarification(input: {
   if (family === "percusion") clarification = percussionClarification(text, input.nlu);
   if (family === "megafonos") clarification = megaphoneClarification(text, input.nlu);
   if (family === "procesamiento_audio") clarification = processorClarification(text);
-  return clarification ? avoidRepeatedClarification(clarification, latestQuery, input.memory) : null;
+  const safeClarification = clarification
+    ? avoidRepeatedClarification(clarification, latestQuery, input.memory)
+    : null;
+  const interpretation = interpretKoraQualificationUtterance({
+    latestQuery,
+    combinedQuery: input.query,
+    family,
+    nlu: input.nlu,
+    previousState: input.memory?.qualification_state,
+  });
+  const decision = decideKoraQualificationTurn({
+    family,
+    interpretation,
+    previousState: input.memory?.qualification_state,
+    fallbackClarification: safeClarification,
+  });
+  if (decision.kind === "recommend") return null;
+  return {
+    ...decision.clarification,
+    qualification_state: decision.state,
+  };
 }

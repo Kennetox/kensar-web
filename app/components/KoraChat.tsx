@@ -6,6 +6,8 @@ import Image from "next/image";
 import { useWebCart } from "@/app/components/WebCartProvider";
 import { buildKoraContextualGreeting } from "@/app/lib/kora/contextual-greetings";
 import type { KoraPageContext } from "@/app/lib/kora/knowledge-types";
+import type { KoraQualificationState } from "@/app/lib/kora/qualification-state";
+import { sanitizeRecommendationState, type KoraRecommendationState } from "@/app/lib/kora/recommendation-state";
 import { buildWhatsAppPrefill } from "@/app/lib/kora/whatsapp-handoff";
 import { getOrCreateHandoffSessionId, readStoredPageContext, resolveCurrentUrlFromWindow } from "@/app/lib/kora/handoff-client";
 import { getKoraActionDisplayPolicy } from "@/app/lib/kora/chat-action-policy";
@@ -121,6 +123,8 @@ type KoraAskResponse = {
     last_qualification_missing_dimensions?: string[];
     last_qualification_attempts?: number | null;
     last_qualification_answer?: string | null;
+    qualification_state?: KoraQualificationState | null;
+    recommendation_state?: KoraRecommendationState | null;
     last_intent?:
       | "products"
       | "payments"
@@ -178,6 +182,8 @@ type KoraAskResponse = {
     last_qualification_missing_dimensions?: string[];
     last_qualification_attempts?: number | null;
     last_qualification_answer?: string | null;
+    qualification_state?: KoraQualificationState | null;
+    recommendation_state?: KoraRecommendationState | null;
     last_intent?:
       | "products"
       | "payments"
@@ -553,6 +559,8 @@ type KoraSessionMemory = {
   last_qualification_missing_dimensions?: string[];
   last_qualification_attempts?: number | null;
   last_qualification_answer?: string | null;
+  qualification_state?: KoraQualificationState | null;
+  recommendation_state?: KoraRecommendationState | null;
   last_intent?:
     | "products"
     | "payments"
@@ -652,6 +660,11 @@ function loadKoraMemory(): KoraSessionMemory {
         : undefined,
       last_qualification_answer:
         typeof parsed?.last_qualification_answer === "string" ? parsed.last_qualification_answer : undefined,
+      qualification_state:
+        parsed?.qualification_state?.schema_version === "kora-qualification-v1"
+          ? parsed.qualification_state
+          : undefined,
+      recommendation_state: sanitizeRecommendationState(parsed?.recommendation_state) || undefined,
       last_intent: typeof parsed?.last_intent === "string" ? parsed.last_intent : undefined,
       last_non_product_intent: typeof parsed?.last_non_product_intent === "string" ? parsed.last_non_product_intent : undefined,
       last_support_topic: typeof parsed?.last_support_topic === "string" ? parsed.last_support_topic : undefined,
@@ -1265,6 +1278,14 @@ function sanitizeApiActions(actions: ChatAction[] | undefined, limit = 2): ChatA
               typeof mergedPatch?.last_qualification_answer === "string"
                 ? mergedPatch.last_qualification_answer
                 : prev.last_qualification_answer,
+            qualification_state:
+              mergedPatch?.qualification_state?.schema_version === "kora-qualification-v1"
+                ? mergedPatch.qualification_state
+                : prev.qualification_state,
+            recommendation_state:
+              mergedPatch && Object.prototype.hasOwnProperty.call(mergedPatch, "recommendation_state")
+                ? sanitizeRecommendationState(mergedPatch.recommendation_state) || undefined
+                : prev.recommendation_state,
             last_intent:
               typeof mergedPatch?.last_intent === "string"
                 ? mergedPatch.last_intent
