@@ -1,6 +1,21 @@
-import { getCatalogProducts, formatCatalogPrice, type WebCatalogProductCard } from "@/app/lib/metrikCatalog";
+import { getCatalogProduct, getCatalogProducts, formatCatalogPrice, type WebCatalogProductCard } from "@/app/lib/metrikCatalog";
 import { normalizeKoraCatalogQuery } from "./query-normalizer";
 import type { KoraNluResult } from "./entities";
+import {
+  productMatchesExplicitConstraints,
+  productMatchesRequestedFamilies,
+  type KoraProductFamily,
+} from "./product-family-guards";
+import {
+  buildProductKnowledgeProfile,
+  isKnowledgeSafeForRecommendation,
+  type ProductKnowledgeProfile,
+} from "./product-knowledge";
+import {
+  buildSalesRecommendationNarrative,
+  knowledgeFitScore,
+  productMeetsKnowledgeConstraints,
+} from "./sales-advisor";
 
 type RecommenderMemory = {
   preferred_category?: string | null;
@@ -39,7 +54,8 @@ type ProductReason =
   | "incluye_recargable"
   | "perfil_profesional"
   | "relacion_seguridad"
-  | "relacion_sonido_potente";
+  | "relacion_sonido_potente"
+  | "conocimiento_clasificado";
 
 export type KoraRecommenderResponse = {
   handled: boolean;
@@ -77,6 +93,15 @@ export type KoraRecommenderResponse = {
     expanded_queries: string[];
     selected_category_paths: string[];
     product_scores: Array<{ id: number; slug: string; score: number }>;
+    product_knowledge?: Array<{
+      id: number;
+      family: string;
+      role: string;
+      subtype: string | null;
+      coverage_score: number;
+      review_flags: string[];
+      sales_facts?: string[];
+    }>;
   };
   product_cards?: Array<{
     id: number;
@@ -98,23 +123,19 @@ const HIGH_OUTPUT_TOKENS = ["watts", "w", "rms", "12", "15", "activa", "subwoofe
 type CategoryMapRule = {
   aliases: string[];
   categories: string[];
-  family:
-    | "cabinas"
-    | "microfonos"
-    | "guitarras"
-    | "teclados"
-    | "seguridad"
-    | "solar"
-    | "televisores"
-    | "hdmi"
-    | "rca"
-    | "red"
-    | "xlr";
+  family: KoraProductFamily;
 };
 
 const CATEGORY_MAP: CategoryMapRule[] = [
+  { aliases: ["amplificador", "amplificadores", "planta de sonido", "preamplificador"], categories: ["amplificadores"], family: "amplificadores" },
   { aliases: ["cabina", "cabinas", "speaker", "speakers", "sonido duro", "potente"], categories: ["cabinas-activas", "sonido"], family: "cabinas" },
+  { aliases: ["consola", "consolas", "mezclador", "mixer"], categories: ["consolas"], family: "consolas" },
+  { aliases: ["interfaz de audio", "interface de audio"], categories: ["produccion-de-audio"], family: "interfaces_audio" },
+  { aliases: ["bajo electrico", "requinto", "ukelele", "violin"], categories: ["instrumentos-de-cuerda"], family: "instrumentos_cuerda" },
+  { aliases: ["megafono", "megafonos"], categories: ["megafonos"], family: "megafonos" },
   { aliases: ["microfono", "microfonos", "micrófono", "micrófonos"], categories: ["microfonos"], family: "microfonos" },
+  { aliases: ["bateria", "bongo", "campana", "conga", "timbal", "guiro", "maraca", "percusion"], categories: ["percusion", "instrumentos-salseros"], family: "percusion" },
+  { aliases: ["ecualizador", "crossover", "procesador de audio"], categories: ["consolas", "produccion-de-audio"], family: "procesamiento_audio" },
   { aliases: ["guitarra", "guitarras"], categories: ["instrumentos-de-cuerda", "instrumentos-musicales"], family: "guitarras" },
   { aliases: ["teclado", "piano", "pianos"], categories: ["teclados", "instrumentos-musicales"], family: "teclados" },
   { aliases: ["camara", "cámara", "seguridad", "camaras wifi"], categories: ["camaras-de-seguridad"], family: "seguridad" },
@@ -127,8 +148,15 @@ const CATEGORY_MAP: CategoryMapRule[] = [
 ];
 
 const MAIN_PRODUCT_QUERY_GUARDS: Record<Exclude<CategoryMapRule["family"], "hdmi" | "rca" | "red" | "xlr">, string[]> = {
+  amplificadores: ["amplificador", "planta", "preamplificador"],
   cabinas: ["cabina", "parlante", "bafle", "speaker", "sonido"],
+  consolas: ["consola", "mezclador", "mixer"],
+  interfaces_audio: ["interfaz", "interface"],
+  instrumentos_cuerda: ["bajo electrico", "requinto", "ukelele", "violin"],
+  megafonos: ["megafono"],
   microfonos: ["microfono", "micro", "inalambrico"],
+  percusion: ["bateria", "bongo", "campana", "conga", "timbal", "guiro", "maraca"],
+  procesamiento_audio: ["ecualizador", "crossover", "procesador"],
   guitarras: ["guitarra", "electroacustica", "acustica", "electrica"],
   teclados: ["teclado", "piano", "organeta"],
   seguridad: ["camara", "cctv", "seguridad", "vigilancia"],
@@ -209,6 +237,7 @@ function hasMainProductHintInText(text: string, families: string[]) {
 
 function scoreProduct(
   product: WebCatalogProductCard,
+  knowledge: ProductKnowledgeProfile,
   normalizedQuery: string,
   categories: string[],
   families: string[],
@@ -261,6 +290,15 @@ function scoreProduct(
     }
   }
   if (families.includes("seguridad") && categoryText.includes("camaras-de-seguridad")) reasons.push("relacion_seguridad");
+  if (
+    families.includes(knowledge.classification.family.value as KoraProductFamily) &&
+    knowledge.classification.role.value === "main_product"
+  ) {
+    score += 12;
+    reasons.push("conocimiento_clasificado");
+  }
+  if (knowledge.coverage_score >= 60) score += 4;
+  score += knowledgeFitScore(knowledge, normalizedQuery);
 
   const requestMainProduct =
     families.includes("cabinas") || families.includes("guitarras") || families.includes("teclados") || families.includes("microfonos");
@@ -308,6 +346,7 @@ function reasonToPhrase(reason: ProductReason): string {
   if (reason === "incluye_recargable") return "incluye recargable/batería según descripción";
   if (reason === "perfil_profesional") return "más orientada a uso profesional";
   if (reason === "relacion_seguridad") return "relacionada con cámaras de seguridad";
+  if (reason === "conocimiento_clasificado") return "identificada como producto principal de la familia solicitada";
   return "relacionada con potencia y buen bajo";
 }
 
@@ -375,6 +414,20 @@ async function searchCatalog(q: string, category?: string) {
   }).catch(() => null);
 }
 
+async function getCatalogProductForKnowledge(slug: string) {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      getCatalogProduct(slug).catch(() => null),
+      new Promise<null>((resolve) => {
+        timeout = setTimeout(() => resolve(null), 2500);
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
 export async function resolveKoraCatalogRecommendation(input: {
   query: string;
   nlu: KoraNluResult | null;
@@ -423,10 +476,49 @@ export async function resolveKoraCatalogRecommendation(input: {
   }
 
   const all = Array.from(seen.values());
-  const filteredByBudget = budget ? all.filter((item) => item.price === null || item.price <= budget) : all;
+  const familyCandidates = all.filter(
+    (item) =>
+      productMatchesRequestedFamilies(item, hints.families) &&
+      productMatchesExplicitConstraints(item, normalizedQuery, hints.families)
+  );
+  const detailsById = new Map(
+    await Promise.all(
+      familyCandidates.map(async (item) => [item.id, await getCatalogProductForKnowledge(item.slug)] as const)
+    )
+  );
+  const knowledgeById = new Map(
+    familyCandidates.map((item) => {
+      const detail = detailsById.get(item.id);
+      return [
+        item.id,
+        buildProductKnowledgeProfile({
+          id: item.id,
+          slug: item.slug,
+          sku: item.sku,
+          name: detail?.name || item.name,
+          category_path: detail?.category_path || item.category_path,
+          category_name: detail?.category_name || item.category_name,
+          short_description: detail?.short_description || item.short_description,
+          long_description: detail?.long_description || item.long_description,
+          specs: detail?.specs || null,
+          service: detail?.stock_status === "service" || item.stock_status === "service",
+        }),
+      ] as const;
+    })
+  );
+  const familySafe = familyCandidates.filter((item) => {
+    const knowledge = knowledgeById.get(item.id);
+    return Boolean(
+      knowledge &&
+        isKnowledgeSafeForRecommendation(knowledge, hints.families) &&
+        productMeetsKnowledgeConstraints(knowledge, normalizedQuery)
+    );
+  });
+  const filteredByBudget = budget ? familySafe.filter((item) => item.price === null || item.price <= budget) : familySafe;
   const previousIds = new Set((input.memory?.last_recommended_products || []).map((item) => item.id));
   let rows = filteredByBudget.map((product) => {
-    const { score, reasons } = scoreProduct(product, normalizedQuery, hints.categories, hints.families, input.nlu);
+    const knowledge = knowledgeById.get(product.id) as ProductKnowledgeProfile;
+    const { score, reasons } = scoreProduct(product, knowledge, normalizedQuery, hints.categories, hints.families, input.nlu);
     return { product, score, reasons };
   });
   rows = rows.map((row) => applyUsageContextScore(row, input.nlu?.usage_context || null));
@@ -459,8 +551,6 @@ export async function resolveKoraCatalogRecommendation(input: {
   }
 
   const top = rows.slice(0, 5).map((row) => row.product);
-  const topReasons = rows.slice(0, 3).flatMap((row) => row.reasons).slice(0, 3);
-
   if (!top.length) {
     return {
       handled: false,
@@ -509,11 +599,18 @@ export async function resolveKoraCatalogRecommendation(input: {
   );
 
   const lead = buildIntentLead(input.nlu, normalizedQuery);
-  const reasonsText = topReasons.length
-    ? `\n\nReferencias: ${Array.from(new Set(topReasons)).map(reasonToPhrase).join(", ")}.`
-    : "";
+  const salesNarrative = buildSalesRecommendationNarrative({
+    lead,
+    query: normalizedQuery,
+    rows: rows.slice(0, 3).map((row) => ({
+      product: row.product,
+      knowledge: knowledgeById.get(row.product.id) as ProductKnowledgeProfile,
+    })),
+  });
   const reasonByProduct = new Map<number, string | null>();
+  salesNarrative.pitches.forEach((pitch) => reasonByProduct.set(pitch.product_id, pitch.card_reason));
   rows.slice(0, 5).forEach((row) => {
+    if (reasonByProduct.has(row.product.id)) return;
     const firstReason = row.reasons[0];
     reasonByProduct.set(row.product.id, firstReason ? reasonToPhrase(firstReason) : "Buena relación precio/categoría");
   });
@@ -521,7 +618,7 @@ export async function resolveKoraCatalogRecommendation(input: {
   return {
     handled: true,
     intent: "products",
-    answer: `${lead}${reasonsText}`,
+    answer: salesNarrative.answer,
     actions: actions.slice(0, 7),
     suggestions: [
       "Dame opciones económicas",
@@ -558,6 +655,18 @@ export async function resolveKoraCatalogRecommendation(input: {
       expanded_queries: expandedQueries,
       selected_category_paths: hints.categories,
       product_scores: rows.slice(0, 8).map((row) => ({ id: row.product.id, slug: row.product.slug, score: Number(row.score.toFixed(2)) })),
+      product_knowledge: rows.slice(0, 8).map((row) => {
+        const knowledge = knowledgeById.get(row.product.id) as ProductKnowledgeProfile;
+        return {
+          id: row.product.id,
+          family: knowledge.classification.family.value,
+          role: knowledge.classification.role.value,
+          subtype: knowledge.classification.subtype?.value || null,
+          coverage_score: knowledge.coverage_score,
+          review_flags: knowledge.review_flags,
+          sales_facts: salesNarrative.pitches.find((pitch) => pitch.product_id === row.product.id)?.used_facts || [],
+        };
+      }),
     },
     product_cards: top.slice(0, 5).map((product) => ({
       id: product.id,

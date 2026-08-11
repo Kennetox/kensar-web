@@ -125,7 +125,11 @@ export const KORA_INTENTS: KoraIntentDefinition[] = [
   {
     id: "product_search",
     priority: 75,
-    aliases: ["quiero", "busco", "tienen", "que speakers tienes", "producto", "catalogo", "guitarra", "cabina", "speaker", "piano"],
+    aliases: [
+      "quiero", "busco", "tienen", "que speakers tienes", "producto", "catalogo", "guitarra", "cabina", "speaker", "piano", "amplificador", "planta de sonido",
+      "consola", "mezcladora", "interfaz de audio", "interface de audio", "ecualizador", "crossover", "megafono", "megáfono", "bajo electrico", "bajo eléctrico",
+      "requinto", "ukelele", "violin", "violín", "bongo", "bongó", "campana", "percusion", "percusión",
+    ],
     examples: ["quiero una guitarra", "que speakers tienes"],
   },
   {

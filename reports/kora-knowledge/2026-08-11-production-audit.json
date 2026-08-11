@@ -1,0 +1,4530 @@
+{
+  "schema_version": "kora-catalog-knowledge-audit-v2",
+  "generated_at": "2026-08-11T06:15:45.843Z",
+  "source": "https://api.metrikpos.com/web/catalog/products + product details",
+  "summary": {
+    "total_products": 80,
+    "auto_ready": 79,
+    "needs_review": 1,
+    "average_coverage_score": 82,
+    "by_family": {
+      "cabinas": 22,
+      "guitarras": 6,
+      "teclados": 8,
+      "amplificadores": 6,
+      "instrumentos_cuerda": 4,
+      "televisores": 5,
+      "percusion": 5,
+      "red": 1,
+      "seguridad": 10,
+      "consolas": 4,
+      "procesamiento_audio": 1,
+      "interfaces_audio": 1,
+      "megafonos": 2,
+      "microfonos": 5
+    },
+    "by_role": {
+      "main_product": 68,
+      "accessory": 12
+    },
+    "by_priority": {
+      "critical": 1,
+      "high": 0,
+      "medium": 0,
+      "low": 0
+    },
+    "unresolved_fields": {
+      "materials": 79,
+      "subtype": 1
+    },
+    "review_flags": {
+      "family_identity_conflict": 1
+    },
+    "enriched_profiles": 2,
+    "by_enrichment_source": {
+      "manufacturer_documentation": 2
+    }
+  },
+  "review_queue": [
+    {
+      "product_ref": {
+        "id": 2335,
+        "slug": "camara-de-videollamadas-model-yh-xm-dp06s",
+        "sku": "2335",
+        "name": "Camara de Videollamadas Model YH-XM-DP06S"
+      },
+      "priority": "critical",
+      "review_score": 150,
+      "reasons": [
+        "La categoría sugiere una familia, pero la identidad del producto no coincide.",
+        "Falta identificar el subtipo del producto principal.",
+        "No hay materiales verificables en los datos publicados."
+      ],
+      "family": "seguridad",
+      "role": "main_product",
+      "subtype": null,
+      "coverage_score": 60,
+      "unresolved_fields": [
+        "subtype",
+        "materials"
+      ],
+      "review_flags": [
+        "family_identity_conflict"
+      ],
+      "featured": false,
+      "stock_status": "in_stock"
+    }
+  ],
+  "profiles": [
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 3826,
+        "slug": "cabina-beta3-12-n12a-mp3-ii",
+        "sku": "3824",
+        "name": "Cabina Beta3 12\" N12A/MP3-II"
+      },
+      "classification": {
+        "family": {
+          "value": "cabinas",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia cabinas"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "activa",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "activa"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "reproducir_y_amplificar_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.8,
+          "evidence": "Función general de cabinas"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [
+        {
+          "value": "requiere_alimentacion_electrica",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "Las cabinas activas requieren energía"
+        }
+      ],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 900,
+        "slug": "cabina-15-activa-beta3-n15a-mp3-ii",
+        "sku": "900",
+        "name": "Cabina 15\" Activa Beta3 N15A/MP3-II"
+      },
+      "classification": {
+        "family": {
+          "value": "cabinas",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia cabinas"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "activa",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "activa"
+        }
+      },
+      "features": [
+        {
+          "value": "bluetooth",
+          "source": "catalog_description",
+          "confidence": 0.82,
+          "evidence": "bluetooth"
+        },
+        {
+          "value": "usb",
+          "source": "catalog_description",
+          "confidence": 0.82,
+          "evidence": "usb"
+        },
+        {
+          "value": "fm",
+          "source": "catalog_description",
+          "confidence": 0.82,
+          "evidence": "fm"
+        }
+      ],
+      "intended_uses": [
+        {
+          "value": "reproducir_y_amplificar_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.8,
+          "evidence": "Función general de cabinas"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [
+        {
+          "value": "requiere_alimentacion_electrica",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "Las cabinas activas requieren energía"
+        }
+      ],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 100
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 740,
+        "slug": "guitarra-acustica-flamengo-music",
+        "sku": "740",
+        "name": "Guitarra Acustica Flamengo Music"
+      },
+      "classification": {
+        "family": {
+          "value": "guitarras",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia guitarras"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "acustica",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "acustica"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "interpretar_musica",
+          "source": "taxonomy_rule",
+          "confidence": 0.72,
+          "evidence": "Uso general de la familia guitarras"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [
+        {
+          "value": "afinador",
+          "source": "taxonomy_rule",
+          "confidence": 0.7,
+          "evidence": "Complemento habitual de guitarras"
+        },
+        {
+          "value": "funda",
+          "source": "taxonomy_rule",
+          "confidence": 0.68,
+          "evidence": "Complemento habitual de guitarras"
+        }
+      ],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 2708,
+        "slug": "adaptador-de-corriente-para-piano-12v-700ma-pa-3c-yamaha",
+        "sku": "2708",
+        "name": "Adaptador de Corriente Para Piano 12V-700mA PA-3C Yamaha"
+      },
+      "classification": {
+        "family": {
+          "value": "teclados",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia teclados"
+        },
+        "role": {
+          "value": "accessory",
+          "source": "catalog_name",
+          "confidence": 0.94,
+          "evidence": "Nombre/categoría contiene señal de accesorio: adaptador"
+        },
+        "subtype": {
+          "value": "piano_electronico",
+          "source": "taxonomy_rule",
+          "confidence": 0.72,
+          "evidence": "piano_electronico"
+        }
+      },
+      "features": [],
+      "intended_uses": [],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 3720,
+        "slug": "amplificador-american-sound-ak-616ub",
+        "sku": "3718",
+        "name": "Amplificador American Sound AK-616UB"
+      },
+      "classification": {
+        "family": {
+          "value": "amplificadores",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia amplificadores"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "amplificador",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "amplificador"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "amplificar_senal_de_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.88,
+          "evidence": "Función general de amplificadores"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "potencia_e_impedancia_compatibles",
+          "source": "taxonomy_rule",
+          "confidence": 0.82,
+          "evidence": "Compatibilidad necesaria con parlantes o cabinas"
+        }
+      ],
+      "complements": [
+        {
+          "value": "cables_de_audio_compatibles",
+          "source": "taxonomy_rule",
+          "confidence": 0.76,
+          "evidence": "Conexión requerida en sistemas de amplificación"
+        }
+      ],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 642,
+        "slug": "amplificador-american-sound-aspx-060",
+        "sku": "642",
+        "name": "Amplificador American Sound ASPX 060"
+      },
+      "classification": {
+        "family": {
+          "value": "amplificadores",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia amplificadores"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "amplificador",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "amplificador"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "amplificar_senal_de_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.88,
+          "evidence": "Función general de amplificadores"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "potencia_e_impedancia_compatibles",
+          "source": "taxonomy_rule",
+          "confidence": 0.82,
+          "evidence": "Compatibilidad necesaria con parlantes o cabinas"
+        }
+      ],
+      "complements": [
+        {
+          "value": "cables_de_audio_compatibles",
+          "source": "taxonomy_rule",
+          "confidence": 0.76,
+          "evidence": "Conexión requerida en sistemas de amplificación"
+        }
+      ],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 732,
+        "slug": "amplificador-spain-sa-987-3000-watts",
+        "sku": "732",
+        "name": "Amplificador Spain SA 987 3000 watts"
+      },
+      "classification": {
+        "family": {
+          "value": "amplificadores",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia amplificadores"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "amplificador",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "amplificador"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "amplificar_senal_de_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.88,
+          "evidence": "Función general de amplificadores"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "potencia_e_impedancia_compatibles",
+          "source": "taxonomy_rule",
+          "confidence": 0.82,
+          "evidence": "Compatibilidad necesaria con parlantes o cabinas"
+        }
+      ],
+      "complements": [
+        {
+          "value": "cables_de_audio_compatibles",
+          "source": "taxonomy_rule",
+          "confidence": 0.76,
+          "evidence": "Conexión requerida en sistemas de amplificación"
+        }
+      ],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 3546,
+        "slug": "bajo-electrico-4c-pb-1-ayson",
+        "sku": "3545",
+        "name": "Bajo Electrico 4C PB-1 Ayson"
+      },
+      "classification": {
+        "family": {
+          "value": "instrumentos_cuerda",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia instrumentos_cuerda"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "bajo_electrico",
+          "source": "catalog_name",
+          "confidence": 0.72,
+          "evidence": "bajo_electrico"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "interpretar_musica",
+          "source": "taxonomy_rule",
+          "confidence": 0.74,
+          "evidence": "Uso general de instrumentos de cuerda"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "amplificacion_para_sonar_externamente",
+          "source": "taxonomy_rule",
+          "confidence": 0.84,
+          "evidence": "Requisito general de bajo eléctrico"
+        }
+      ],
+      "complements": [
+        {
+          "value": "cable_de_instrumento",
+          "source": "taxonomy_rule",
+          "confidence": 0.8,
+          "evidence": "Conexión habitual de bajo eléctrico"
+        }
+      ],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 3732,
+        "slug": "bajo-torre-spain-12a-linea-array",
+        "sku": "3730",
+        "name": "Bajo + Torre Spain 12A  Linea ARRAY"
+      },
+      "classification": {
+        "family": {
+          "value": "cabinas",
+          "source": "catalog_category",
+          "confidence": 0.78,
+          "evidence": "Nombre/categoría coincide con familia cabinas"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "activa+line_array",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "activa+line_array"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "reproducir_y_amplificar_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.8,
+          "evidence": "Función general de cabinas"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [
+        {
+          "value": "requiere_alimentacion_electrica",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "Las cabinas activas requieren energía"
+        }
+      ],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 2627,
+        "slug": "base-tv-trolley-con-mesa-de-32-75-1500",
+        "sku": "2627",
+        "name": "Base TV Trolley con Mesa de 32\"-75\" 1500"
+      },
+      "classification": {
+        "family": {
+          "value": "televisores",
+          "source": "catalog_category",
+          "confidence": 0.78,
+          "evidence": "Nombre/categoría coincide con familia televisores"
+        },
+        "role": {
+          "value": "accessory",
+          "source": "catalog_name",
+          "confidence": 0.94,
+          "evidence": "Nombre/categoría contiene señal de accesorio: base"
+        },
+        "subtype": {
+          "value": "televisor",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "televisor"
+        }
+      },
+      "features": [],
+      "intended_uses": [],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 3785,
+        "slug": "bateria-ayson-adulto-roja-laser-5p",
+        "sku": "3783",
+        "name": "Bateria Ayson Adulto Roja Laser 5P"
+      },
+      "classification": {
+        "family": {
+          "value": "percusion",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia percusion"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "bateria_acustica",
+          "source": "taxonomy_rule",
+          "confidence": 0.72,
+          "evidence": "bateria_acustica"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "interpretacion_ritmica",
+          "source": "taxonomy_rule",
+          "confidence": 0.82,
+          "evidence": "Función general de instrumentos de percusión"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 3898,
+        "slug": "bongo-con-aro-liso-ayson",
+        "sku": "3896",
+        "name": "Bongo con Aro Liso Ayson"
+      },
+      "classification": {
+        "family": {
+          "value": "percusion",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia percusion"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "bongo",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "bongo"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "interpretacion_ritmica",
+          "source": "taxonomy_rule",
+          "confidence": 0.82,
+          "evidence": "Función general de instrumentos de percusión"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 3899,
+        "slug": "bongo-rm-semiprofesional-cuero-chivo",
+        "sku": "3897",
+        "name": "Bongo RM Semiprofesional Cuero Chivo"
+      },
+      "classification": {
+        "family": {
+          "value": "percusion",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia percusion"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "bongo",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "bongo"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "interpretacion_ritmica",
+          "source": "taxonomy_rule",
+          "confidence": 0.82,
+          "evidence": "Función general de instrumentos de percusión"
+        }
+      ],
+      "materials": [
+        {
+          "value": "cuero",
+          "source": "catalog_description",
+          "confidence": 0.86,
+          "evidence": "cuero"
+        }
+      ],
+      "requirements": [],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 3270,
+        "slug": "cabina-10-activa-pro-dj-psa10a",
+        "sku": "3270",
+        "name": "Cabina 10\" Activa Pro DJ PSA10A"
+      },
+      "classification": {
+        "family": {
+          "value": "cabinas",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia cabinas"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "activa",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "activa"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "reproducir_y_amplificar_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.8,
+          "evidence": "Función general de cabinas"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [
+        {
+          "value": "requiere_alimentacion_electrica",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "Las cabinas activas requieren energía"
+        }
+      ],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 2481,
+        "slug": "cabina-12-pb12e-mp3-pro-dj",
+        "sku": "2481",
+        "name": "Cabina 12\" PB12E-MP3 Pro DJ"
+      },
+      "classification": {
+        "family": {
+          "value": "cabinas",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia cabinas"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "activa",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "activa"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "reproducir_y_amplificar_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.8,
+          "evidence": "Función general de cabinas"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [
+        {
+          "value": "requiere_alimentacion_electrica",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "Las cabinas activas requieren energía"
+        }
+      ],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 2484,
+        "slug": "cabina-15-activa-audio-sound-as-1500",
+        "sku": "2484",
+        "name": "Cabina 15\" Activa Audio Sound AS-1500"
+      },
+      "classification": {
+        "family": {
+          "value": "cabinas",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia cabinas"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "activa",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "activa"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "reproducir_y_amplificar_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.8,
+          "evidence": "Función general de cabinas"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [
+        {
+          "value": "requiere_alimentacion_electrica",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "Las cabinas activas requieren energía"
+        }
+      ],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 2388,
+        "slug": "cabina-15-pb15e-mp3-pro-dj",
+        "sku": "2388",
+        "name": "Cabina 15\" PB15E-MP3 Pro DJ"
+      },
+      "classification": {
+        "family": {
+          "value": "cabinas",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia cabinas"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "activa",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "activa"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "reproducir_y_amplificar_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.8,
+          "evidence": "Función general de cabinas"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [
+        {
+          "value": "requiere_alimentacion_electrica",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "Las cabinas activas requieren energía"
+        }
+      ],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 1506,
+        "slug": "cabina-15-pro-dj-pb15e-mp3-op",
+        "sku": "1506",
+        "name": "Cabina 15\" Pro DJ  PB15E-MP3-OP"
+      },
+      "classification": {
+        "family": {
+          "value": "cabinas",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia cabinas"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "activa",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "activa"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "reproducir_y_amplificar_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.8,
+          "evidence": "Función general de cabinas"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [
+        {
+          "value": "requiere_alimentacion_electrica",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "Las cabinas activas requieren energía"
+        }
+      ],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 2969,
+        "slug": "cabina-15-spain-1557-activa",
+        "sku": "2969",
+        "name": "Cabina 15\" Spain 1557 Activa"
+      },
+      "classification": {
+        "family": {
+          "value": "cabinas",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia cabinas"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "activa",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "activa"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "reproducir_y_amplificar_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.8,
+          "evidence": "Función general de cabinas"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [
+        {
+          "value": "requiere_alimentacion_electrica",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "Las cabinas activas requieren energía"
+        }
+      ],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 3,
+        "slug": "cabina-15-spain-1579-activa",
+        "sku": "3",
+        "name": "Cabina 15\" Spain 1579 Activa"
+      },
+      "classification": {
+        "family": {
+          "value": "cabinas",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia cabinas"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "activa",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "activa"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "reproducir_y_amplificar_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.8,
+          "evidence": "Función general de cabinas"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [
+        {
+          "value": "requiere_alimentacion_electrica",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "Las cabinas activas requieren energía"
+        }
+      ],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 1420,
+        "slug": "cabina-15-spain-15e-activa",
+        "sku": "1420",
+        "name": "Cabina 15\" Spain 15E Activa"
+      },
+      "classification": {
+        "family": {
+          "value": "cabinas",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia cabinas"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "activa",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "activa"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "reproducir_y_amplificar_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.8,
+          "evidence": "Función general de cabinas"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [
+        {
+          "value": "requiere_alimentacion_electrica",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "Las cabinas activas requieren energía"
+        }
+      ],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 1960,
+        "slug": "cabina-15-spain-activa-zeta315",
+        "sku": "1960",
+        "name": "Cabina 15\" Spain Activa Zeta315"
+      },
+      "classification": {
+        "family": {
+          "value": "cabinas",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia cabinas"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "activa",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "activa"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "reproducir_y_amplificar_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.8,
+          "evidence": "Función general de cabinas"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [
+        {
+          "value": "requiere_alimentacion_electrica",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "Las cabinas activas requieren energía"
+        }
+      ],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 637,
+        "slug": "cabina-15-spain-doble-215a",
+        "sku": "637",
+        "name": "Cabina 15\" Spain Doble 215A"
+      },
+      "classification": {
+        "family": {
+          "value": "cabinas",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia cabinas"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "activa",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "activa"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "reproducir_y_amplificar_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.8,
+          "evidence": "Función general de cabinas"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [
+        {
+          "value": "requiere_alimentacion_electrica",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "Las cabinas activas requieren energía"
+        }
+      ],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 1454,
+        "slug": "cabina-15-spain-sp157",
+        "sku": "1454",
+        "name": "Cabina 15\" Spain SP157"
+      },
+      "classification": {
+        "family": {
+          "value": "cabinas",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia cabinas"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "activa",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "activa"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "reproducir_y_amplificar_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.8,
+          "evidence": "Función general de cabinas"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [
+        {
+          "value": "requiere_alimentacion_electrica",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "Las cabinas activas requieren energía"
+        }
+      ],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 746,
+        "slug": "cabina-18-spain-118vx",
+        "sku": "746",
+        "name": "Cabina 18\" Spain 118VX"
+      },
+      "classification": {
+        "family": {
+          "value": "cabinas",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia cabinas"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "activa",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "activa"
+        }
+      },
+      "features": [
+        {
+          "value": "bluetooth",
+          "source": "catalog_description",
+          "confidence": 0.82,
+          "evidence": "bluetooth"
+        },
+        {
+          "value": "usb",
+          "source": "catalog_description",
+          "confidence": 0.82,
+          "evidence": "usb"
+        },
+        {
+          "value": "fm",
+          "source": "catalog_description",
+          "confidence": 0.82,
+          "evidence": "fm"
+        }
+      ],
+      "intended_uses": [
+        {
+          "value": "reproducir_y_amplificar_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.8,
+          "evidence": "Función general de cabinas"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [
+        {
+          "value": "requiere_alimentacion_electrica",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "Las cabinas activas requieren energía"
+        }
+      ],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 100
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 2241,
+        "slug": "cabina-6-5-nia-an-2062a",
+        "sku": "2241",
+        "name": "Cabina 6.5\" NIA AN-2062A"
+      },
+      "classification": {
+        "family": {
+          "value": "cabinas",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia cabinas"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "activa",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "activa"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "reproducir_y_amplificar_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.8,
+          "evidence": "Función general de cabinas"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [
+        {
+          "value": "requiere_alimentacion_electrica",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "Las cabinas activas requieren energía"
+        }
+      ],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 698,
+        "slug": "cabina-8-nia-activa-an-2062",
+        "sku": "698",
+        "name": "Cabina 8\" NIA Activa AN-2062"
+      },
+      "classification": {
+        "family": {
+          "value": "cabinas",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia cabinas"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "activa",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "activa"
+        }
+      },
+      "features": [
+        {
+          "value": "bluetooth",
+          "source": "catalog_description",
+          "confidence": 0.82,
+          "evidence": "bluetooth"
+        },
+        {
+          "value": "usb",
+          "source": "catalog_description",
+          "confidence": 0.82,
+          "evidence": "usb"
+        }
+      ],
+      "intended_uses": [
+        {
+          "value": "reproducir_y_amplificar_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.8,
+          "evidence": "Función general de cabinas"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [
+        {
+          "value": "requiere_alimentacion_electrica",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "Las cabinas activas requieren energía"
+        }
+      ],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 100
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 3677,
+        "slug": "cabina-nia-an-083-activa-4",
+        "sku": "3676",
+        "name": "Cabina NIA  AN-083 activa 4\""
+      },
+      "classification": {
+        "family": {
+          "value": "cabinas",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia cabinas"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "activa",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "activa"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "reproducir_y_amplificar_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.8,
+          "evidence": "Función general de cabinas"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [
+        {
+          "value": "requiere_alimentacion_electrica",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "Las cabinas activas requieren energía"
+        }
+      ],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 3531,
+        "slug": "cabina-spain-12-12-2",
+        "sku": "3530",
+        "name": "Cabina Spain 12\" 12-2"
+      },
+      "classification": {
+        "family": {
+          "value": "cabinas",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia cabinas"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "activa",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "activa"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "reproducir_y_amplificar_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.8,
+          "evidence": "Función general de cabinas"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [
+        {
+          "value": "requiere_alimentacion_electrica",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "Las cabinas activas requieren energía"
+        }
+      ],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 3757,
+        "slug": "cabina-spain-8-bt-r80",
+        "sku": "3755",
+        "name": "Cabina Spain 8\" BT R80"
+      },
+      "classification": {
+        "family": {
+          "value": "cabinas",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia cabinas"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "activa",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "activa"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "reproducir_y_amplificar_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.8,
+          "evidence": "Función general de cabinas"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [
+        {
+          "value": "requiere_alimentacion_electrica",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "Las cabinas activas requieren energía"
+        }
+      ],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 3410,
+        "slug": "cable-de-red-cat-6-jaltech-5m",
+        "sku": "3410",
+        "name": "Cable de red CAT 6 Jaltech 5M"
+      },
+      "classification": {
+        "family": {
+          "value": "red",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia red"
+        },
+        "role": {
+          "value": "accessory",
+          "source": "catalog_name",
+          "confidence": 0.94,
+          "evidence": "Nombre/categoría contiene señal de accesorio: cable"
+        },
+        "subtype": null
+      },
+      "features": [],
+      "intended_uses": [],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 60
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 865,
+        "slug": "camara-de-seguridad-tapo-tp-link-tapo-c500",
+        "sku": "865",
+        "name": "Camara de Seguridad Tapo Tp-Link Tapo C500"
+      },
+      "classification": {
+        "family": {
+          "value": "seguridad",
+          "source": "manufacturer_documentation",
+          "confidence": 1,
+          "evidence": "Enriquecimiento aprobado manufacturer-tplink-tapo-c500-2026-08"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "manufacturer_documentation",
+          "confidence": 1,
+          "evidence": "Enriquecimiento aprobado manufacturer-tplink-tapo-c500-2026-08"
+        },
+        "subtype": {
+          "value": "wifi_exterior_pan_tilt",
+          "source": "manufacturer_documentation",
+          "confidence": 1,
+          "evidence": "Enriquecimiento aprobado manufacturer-tplink-tapo-c500-2026-08"
+        }
+      },
+      "features": [
+        {
+          "value": "wifi_2_4_ghz",
+          "source": "manufacturer_documentation",
+          "confidence": 0.99,
+          "evidence": "Ficha oficial TP-Link Tapo C500: Wi-Fi 2.4 GHz"
+        },
+        {
+          "value": "resolucion_1080p",
+          "source": "manufacturer_documentation",
+          "confidence": 0.99,
+          "evidence": "Ficha oficial TP-Link Tapo C500: 1920 × 1080 px"
+        },
+        {
+          "value": "cobertura_360_grados",
+          "source": "manufacturer_documentation",
+          "confidence": 0.99,
+          "evidence": "Ficha oficial TP-Link Tapo C500: cobertura horizontal 360°"
+        },
+        {
+          "value": "vision_nocturna",
+          "source": "manufacturer_documentation",
+          "confidence": 0.99,
+          "evidence": "Ficha oficial TP-Link Tapo C500: visión nocturna"
+        },
+        {
+          "value": "deteccion_de_personas",
+          "source": "manufacturer_documentation",
+          "confidence": 0.99,
+          "evidence": "Ficha oficial TP-Link Tapo C500: detección de personas"
+        },
+        {
+          "value": "seguimiento_de_movimiento",
+          "source": "manufacturer_documentation",
+          "confidence": 0.99,
+          "evidence": "Ficha oficial TP-Link Tapo C500: seguimiento de movimiento"
+        },
+        {
+          "value": "audio_bidireccional",
+          "source": "manufacturer_documentation",
+          "confidence": 0.99,
+          "evidence": "Ficha oficial TP-Link Tapo C500: audio bidireccional"
+        },
+        {
+          "value": "proteccion_ip65",
+          "source": "manufacturer_documentation",
+          "confidence": 0.99,
+          "evidence": "Ficha oficial TP-Link Tapo C500: resistencia IP65"
+        },
+        {
+          "value": "ranura_micro_sd",
+          "source": "manufacturer_documentation",
+          "confidence": 0.99,
+          "evidence": "Ficha oficial TP-Link Tapo C500: ranura microSD"
+        }
+      ],
+      "intended_uses": [
+        {
+          "value": "monitoreo_y_vigilancia",
+          "source": "taxonomy_rule",
+          "confidence": 0.86,
+          "evidence": "Función general de cámaras de seguridad"
+        },
+        {
+          "value": "vigilancia_exterior",
+          "source": "manufacturer_documentation",
+          "confidence": 0.99,
+          "evidence": "TP-Link la clasifica como cámara de seguridad para exterior"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "alimentacion_y_conectividad_compatibles",
+          "source": "taxonomy_rule",
+          "confidence": 0.76,
+          "evidence": "Requisitos generales de instalación"
+        },
+        {
+          "value": "wifi_2_4_ghz_y_alimentacion_dc",
+          "source": "manufacturer_documentation",
+          "confidence": 0.97,
+          "evidence": "Ficha oficial requiere Wi-Fi 2.4 GHz y adaptador DC"
+        }
+      ],
+      "complements": [],
+      "limitations": [
+        {
+          "value": "tarjeta_micro_sd_se_vende_por_separado",
+          "source": "manufacturer_documentation",
+          "confidence": 0.99,
+          "evidence": "Aclaración expresa en ficha oficial TP-Link"
+        },
+        {
+          "value": "almacenamiento_nube_requiere_suscripcion",
+          "source": "manufacturer_documentation",
+          "confidence": 0.99,
+          "evidence": "Tapo Care requiere suscripción"
+        }
+      ],
+      "enrichment": {
+        "record_id": "manufacturer-tplink-tapo-c500-2026-08",
+        "reviewed_by": "Kensar product knowledge review",
+        "reviewed_at": "2026-08-11",
+        "source": "manufacturer_documentation",
+        "source_references": [
+          "https://www.tp-link.com/cac/home-networking/cloud-camera/tapo-c500/"
+        ]
+      },
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 100
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 524,
+        "slug": "camara-de-seguridad-wifi-5-antenas-ipc-v380-5",
+        "sku": "524",
+        "name": "Camara de Seguridad WiFi (5 Antenas) IPC-V380-5"
+      },
+      "classification": {
+        "family": {
+          "value": "seguridad",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia seguridad"
+        },
+        "role": {
+          "value": "accessory",
+          "source": "catalog_name",
+          "confidence": 0.94,
+          "evidence": "Nombre/categoría contiene señal de accesorio: antena"
+        },
+        "subtype": {
+          "value": "wifi",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "wifi"
+        }
+      },
+      "features": [
+        {
+          "value": "wifi",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "wifi"
+        }
+      ],
+      "intended_uses": [],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 100
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 2650,
+        "slug": "camara-de-seguridad-wifi-ezviz-h6c-pro-2k-3mp",
+        "sku": "2650",
+        "name": "Camara de Seguridad WiFi EZVIZ H6c Pro 2k 3MP"
+      },
+      "classification": {
+        "family": {
+          "value": "seguridad",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia seguridad"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "wifi",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "wifi"
+        }
+      },
+      "features": [
+        {
+          "value": "wifi",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "wifi"
+        }
+      ],
+      "intended_uses": [
+        {
+          "value": "monitoreo_y_vigilancia",
+          "source": "taxonomy_rule",
+          "confidence": 0.86,
+          "evidence": "Función general de cámaras de seguridad"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "alimentacion_y_conectividad_compatibles",
+          "source": "taxonomy_rule",
+          "confidence": 0.76,
+          "evidence": "Requisitos generales de instalación"
+        }
+      ],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 100
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 2335,
+        "slug": "camara-de-videollamadas-model-yh-xm-dp06s",
+        "sku": "2335",
+        "name": "Camara de Videollamadas Model YH-XM-DP06S"
+      },
+      "classification": {
+        "family": {
+          "value": "seguridad",
+          "source": "catalog_category",
+          "confidence": 0.78,
+          "evidence": "Nombre/categoría coincide con familia seguridad"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": null
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "monitoreo_y_vigilancia",
+          "source": "taxonomy_rule",
+          "confidence": 0.86,
+          "evidence": "Función general de cámaras de seguridad"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "alimentacion_y_conectividad_compatibles",
+          "source": "taxonomy_rule",
+          "confidence": 0.76,
+          "evidence": "Requisitos generales de instalación"
+        }
+      ],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "subtype",
+        "materials"
+      ],
+      "review_flags": [
+        "family_identity_conflict"
+      ],
+      "coverage_score": 60
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 509,
+        "slug": "camara-hikvision-bala-ds-2ce56d0t-irpf",
+        "sku": "509",
+        "name": "Camara HikVision Bala DS-2CE56D0T-IRPF"
+      },
+      "classification": {
+        "family": {
+          "value": "seguridad",
+          "source": "catalog_category",
+          "confidence": 0.78,
+          "evidence": "Nombre/categoría coincide con familia seguridad"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "bala",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "bala"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "monitoreo_y_vigilancia",
+          "source": "taxonomy_rule",
+          "confidence": 0.86,
+          "evidence": "Función general de cámaras de seguridad"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "alimentacion_y_conectividad_compatibles",
+          "source": "taxonomy_rule",
+          "confidence": 0.76,
+          "evidence": "Requisitos generales de instalación"
+        }
+      ],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 512,
+        "slug": "camara-hikvision-turbo-hd-bala-ds-2ce16d0t-irpf",
+        "sku": "512",
+        "name": "Camara HikVision Turbo HD Bala DS-2CE16D0T-IRPF"
+      },
+      "classification": {
+        "family": {
+          "value": "seguridad",
+          "source": "catalog_category",
+          "confidence": 0.78,
+          "evidence": "Nombre/categoría coincide con familia seguridad"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "bala+turbo_hd",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "bala+turbo_hd"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "monitoreo_y_vigilancia",
+          "source": "taxonomy_rule",
+          "confidence": 0.86,
+          "evidence": "Función general de cámaras de seguridad"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "alimentacion_y_conectividad_compatibles",
+          "source": "taxonomy_rule",
+          "confidence": 0.76,
+          "evidence": "Requisitos generales de instalación"
+        }
+      ],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 3687,
+        "slug": "camara-portable-multifuncional-pantalla-jym-012",
+        "sku": "3685",
+        "name": "Camara Portable Multifuncional + Pantalla JYM-012"
+      },
+      "classification": {
+        "family": {
+          "value": "seguridad",
+          "source": "catalog_category",
+          "confidence": 0.78,
+          "evidence": "Nombre/categoría coincide con familia seguridad"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "portatil_con_pantalla",
+          "source": "taxonomy_rule",
+          "confidence": 0.72,
+          "evidence": "portatil_con_pantalla"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "monitoreo_y_vigilancia",
+          "source": "taxonomy_rule",
+          "confidence": 0.86,
+          "evidence": "Función general de cámaras de seguridad"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "alimentacion_y_conectividad_compatibles",
+          "source": "taxonomy_rule",
+          "confidence": 0.76,
+          "evidence": "Requisitos generales de instalación"
+        }
+      ],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 3093,
+        "slug": "camara-wifi-smart-ip66-a6",
+        "sku": "3093",
+        "name": "Camara Wifi Smart IP66 A6"
+      },
+      "classification": {
+        "family": {
+          "value": "seguridad",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia seguridad"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "wifi",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "wifi"
+        }
+      },
+      "features": [
+        {
+          "value": "wifi",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "wifi"
+        }
+      ],
+      "intended_uses": [
+        {
+          "value": "monitoreo_y_vigilancia",
+          "source": "taxonomy_rule",
+          "confidence": 0.86,
+          "evidence": "Función general de cámaras de seguridad"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "alimentacion_y_conectividad_compatibles",
+          "source": "taxonomy_rule",
+          "confidence": 0.76,
+          "evidence": "Requisitos generales de instalación"
+        }
+      ],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 100
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 1730,
+        "slug": "codificador-tdt-nia-an-777",
+        "sku": "1730",
+        "name": "Codificador TDT NIA AN-777"
+      },
+      "classification": {
+        "family": {
+          "value": "televisores",
+          "source": "catalog_category",
+          "confidence": 0.78,
+          "evidence": "Nombre/categoría coincide con familia televisores"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "televisor",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "televisor"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "entretenimiento_y_visualizacion",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "Uso general de televisores"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 3195,
+        "slug": "consola-10-canales-yamaha-mg10xu",
+        "sku": "3195",
+        "name": "Consola 10 Canales Yamaha MG10XU"
+      },
+      "classification": {
+        "family": {
+          "value": "consolas",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia consolas"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "mezcladora_10_canales",
+          "source": "taxonomy_rule",
+          "confidence": 0.72,
+          "evidence": "mezcladora_10_canales"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "mezclar_y_controlar_fuentes_de_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.9,
+          "evidence": "Función general de consolas"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "entradas_y_salidas_compatibles",
+          "source": "taxonomy_rule",
+          "confidence": 0.82,
+          "evidence": "Compatibilidad necesaria con fuentes y sistema de salida"
+        }
+      ],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 575,
+        "slug": "consola-pro-dj-b4l",
+        "sku": "575",
+        "name": "Consola Pro DJ B4L"
+      },
+      "classification": {
+        "family": {
+          "value": "consolas",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia consolas"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "mezcladora",
+          "source": "taxonomy_rule",
+          "confidence": 0.72,
+          "evidence": "mezcladora"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "mezclar_y_controlar_fuentes_de_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.9,
+          "evidence": "Función general de consolas"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "entradas_y_salidas_compatibles",
+          "source": "taxonomy_rule",
+          "confidence": 0.82,
+          "evidence": "Compatibilidad necesaria con fuentes y sistema de salida"
+        }
+      ],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 613,
+        "slug": "consola-spain-cx1828-16-canales",
+        "sku": "613",
+        "name": "Consola Spain CX1828 (16 Canales)"
+      },
+      "classification": {
+        "family": {
+          "value": "consolas",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia consolas"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "mezcladora_16_canales",
+          "source": "taxonomy_rule",
+          "confidence": 0.72,
+          "evidence": "mezcladora_16_canales"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "mezclar_y_controlar_fuentes_de_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.9,
+          "evidence": "Función general de consolas"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "entradas_y_salidas_compatibles",
+          "source": "taxonomy_rule",
+          "confidence": 0.82,
+          "evidence": "Compatibilidad necesaria con fuentes y sistema de salida"
+        }
+      ],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 647,
+        "slug": "consola-spain-cx602-3-canales",
+        "sku": "647",
+        "name": "Consola Spain CX602 (3 Canales)"
+      },
+      "classification": {
+        "family": {
+          "value": "consolas",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia consolas"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "mezcladora_3_canales",
+          "source": "taxonomy_rule",
+          "confidence": 0.72,
+          "evidence": "mezcladora_3_canales"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "mezclar_y_controlar_fuentes_de_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.9,
+          "evidence": "Función general de consolas"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "entradas_y_salidas_compatibles",
+          "source": "taxonomy_rule",
+          "confidence": 0.82,
+          "evidence": "Compatibilidad necesaria con fuentes y sistema de salida"
+        }
+      ],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 275,
+        "slug": "convertidor-optico-digital-analogico-audio-435-17",
+        "sku": "275",
+        "name": "Convertidor Optico (Digital-Analogico) Audio 435-17"
+      },
+      "classification": {
+        "family": {
+          "value": "televisores",
+          "source": "catalog_category",
+          "confidence": 0.78,
+          "evidence": "Nombre/categoría coincide con familia televisores"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "televisor",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "televisor"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "entretenimiento_y_visualizacion",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "Uso general de televisores"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 279,
+        "slug": "convertidor-vga-a-av-vga2av",
+        "sku": "279",
+        "name": "Convertidor VGA a AV (VGA2AV)"
+      },
+      "classification": {
+        "family": {
+          "value": "televisores",
+          "source": "catalog_category",
+          "confidence": 0.78,
+          "evidence": "Nombre/categoría coincide con familia televisores"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "televisor",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "televisor"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "entretenimiento_y_visualizacion",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "Uso general de televisores"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 1412,
+        "slug": "ecualizador-crossover-profesional-spain-234xl",
+        "sku": "1412",
+        "name": "Ecualizador Crossover Profesional Spain 234XL"
+      },
+      "classification": {
+        "family": {
+          "value": "procesamiento_audio",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia procesamiento_audio"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "crossover+ecualizador",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "crossover+ecualizador"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "procesar_y_ajustar_senal_de_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.88,
+          "evidence": "Función general de procesadores de audio"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "sistema_de_audio_compatible",
+          "source": "taxonomy_rule",
+          "confidence": 0.8,
+          "evidence": "Debe integrarse dentro de una cadena de audio"
+        }
+      ],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 2608,
+        "slug": "encordado-para-guitarra-clasica-x6-capa-de-plata-orphee-sc57",
+        "sku": "2608",
+        "name": "Encordado para Guitarra Clasica x6 (Capa de Plata) Orphee SC57 2845"
+      },
+      "classification": {
+        "family": {
+          "value": "guitarras",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia guitarras"
+        },
+        "role": {
+          "value": "accessory",
+          "source": "catalog_name",
+          "confidence": 0.94,
+          "evidence": "Nombre/categoría contiene señal de accesorio: encordado"
+        },
+        "subtype": {
+          "value": "clasica",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "clasica"
+        }
+      },
+      "features": [],
+      "intended_uses": [],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 2206,
+        "slug": "encordado-x6-para-guitarra-clasica-nx35-orphee",
+        "sku": "2206",
+        "name": "Encordado x6 Para Guitarra Clasica NX35 Orphee"
+      },
+      "classification": {
+        "family": {
+          "value": "guitarras",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia guitarras"
+        },
+        "role": {
+          "value": "accessory",
+          "source": "catalog_name",
+          "confidence": 0.94,
+          "evidence": "Nombre/categoría contiene señal de accesorio: encordado"
+        },
+        "subtype": {
+          "value": "clasica",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "clasica"
+        }
+      },
+      "features": [],
+      "intended_uses": [],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 2215,
+        "slug": "encordado-x6-para-guitarra-clasica-qc5-orphee",
+        "sku": "2215",
+        "name": "Encordado x6 Para Guitarra Clasica QC5 Orphee"
+      },
+      "classification": {
+        "family": {
+          "value": "guitarras",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia guitarras"
+        },
+        "role": {
+          "value": "accessory",
+          "source": "catalog_name",
+          "confidence": 0.94,
+          "evidence": "Nombre/categoría contiene señal de accesorio: encordado"
+        },
+        "subtype": {
+          "value": "clasica",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "clasica"
+        }
+      },
+      "features": [],
+      "intended_uses": [],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 3454,
+        "slug": "guitarra-yamaha-c40-acustica",
+        "sku": "3453",
+        "name": "Guitarra Yamaha C40 Acustica"
+      },
+      "classification": {
+        "family": {
+          "value": "guitarras",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia guitarras"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "acustica",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "acustica"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "interpretar_musica",
+          "source": "taxonomy_rule",
+          "confidence": 0.72,
+          "evidence": "Uso general de la familia guitarras"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [
+        {
+          "value": "afinador",
+          "source": "taxonomy_rule",
+          "confidence": 0.7,
+          "evidence": "Complemento habitual de guitarras"
+        },
+        {
+          "value": "funda",
+          "source": "taxonomy_rule",
+          "confidence": 0.68,
+          "evidence": "Complemento habitual de guitarras"
+        }
+      ],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 608,
+        "slug": "interfaz-de-audio-behringer-umc22",
+        "sku": "608",
+        "name": "Interfaz de Audio Behringer UMC22"
+      },
+      "classification": {
+        "family": {
+          "value": "interfaces_audio",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia interfaces_audio"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "interfaz_de_audio",
+          "source": "catalog_name",
+          "confidence": 0.72,
+          "evidence": "interfaz_de_audio"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "grabar_y_reproducir_audio_con_computador",
+          "source": "taxonomy_rule",
+          "confidence": 0.9,
+          "evidence": "Función general de interfaces de audio"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "computador_y_conexion_compatible",
+          "source": "taxonomy_rule",
+          "confidence": 0.84,
+          "evidence": "Requisito general de interfaces de audio"
+        }
+      ],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 1037,
+        "slug": "megafono-6-20w-recargable-american-sound-mp-506urb",
+        "sku": "1037",
+        "name": "Megafono 6\" 20W Recargable American Sound MP-506URB"
+      },
+      "classification": {
+        "family": {
+          "value": "megafonos",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia megafonos"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "megafono_recargable",
+          "source": "taxonomy_rule",
+          "confidence": 0.72,
+          "evidence": "megafono_recargable"
+        }
+      },
+      "features": [
+        {
+          "value": "recargable",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "recargable"
+        }
+      ],
+      "intended_uses": [
+        {
+          "value": "amplificar_voz_de_forma_portatil",
+          "source": "taxonomy_rule",
+          "confidence": 0.92,
+          "evidence": "Función general de megáfonos"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "bateria_o_alimentacion_compatible",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "Requisito general de megáfonos"
+        }
+      ],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 100
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 2861,
+        "slug": "megafono-pequeno-35w-marketpeak-mp-19",
+        "sku": "2861",
+        "name": "Megafono Pequeño 35W Marketpeak MP-19"
+      },
+      "classification": {
+        "family": {
+          "value": "megafonos",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia megafonos"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "megafono",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "megafono"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "amplificar_voz_de_forma_portatil",
+          "source": "taxonomy_rule",
+          "confidence": 0.92,
+          "evidence": "Función general de megáfonos"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "bateria_o_alimentacion_compatible",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "Requisito general de megáfonos"
+        }
+      ],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 441,
+        "slug": "memoria-micro-sd-64gb-kingston-sandisk",
+        "sku": "441",
+        "name": "Memoria Micro SD 64GB Kingston/Sandisk"
+      },
+      "classification": {
+        "family": {
+          "value": "seguridad",
+          "source": "catalog_category",
+          "confidence": 0.78,
+          "evidence": "Nombre/categoría coincide con familia seguridad"
+        },
+        "role": {
+          "value": "accessory",
+          "source": "catalog_name",
+          "confidence": 0.94,
+          "evidence": "Nombre/categoría contiene señal de accesorio: memoria micro sd"
+        },
+        "subtype": {
+          "value": "wifi",
+          "source": "catalog_description",
+          "confidence": 0.72,
+          "evidence": "wifi"
+        }
+      },
+      "features": [
+        {
+          "value": "wifi",
+          "source": "catalog_description",
+          "confidence": 0.82,
+          "evidence": "wifi"
+        },
+        {
+          "value": "micro_sd",
+          "source": "catalog_description",
+          "confidence": 0.82,
+          "evidence": "microsd"
+        }
+      ],
+      "intended_uses": [],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 100
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 630,
+        "slug": "microfono-condensador-bm-800-1",
+        "sku": "630",
+        "name": "Microfono Condensador BM-800-1"
+      },
+      "classification": {
+        "family": {
+          "value": "microfonos",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia microfonos"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "condensador",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "condensador"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "capturar_voz_o_sonido",
+          "source": "taxonomy_rule",
+          "confidence": 0.82,
+          "evidence": "Función general de micrófonos"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "entrada_compatible",
+          "source": "taxonomy_rule",
+          "confidence": 0.76,
+          "evidence": "Debe conectarse a una entrada compatible"
+        }
+      ],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 3032,
+        "slug": "microfono-condensador-c-1u",
+        "sku": "3032",
+        "name": "Microfono Condensador C-1U"
+      },
+      "classification": {
+        "family": {
+          "value": "microfonos",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia microfonos"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "condensador",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "condensador"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "capturar_voz_o_sonido",
+          "source": "taxonomy_rule",
+          "confidence": 0.82,
+          "evidence": "Función general de micrófonos"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "entrada_compatible",
+          "source": "taxonomy_rule",
+          "confidence": 0.76,
+          "evidence": "Debe conectarse a una entrada compatible"
+        }
+      ],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 598,
+        "slug": "microfono-inalamabrico-doble-shure-sh-6000",
+        "sku": "598",
+        "name": "Microfono Inalamabrico Doble Shure SH-6000"
+      },
+      "classification": {
+        "family": {
+          "value": "microfonos",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia microfonos"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "inalambrico",
+          "source": "taxonomy_rule",
+          "confidence": 0.72,
+          "evidence": "inalambrico"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "capturar_voz_o_sonido",
+          "source": "taxonomy_rule",
+          "confidence": 0.82,
+          "evidence": "Función general de micrófonos"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "entrada_compatible",
+          "source": "taxonomy_rule",
+          "confidence": 0.76,
+          "evidence": "Debe conectarse a una entrada compatible"
+        }
+      ],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 3034,
+        "slug": "microfono-inalambrico-doble-pro-dj-uhv-1422m",
+        "sku": "3034",
+        "name": "Microfono Inalambrico Doble Pro DJ UHV-1422M"
+      },
+      "classification": {
+        "family": {
+          "value": "microfonos",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia microfonos"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "inalambrico",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "inalambrico"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "capturar_voz_o_sonido",
+          "source": "taxonomy_rule",
+          "confidence": 0.82,
+          "evidence": "Función general de micrófonos"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "entrada_compatible",
+          "source": "taxonomy_rule",
+          "confidence": 0.76,
+          "evidence": "Debe conectarse a una entrada compatible"
+        }
+      ],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 443,
+        "slug": "micro-sd-32gb-adata-sandisk",
+        "sku": "443",
+        "name": "Micro SD 32GB Adata / SanDisk"
+      },
+      "classification": {
+        "family": {
+          "value": "seguridad",
+          "source": "catalog_category",
+          "confidence": 0.78,
+          "evidence": "Nombre/categoría coincide con familia seguridad"
+        },
+        "role": {
+          "value": "accessory",
+          "source": "catalog_name",
+          "confidence": 0.94,
+          "evidence": "Nombre/categoría contiene señal de accesorio: micro sd"
+        },
+        "subtype": null
+      },
+      "features": [
+        {
+          "value": "micro_sd",
+          "source": "catalog_description",
+          "confidence": 0.82,
+          "evidence": "microsd"
+        }
+      ],
+      "intended_uses": [],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 2709,
+        "slug": "pedal-de-sustain-para-piano-fc4a-yamaha",
+        "sku": "2709",
+        "name": "Pedal de sustain Para Piano FC4A Yamaha"
+      },
+      "classification": {
+        "family": {
+          "value": "teclados",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia teclados"
+        },
+        "role": {
+          "value": "accessory",
+          "source": "catalog_name",
+          "confidence": 0.94,
+          "evidence": "Nombre/categoría contiene señal de accesorio: pedal"
+        },
+        "subtype": {
+          "value": "piano_electronico",
+          "source": "taxonomy_rule",
+          "confidence": 0.72,
+          "evidence": "piano_electronico"
+        }
+      },
+      "features": [],
+      "intended_uses": [],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 753,
+        "slug": "piana-de-microfono-pro-dj-sm-20",
+        "sku": "753",
+        "name": "Piaña de Microfono Pro DJ SM-20"
+      },
+      "classification": {
+        "family": {
+          "value": "microfonos",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia microfonos"
+        },
+        "role": {
+          "value": "accessory",
+          "source": "catalog_name",
+          "confidence": 0.94,
+          "evidence": "Nombre/categoría contiene señal de accesorio: piana"
+        },
+        "subtype": null
+      },
+      "features": [],
+      "intended_uses": [],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 60
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 1070,
+        "slug": "piano-bigfun-bf-430a2-mini",
+        "sku": "1070",
+        "name": "Piano Bigfun BF-430A2 Mini"
+      },
+      "classification": {
+        "family": {
+          "value": "teclados",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia teclados"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "piano_electronico",
+          "source": "taxonomy_rule",
+          "confidence": 0.72,
+          "evidence": "piano_electronico"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "interpretar_y_aprender_musica",
+          "source": "taxonomy_rule",
+          "confidence": 0.75,
+          "evidence": "Uso general de teclados"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "alimentacion_compatible",
+          "source": "taxonomy_rule",
+          "confidence": 0.72,
+          "evidence": "Requisito general de teclados electrónicos"
+        }
+      ],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 2353,
+        "slug": "piano-bigfun-bf-730a2-61-teclas",
+        "sku": "2353",
+        "name": "Piano Bigfun BF-730A2 61 Teclas"
+      },
+      "classification": {
+        "family": {
+          "value": "teclados",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia teclados"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "piano_electronico",
+          "source": "taxonomy_rule",
+          "confidence": 0.72,
+          "evidence": "piano_electronico"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "interpretar_y_aprender_musica",
+          "source": "taxonomy_rule",
+          "confidence": 0.75,
+          "evidence": "Uso general de teclados"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "alimentacion_compatible",
+          "source": "taxonomy_rule",
+          "confidence": 0.72,
+          "evidence": "Requisito general de teclados electrónicos"
+        }
+      ],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 2352,
+        "slug": "piano-bigfun-bf-830a2-61-teclas",
+        "sku": "2352",
+        "name": "Piano Bigfun BF-830A2 61 Teclas"
+      },
+      "classification": {
+        "family": {
+          "value": "teclados",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia teclados"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "piano_electronico",
+          "source": "taxonomy_rule",
+          "confidence": 0.72,
+          "evidence": "piano_electronico"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "interpretar_y_aprender_musica",
+          "source": "taxonomy_rule",
+          "confidence": 0.75,
+          "evidence": "Uso general de teclados"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "alimentacion_compatible",
+          "source": "taxonomy_rule",
+          "confidence": 0.72,
+          "evidence": "Requisito general de teclados electrónicos"
+        }
+      ],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 3064,
+        "slug": "piano-yamaha-psr-e473",
+        "sku": "3064",
+        "name": "Piano Yamaha PSR-E473"
+      },
+      "classification": {
+        "family": {
+          "value": "teclados",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia teclados"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "piano_electronico",
+          "source": "taxonomy_rule",
+          "confidence": 0.72,
+          "evidence": "piano_electronico"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "interpretar_y_aprender_musica",
+          "source": "taxonomy_rule",
+          "confidence": 0.75,
+          "evidence": "Uso general de teclados"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "alimentacion_compatible",
+          "source": "taxonomy_rule",
+          "confidence": 0.72,
+          "evidence": "Requisito general de teclados electrónicos"
+        }
+      ],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 731,
+        "slug": "planta-spain-2000w-sp2000",
+        "sku": "731",
+        "name": "Planta Spain 2000W SP2000"
+      },
+      "classification": {
+        "family": {
+          "value": "amplificadores",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia amplificadores"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "amplificador_de_potencia",
+          "source": "taxonomy_rule",
+          "confidence": 0.72,
+          "evidence": "amplificador_de_potencia"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "amplificar_senal_de_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.88,
+          "evidence": "Función general de amplificadores"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "potencia_e_impedancia_compatibles",
+          "source": "taxonomy_rule",
+          "confidence": 0.82,
+          "evidence": "Compatibilidad necesaria con parlantes o cabinas"
+        }
+      ],
+      "complements": [
+        {
+          "value": "cables_de_audio_compatibles",
+          "source": "taxonomy_rule",
+          "confidence": 0.76,
+          "evidence": "Conexión requerida en sistemas de amplificación"
+        }
+      ],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 2386,
+        "slug": "planta-spain-sp-4000-sp4000",
+        "sku": "2386",
+        "name": "Planta Spain SP 4000 SP4000"
+      },
+      "classification": {
+        "family": {
+          "value": "amplificadores",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia amplificadores"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "amplificador_de_potencia",
+          "source": "taxonomy_rule",
+          "confidence": 0.72,
+          "evidence": "amplificador_de_potencia"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "amplificar_senal_de_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.88,
+          "evidence": "Función general de amplificadores"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "potencia_e_impedancia_compatibles",
+          "source": "taxonomy_rule",
+          "confidence": 0.82,
+          "evidence": "Compatibilidad necesaria con parlantes o cabinas"
+        }
+      ],
+      "complements": [
+        {
+          "value": "cables_de_audio_compatibles",
+          "source": "taxonomy_rule",
+          "confidence": 0.76,
+          "evidence": "Conexión requerida en sistemas de amplificación"
+        }
+      ],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 648,
+        "slug": "pre-amplificador-rs-audio",
+        "sku": "648",
+        "name": "Pre Amplificador RS Audio"
+      },
+      "classification": {
+        "family": {
+          "value": "amplificadores",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia amplificadores"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "preamplificador",
+          "source": "taxonomy_rule",
+          "confidence": 0.72,
+          "evidence": "preamplificador"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "amplificar_senal_de_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.88,
+          "evidence": "Función general de amplificadores"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "potencia_e_impedancia_compatibles",
+          "source": "taxonomy_rule",
+          "confidence": 0.82,
+          "evidence": "Compatibilidad necesaria con parlantes o cabinas"
+        }
+      ],
+      "complements": [
+        {
+          "value": "cables_de_audio_compatibles",
+          "source": "taxonomy_rule",
+          "confidence": 0.76,
+          "evidence": "Conexión requerida en sistemas de amplificación"
+        }
+      ],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 3870,
+        "slug": "requinto-puntero-en-cedro-la-clasica",
+        "sku": "3868",
+        "name": "Requinto Puntero en Cedro La Clasica"
+      },
+      "classification": {
+        "family": {
+          "value": "instrumentos_cuerda",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia instrumentos_cuerda"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "requinto",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "requinto"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "interpretar_musica",
+          "source": "taxonomy_rule",
+          "confidence": 0.74,
+          "evidence": "Uso general de instrumentos de cuerda"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 2473,
+        "slug": "teclado-electronico-rosa-ms-6113",
+        "sku": "2473",
+        "name": "Teclado Electronico Rosa MS-6113"
+      },
+      "classification": {
+        "family": {
+          "value": "teclados",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia teclados"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "teclado_electronico",
+          "source": "catalog_name",
+          "confidence": 0.72,
+          "evidence": "teclado_electronico"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "interpretar_y_aprender_musica",
+          "source": "taxonomy_rule",
+          "confidence": 0.75,
+          "evidence": "Uso general de teclados"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "alimentacion_compatible",
+          "source": "taxonomy_rule",
+          "confidence": 0.72,
+          "evidence": "Requisito general de teclados electrónicos"
+        }
+      ],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 2715,
+        "slug": "teclado-electronico-yamaha-psre383",
+        "sku": "2715",
+        "name": "Teclado Electronico Yamaha PSRE383"
+      },
+      "classification": {
+        "family": {
+          "value": "teclados",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia teclados"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "teclado_electronico",
+          "source": "catalog_name",
+          "confidence": 0.72,
+          "evidence": "teclado_electronico"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "interpretar_y_aprender_musica",
+          "source": "taxonomy_rule",
+          "confidence": 0.75,
+          "evidence": "Uso general de teclados"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "alimentacion_compatible",
+          "source": "taxonomy_rule",
+          "confidence": 0.72,
+          "evidence": "Requisito general de teclados electrónicos"
+        }
+      ],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 2674,
+        "slug": "televisor-32-nia-4k-led-nia-tv3299dsv",
+        "sku": "2674",
+        "name": "Televisor 32\" NIA 4K LED NIA-TV3299DSV"
+      },
+      "classification": {
+        "family": {
+          "value": "televisores",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia televisores"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "televisor",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "televisor"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "entretenimiento_y_visualizacion",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "Uso general de televisores"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 3247,
+        "slug": "tripode-spain-para-cabina",
+        "sku": "3247",
+        "name": "Tripode Spain Para Cabina"
+      },
+      "classification": {
+        "family": {
+          "value": "cabinas",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia cabinas"
+        },
+        "role": {
+          "value": "accessory",
+          "source": "catalog_name",
+          "confidence": 0.94,
+          "evidence": "Nombre/categoría contiene señal de accesorio: tripode"
+        },
+        "subtype": null
+      },
+      "features": [],
+      "intended_uses": [],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 60
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 3657,
+        "slug": "ukelele-concierto-zebra",
+        "sku": "3656",
+        "name": "Ukelele Concierto  Zebra"
+      },
+      "classification": {
+        "family": {
+          "value": "instrumentos_cuerda",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia instrumentos_cuerda"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "ukelele",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "ukelele"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "interpretar_musica",
+          "source": "taxonomy_rule",
+          "confidence": 0.74,
+          "evidence": "Uso general de instrumentos de cuerda"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 3432,
+        "slug": "violin-glossy-3-4-ayson",
+        "sku": "3431",
+        "name": "Violin Glossy 3/4 Ayson"
+      },
+      "classification": {
+        "family": {
+          "value": "instrumentos_cuerda",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia instrumentos_cuerda"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "violin",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "violin"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "interpretar_musica",
+          "source": "taxonomy_rule",
+          "confidence": 0.74,
+          "evidence": "Uso general de instrumentos de cuerda"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 93,
+        "slug": "campana-grande-rm-1-solo-tono",
+        "sku": "93",
+        "name": "Campana Grande RM 1 Solo Tono"
+      },
+      "classification": {
+        "family": {
+          "value": "percusion",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia percusion"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "campana",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "campana"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "interpretacion_ritmica",
+          "source": "taxonomy_rule",
+          "confidence": 0.82,
+          "evidence": "Función general de instrumentos de percusión"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 92,
+        "slug": "campana-mediana-rm-1-solo-tono",
+        "sku": "92",
+        "name": "Campana Mediana RM 1 Solo Tono"
+      },
+      "classification": {
+        "family": {
+          "value": "percusion",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia percusion"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "campana",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "campana"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "interpretacion_ritmica",
+          "source": "taxonomy_rule",
+          "confidence": 0.82,
+          "evidence": "Función general de instrumentos de percusión"
+        }
+      ],
+      "materials": [],
+      "requirements": [],
+      "complements": [],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 3428,
+        "slug": "guitarra-electrica-ayson",
+        "sku": "3427",
+        "name": "Guitarra Electrica Ayson"
+      },
+      "classification": {
+        "family": {
+          "value": "guitarras",
+          "source": "catalog_name",
+          "confidence": 0.92,
+          "evidence": "Nombre/categoría coincide con familia guitarras"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "taxonomy_rule",
+          "confidence": 0.78,
+          "evidence": "No contiene señales conocidas de accesorio o servicio"
+        },
+        "subtype": {
+          "value": "electrica",
+          "source": "catalog_name",
+          "confidence": 0.9,
+          "evidence": "electrica"
+        }
+      },
+      "features": [],
+      "intended_uses": [
+        {
+          "value": "interpretar_musica",
+          "source": "taxonomy_rule",
+          "confidence": 0.72,
+          "evidence": "Uso general de la familia guitarras"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "amplificacion_para_sonar_externamente",
+          "source": "taxonomy_rule",
+          "confidence": 0.82,
+          "evidence": "Requisito general de guitarra eléctrica"
+        }
+      ],
+      "complements": [
+        {
+          "value": "afinador",
+          "source": "taxonomy_rule",
+          "confidence": 0.7,
+          "evidence": "Complemento habitual de guitarras"
+        },
+        {
+          "value": "funda",
+          "source": "taxonomy_rule",
+          "confidence": 0.68,
+          "evidence": "Complemento habitual de guitarras"
+        },
+        {
+          "value": "cable_de_instrumento",
+          "source": "taxonomy_rule",
+          "confidence": 0.8,
+          "evidence": "Conexión habitual de guitarra eléctrica"
+        }
+      ],
+      "limitations": [],
+      "enrichment": null,
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 80
+    },
+    {
+      "schema_version": "kora-product-knowledge-v2",
+      "product_ref": {
+        "id": 1128,
+        "slug": "jbl-flip-6",
+        "sku": "1128",
+        "name": "JBL Flip 6"
+      },
+      "classification": {
+        "family": {
+          "value": "cabinas",
+          "source": "manufacturer_documentation",
+          "confidence": 1,
+          "evidence": "Enriquecimiento aprobado manufacturer-jbl-flip-6-2026-08"
+        },
+        "role": {
+          "value": "main_product",
+          "source": "manufacturer_documentation",
+          "confidence": 1,
+          "evidence": "Enriquecimiento aprobado manufacturer-jbl-flip-6-2026-08"
+        },
+        "subtype": {
+          "value": "parlante_portatil_bluetooth",
+          "source": "manufacturer_documentation",
+          "confidence": 1,
+          "evidence": "Enriquecimiento aprobado manufacturer-jbl-flip-6-2026-08"
+        }
+      },
+      "features": [
+        {
+          "value": "bluetooth_5_1",
+          "source": "manufacturer_documentation",
+          "confidence": 0.99,
+          "evidence": "Ficha oficial JBL Flip 6: Bluetooth 5.1"
+        },
+        {
+          "value": "proteccion_ip67",
+          "source": "manufacturer_documentation",
+          "confidence": 0.99,
+          "evidence": "Ficha oficial JBL Flip 6: resistencia IP67"
+        },
+        {
+          "value": "bateria_hasta_12_horas",
+          "source": "manufacturer_documentation",
+          "confidence": 0.97,
+          "evidence": "Ficha oficial JBL Flip 6: hasta 12 horas según uso"
+        },
+        {
+          "value": "carga_usb_c",
+          "source": "manufacturer_documentation",
+          "confidence": 0.99,
+          "evidence": "Ficha oficial JBL Flip 6: cable y carga USB-C"
+        },
+        {
+          "value": "partyboost",
+          "source": "manufacturer_documentation",
+          "confidence": 0.99,
+          "evidence": "Ficha oficial JBL Flip 6: compatibilidad PartyBoost"
+        }
+      ],
+      "intended_uses": [
+        {
+          "value": "reproducir_y_amplificar_audio",
+          "source": "taxonomy_rule",
+          "confidence": 0.8,
+          "evidence": "Función general de cabinas"
+        },
+        {
+          "value": "reproducir_musica_de_forma_portatil",
+          "source": "manufacturer_documentation",
+          "confidence": 0.97,
+          "evidence": "JBL lo clasifica como parlante portátil"
+        }
+      ],
+      "materials": [],
+      "requirements": [
+        {
+          "value": "recarga_usb_c",
+          "source": "manufacturer_documentation",
+          "confidence": 0.98,
+          "evidence": "Ficha oficial incluye carga por USB-C"
+        }
+      ],
+      "complements": [],
+      "limitations": [
+        {
+          "value": "autonomia_depende_del_volumen_y_contenido",
+          "source": "manufacturer_documentation",
+          "confidence": 0.99,
+          "evidence": "Aclaración expresa de autonomía en ficha JBL"
+        }
+      ],
+      "enrichment": {
+        "record_id": "manufacturer-jbl-flip-6-2026-08",
+        "reviewed_by": "Kensar product knowledge review",
+        "reviewed_at": "2026-08-11",
+        "source": "manufacturer_documentation",
+        "source_references": [
+          "https://support.jbl.com/on/demandware.static/-/Sites-masterCatalog_Harman/default/dw96f5c5b9/pdfs/JBL_Flip_6_SpecSheet_English.pdf"
+        ]
+      },
+      "unresolved_fields": [
+        "materials"
+      ],
+      "review_flags": [],
+      "coverage_score": 100
+    }
+  ]
+}

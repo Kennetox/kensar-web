@@ -17,8 +17,21 @@ export type KoraNluResult = {
 };
 
 const CATEGORY_ALIASES: Array<{ category: string; aliases: string[] }> = [
-  { category: "instrumentos", aliases: ["guitarra", "guitarras", "piano", "teclado", "bateria", "batería", "instrumento"] },
-  { category: "audio-profesional", aliases: ["cabina", "cabinas", "speaker", "speakers", "parlante", "bafle", "sonido"] },
+  {
+    category: "instrumentos",
+    aliases: [
+      "guitarra", "guitarras", "piano", "teclado", "bajo electrico", "bajo eléctrico", "requinto", "ukelele", "violin", "violín",
+      "bateria", "batería", "bongo", "bongó", "campana", "conga", "timbal", "guiro", "güiro", "maraca", "percusion", "percusión", "instrumento",
+    ],
+  },
+  {
+    category: "audio-profesional",
+    aliases: [
+      "cabina", "cabinas", "speaker", "speakers", "parlante", "bafle", "sonido", "microfono", "micrófono", "amplificador", "planta de sonido",
+      "preamplificador", "pre amplificador", "consola", "mezcladora", "interfaz de audio", "interface de audio", "ecualizador", "crossover", "procesador de audio",
+      "megafono", "megáfono",
+    ],
+  },
   { category: "accesorios", aliases: ["accesorio", "cable", "soporte", "adaptador"] },
   { category: "camaras", aliases: ["camara", "cámara", "cctv", "vigilancia"] },
 ];

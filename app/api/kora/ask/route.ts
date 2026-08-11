@@ -4,8 +4,13 @@ import { extractKoraEntities, type KoraNluResult } from "@/app/lib/kora/entities
 import { buildNluRoutedResponse } from "@/app/lib/kora/response-router";
 import { resolveKoraCatalogRecommendation } from "@/app/lib/kora/recommender";
 import { getKoraBusinessKnowledge } from "@/app/lib/kora/business-knowledge";
+import { resolveKoraSupportAnswer } from "@/app/lib/kora/support-advisor";
 import { resolveContextualSellingResponse } from "@/app/lib/kora/contextual-selling";
 import { sanitizePageContext } from "@/app/lib/kora/page-context";
+import {
+  buildRecommendationQualificationQuery,
+  resolveRecommendationClarification,
+} from "@/app/lib/kora/recommendation-readiness";
 import type { KoraContextualSellingDebug, KoraPageContext } from "@/app/lib/kora/knowledge-types";
 
 type AskRequest = {
@@ -251,6 +256,14 @@ type AskResponse = {
     expanded_queries: string[];
     selected_category_paths: string[];
     product_scores: Array<{ id: number; slug: string; score: number }>;
+    product_knowledge?: Array<{
+      id: number;
+      family: string;
+      role: string;
+      subtype: string | null;
+      coverage_score: number;
+      review_flags: string[];
+    }>;
   };
   nlu_debug?: KoraNluResult | null;
   product_cards?: Array<{
@@ -286,7 +299,6 @@ type AskResponse = {
 type Emotion = AskResponse["emotion"];
 type ToneMode = "friendly" | "professional";
 type CustomerGoal = "gift" | "home" | "business" | "studio" | null;
-type NonProductIntent = "payments" | "shipping" | "warranty" | "advisor" | "orders" | "menu";
 type SupportTopic = "payments" | "shipping" | "warranty" | "returns" | "advisor";
 type BusinessTopic = "location" | "hours" | "contact" | "support" | "business_info";
 type ConversationTopic =
@@ -1665,8 +1677,8 @@ export async function POST(request: Request) {
         intent: "menu",
         answer:
           tone === "professional"
-            ? "Hola, qué gusto saludarte.\n\nEstoy para ayudarte con productos, pagos, envíos o garantías. ¿Qué necesitas hoy?"
-            : "¡Hola! Qué bueno tenerte por aquí.\n\nEstoy para ayudarte con productos, pagos, envíos o garantías. ¿Qué estás buscando hoy?",
+            ? "Hola, soy KORA. Puedo explicarte aquí mismo nuestros productos, pagos, envíos y garantías, y ayudarte a elegir una opción adecuada. ¿Qué necesitas hoy?"
+            : "¡Hola! Soy KORA. Puedo explicarte aquí mismo productos, pagos, envíos y garantías, y ayudarte a elegir sin que tengas que recorrer toda la página. ¿Qué necesitas?",
         actions: [],
         suggestions: [],
         emotion,
@@ -1700,6 +1712,46 @@ export async function POST(request: Request) {
           last_emotion: emotion,
         },
       },
+      { status: 200 }
+    );
+  }
+
+  const supportKnowledge = resolveKoraSupportAnswer({
+    query,
+    nluIntent: nluDebug?.intent || null,
+    memoryTopic: body?.memory?.last_support_topic || null,
+    knowledge: getKoraBusinessKnowledge(),
+  });
+  if (supportKnowledge) {
+    const memoryTopic: SupportTopic =
+      supportKnowledge.topic === "returns"
+        ? "returns"
+        : supportKnowledge.topic === "technical_support"
+          ? "advisor"
+          : supportKnowledge.topic;
+    const conversationTopic: ConversationTopic =
+      supportKnowledge.topic === "technical_support"
+        ? "support"
+        : supportKnowledge.topic === "returns"
+          ? "returns"
+          : supportKnowledge.topic;
+    return NextResponse.json<AskResponse>(
+      finalizeResponse(
+        {
+          handled: true,
+          intent: supportKnowledge.intent,
+          answer: supportKnowledge.answer,
+          actions: supportKnowledge.actions,
+          suggestions: supportKnowledge.suggestions,
+          memory_updates: {
+            last_support_topic: memoryTopic,
+            last_non_product_intent: memoryTopic === "returns" ? "warranty" : memoryTopic,
+            last_conversation_topic: conversationTopic,
+            last_answer_domain: "support",
+          },
+        },
+        { emotion, tone, goal, companionMode, nluDebug, contextualSellingDebug: null }
+      ),
       { status: 200 }
     );
   }
@@ -1749,8 +1801,49 @@ export async function POST(request: Request) {
     );
   }
 
-  let nluForRecommendation = nluDebug;
-  let queryForRecommendation = query;
+  const qualificationQuery = buildRecommendationQualificationQuery(query, {
+    last_recommendation_query: body?.memory?.last_recommendation_query,
+    last_recommendation_type: body?.memory?.last_recommendation_type,
+  });
+  const continuesQualification = qualificationQuery !== query;
+  const qualificationNlu = continuesQualification ? extractKoraEntities(qualificationQuery) : nluDebug;
+
+  const recommendationClarification = resolveRecommendationClarification({
+    query: qualificationQuery,
+    nlu: qualificationNlu,
+    memory: {
+      preferred_category: body?.memory?.preferred_category,
+      last_recommendation_category: body?.memory?.last_recommendation_category,
+      last_recommendation_query: body?.memory?.last_recommendation_query,
+      last_query: body?.memory?.last_query,
+      last_recommended_products: body?.memory?.last_recommended_products,
+    },
+  });
+  if (recommendationClarification) {
+    return NextResponse.json<AskResponse>(
+      finalizeResponse(
+        {
+          handled: true,
+          intent: "products",
+          answer: recommendationClarification.answer,
+          actions: recommendationClarification.actions,
+          suggestions: recommendationClarification.suggestions,
+          confidence_score: 0.9,
+          resolution_kind: "disambiguation",
+          memory_patch: {
+            last_recommendation_query: qualificationQuery,
+            last_recommendation_category: recommendationClarification.family,
+            last_recommendation_type: "qualification",
+          },
+        },
+        { emotion, tone, goal, companionMode, nluDebug, contextualSellingDebug: null }
+      ),
+      { status: 200 }
+    );
+  }
+
+  let nluForRecommendation = qualificationNlu;
+  let queryForRecommendation = qualificationQuery;
   if (isShortAttributeRefinement(normalized, nluDebug, body?.memory)) {
     nluForRecommendation = {
       ...(nluDebug as KoraNluResult),

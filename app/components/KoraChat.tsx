@@ -8,6 +8,14 @@ import { buildKoraContextualGreeting } from "@/app/lib/kora/contextual-greetings
 import type { KoraPageContext } from "@/app/lib/kora/knowledge-types";
 import { buildWhatsAppPrefill } from "@/app/lib/kora/whatsapp-handoff";
 import { getOrCreateHandoffSessionId, readStoredPageContext, resolveCurrentUrlFromWindow } from "@/app/lib/kora/handoff-client";
+import { getKoraActionDisplayPolicy } from "@/app/lib/kora/chat-action-policy";
+import { getKoraNudgeMessages } from "@/app/lib/kora/nudge-messages";
+import {
+  canShowKoraFollowup,
+  resolveKoraFollowupNudge,
+  type KoraFollowupCourtesyState,
+  type KoraFollowupNudge,
+} from "@/app/lib/kora/followup-nudges";
 
 type ActionType = "command" | "link" | "whatsapp" | "prompt" | "add_to_cart";
 type CommandValue = "menu" | "products" | "payments" | "shipping" | "warranty" | "advisor";
@@ -19,6 +27,8 @@ type KoraEventName =
   | "intent_detected"
   | "whatsapp_opened"
   | "handoff_initiated"
+  | "followup_shown"
+  | "followup_clicked"
   | "conversation_reset";
 
 type ChatAction = {
@@ -231,13 +241,14 @@ const SESSION_OPEN_KEY = "kensar_kora_open_v1";
 const EVENTS_SESSION_KEY = "kensar_kora_events_v1";
 const MEMORY_SESSION_KEY = "kensar_kora_memory_v1";
 const GREETING_CONTEXTS_SESSION_KEY = "kensar_kora_greeting_contexts_v1";
+const FOLLOWUP_SESSION_KEY = "kensar_kora_followups_v1";
 const RESPONSE_DELAYS = [520, 640, 760] as const;
-const KORA_NUDGE_TEXT = "Asistente 24/7";
 const KORA_AVATAR_SRC = "/branding/kora-avatar.png";
-const KORA_NUDGE_INITIAL_DELAY_MS = 9000;
-const KORA_NUDGE_VISIBLE_MS = 3200;
+const KORA_NUDGE_INITIAL_DELAY_MS = 5000;
+const KORA_NUDGE_VISIBLE_MS = 5200;
 const KORA_NUDGE_PULSE_MS = 920;
 const KORA_WHATSAPP_MIN_GAP_MS = 4500;
+const KORA_FOLLOWUP_VISIBLE_MS = 6500;
 
 const MAIN_ACTIONS: ChatAction[] = [
   { id: "products", label: "Ver catálogo", icon: "🛍️", type: "command", value: "products" },
@@ -642,6 +653,34 @@ function persistKoraMemory(memory: KoraSessionMemory) {
   }
 }
 
+function loadKoraFollowupState(): KoraFollowupCourtesyState {
+  const emptyState = { shownCount: 0, lastShownAt: 0, shownPaths: [] };
+  if (typeof window === "undefined") return emptyState;
+  try {
+    const raw = window.sessionStorage.getItem(FOLLOWUP_SESSION_KEY);
+    if (!raw) return emptyState;
+    const parsed = JSON.parse(raw) as Partial<KoraFollowupCourtesyState>;
+    return {
+      shownCount: Math.max(0, Number(parsed.shownCount) || 0),
+      lastShownAt: Math.max(0, Number(parsed.lastShownAt) || 0),
+      shownPaths: Array.isArray(parsed.shownPaths)
+        ? parsed.shownPaths.filter((value) => typeof value === "string").slice(-10)
+        : [],
+    };
+  } catch {
+    return emptyState;
+  }
+}
+
+function persistKoraFollowupState(state: KoraFollowupCourtesyState) {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(FOLLOWUP_SESSION_KEY, JSON.stringify(state));
+  } catch {
+    return;
+  }
+}
+
 function readPageContextFromSession(pathname: string): KoraPageContext | null {
   return readStoredPageContext(pathname);
 }
@@ -666,6 +705,8 @@ export default function KoraChat({ pageContext }: { pageContext?: KoraPageContex
   const [productActions, setProductActions] = useState<ChatAction[]>(FALLBACK_PRODUCT_ACTIONS);
   const [nudgeVisible, setNudgeVisible] = useState(false);
   const [nudgePulse, setNudgePulse] = useState(false);
+  const [nudgeMessageIndex, setNudgeMessageIndex] = useState(0);
+  const [activeFollowup, setActiveFollowup] = useState<KoraFollowupNudge | null>(null);
   const [memory, setMemory] = useState<KoraSessionMemory>(loadKoraMemory);
   const telemetrySessionIdRef = useRef<string>(loadTelemetrySessionId());
   const endRef = useRef<HTMLDivElement | null>(null);
@@ -673,12 +714,28 @@ export default function KoraChat({ pageContext }: { pageContext?: KoraPageContex
   const timeoutRef = useRef<number | null>(null);
   const delayIndexRef = useRef(0);
   const lastWhatsappNudgeRef = useRef(0);
+  const followupStateRef = useRef<KoraFollowupCourtesyState>(loadKoraFollowupState());
   const openChatRef = useRef<(source: string) => void>(() => undefined);
   const processUserInputRef = useRef<(input: string, source?: "message" | "prompt") => void>(() => undefined);
   const isDisabledRoute = pathname === "/pago" || pathname.startsWith("/pago/") || pathname === "/legal" || pathname.startsWith("/legal/");
   const isCatalogRoute = pathname === "/catalogo" || pathname.startsWith("/catalogo/");
-  const koraNudgeLoopMs = isCatalogRoute ? 45000 : 27000;
-  const { addItem } = useWebCart();
+  const koraNudgeLoopMs = isCatalogRoute ? 30000 : 24000;
+  const koraNudgeMessages = getKoraNudgeMessages(effectivePageContext);
+  const koraNudgeMessageCount = koraNudgeMessages.length;
+  const initialNudgeMessage = koraNudgeMessages[nudgeMessageIndex % koraNudgeMessageCount];
+  const koraNudgeMessage = activeFollowup?.text || initialNudgeMessage;
+  const hasConversation = messages.some((message) => message.role === "user");
+  const { addItem, cart } = useWebCart();
+  const followupNudge = resolveKoraFollowupNudge({
+    hasConversation,
+    memory,
+    pageContext: effectivePageContext,
+    currentProductSlug: getCurrentProductSlugFromPath(pathname),
+    cartItemsCount: cart?.items_count || 0,
+  });
+  const followupNudgeId = followupNudge?.id;
+  const followupNudgeText = followupNudge?.text;
+  const koraFollowupDelayMs = isCatalogRoute ? 45000 : 70000;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -759,7 +816,20 @@ export default function KoraChat({ pageContext }: { pageContext?: KoraPageContex
   }, []);
 
   useEffect(() => {
-    if (!hydrated || isDisabledRoute || isOpen) return;
+    if (!hydrated || isDisabledRoute) return;
+
+    function onWhatsAppNudge(event: Event) {
+      const detail = (event as CustomEvent<{ timestamp?: number }>).detail;
+      const timestamp = Number(detail?.timestamp);
+      lastWhatsappNudgeRef.current = Number.isFinite(timestamp) ? timestamp : Date.now();
+    }
+
+    window.addEventListener("kensar:whatsapp-nudge", onWhatsAppNudge as EventListener);
+    return () => window.removeEventListener("kensar:whatsapp-nudge", onWhatsAppNudge as EventListener);
+  }, [hydrated, isDisabledRoute]);
+
+  useEffect(() => {
+    if (!hydrated || isDisabledRoute || isOpen || hasConversation) return;
 
     let active = true;
     const timeouts: number[] = [];
@@ -770,12 +840,6 @@ export default function KoraChat({ pageContext }: { pageContext?: KoraPageContex
         callback();
       }, delay);
       timeouts.push(timeoutId);
-    }
-
-    function onWhatsAppNudge(event: Event) {
-      const detail = (event as CustomEvent<{ timestamp?: number }>).detail;
-      const timestamp = Number(detail?.timestamp);
-      lastWhatsappNudgeRef.current = Number.isFinite(timestamp) ? timestamp : Date.now();
     }
 
     function triggerKoraPulse() {
@@ -795,19 +859,82 @@ export default function KoraChat({ pageContext }: { pageContext?: KoraPageContex
       setNudgeVisible(true);
       schedule(() => {
         setNudgeVisible(false);
+        setNudgeMessageIndex((current) => (current + 1) % koraNudgeMessageCount);
         schedule(runCycle, koraNudgeLoopMs);
       }, KORA_NUDGE_VISIBLE_MS);
     }
 
-    window.addEventListener("kensar:whatsapp-nudge", onWhatsAppNudge as EventListener);
     schedule(runCycle, KORA_NUDGE_INITIAL_DELAY_MS);
 
     return () => {
       active = false;
       timeouts.forEach((id) => window.clearTimeout(id));
-      window.removeEventListener("kensar:whatsapp-nudge", onWhatsAppNudge as EventListener);
     };
-  }, [hydrated, isDisabledRoute, isOpen, koraNudgeLoopMs]);
+  }, [hasConversation, hydrated, isDisabledRoute, isOpen, koraNudgeLoopMs, koraNudgeMessageCount]);
+
+  useEffect(() => {
+    if (!hydrated || isDisabledRoute || isOpen || !hasConversation || !followupNudgeId || !followupNudgeText) return;
+    if (
+      !canShowKoraFollowup({
+        state: followupStateRef.current,
+        pathname,
+        now: Date.now(),
+      })
+    ) return;
+
+    let hideTimeoutId: number | null = null;
+    let pulseTimeoutId: number | null = null;
+    const selectedFollowup: KoraFollowupNudge = { id: followupNudgeId, text: followupNudgeText };
+    const showTimeoutId = window.setTimeout(() => {
+      const deltaWithWhatsApp = Date.now() - lastWhatsappNudgeRef.current;
+      if (deltaWithWhatsApp < KORA_WHATSAPP_MIN_GAP_MS) return;
+      if (
+        !canShowKoraFollowup({
+          state: followupStateRef.current,
+          pathname,
+          now: Date.now(),
+        })
+      ) return;
+
+      const nextState: KoraFollowupCourtesyState = {
+        shownCount: followupStateRef.current.shownCount + 1,
+        lastShownAt: Date.now(),
+        shownPaths: [...followupStateRef.current.shownPaths, pathname].slice(-10),
+      };
+      followupStateRef.current = nextState;
+      persistKoraFollowupState(nextState);
+      setActiveFollowup(selectedFollowup);
+      setNudgeVisible(true);
+      setNudgePulse(true);
+      trackKoraEvent({
+        event: "followup_shown",
+        path: pathname,
+        timestamp: new Date().toISOString(),
+        payload: { followup_id: selectedFollowup.id },
+      });
+      pulseTimeoutId = window.setTimeout(() => setNudgePulse(false), KORA_NUDGE_PULSE_MS);
+
+      hideTimeoutId = window.setTimeout(() => {
+        setNudgeVisible(false);
+        setActiveFollowup(null);
+      }, KORA_FOLLOWUP_VISIBLE_MS);
+    }, koraFollowupDelayMs);
+
+    return () => {
+      window.clearTimeout(showTimeoutId);
+      if (hideTimeoutId !== null) window.clearTimeout(hideTimeoutId);
+      if (pulseTimeoutId !== null) window.clearTimeout(pulseTimeoutId);
+    };
+  }, [
+    followupNudgeId,
+    followupNudgeText,
+    hasConversation,
+    hydrated,
+    isDisabledRoute,
+    isOpen,
+    koraFollowupDelayMs,
+    pathname,
+  ]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -849,7 +976,10 @@ export default function KoraChat({ pageContext }: { pageContext?: KoraPageContex
 
   function openChat(source: string) {
     setIsOpen(true);
+    setNudgeVisible(false);
+    setActiveFollowup(null);
     emitEvent("chat_opened", { source });
+    if (messages.some((message) => message.role === "user")) return;
     const greeting = buildKoraContextualGreeting({ pageContext: effectivePageContext || null });
     const shown = loadShownGreetingContexts();
     if (!shown.includes(greeting.contextKey)) {
@@ -878,6 +1008,16 @@ export default function KoraChat({ pageContext }: { pageContext?: KoraPageContex
   function closeChat(source: string) {
     setIsOpen(false);
     emitEvent("chat_closed", { source });
+  }
+
+  function handleNudgeClick() {
+    if (activeFollowup) {
+      emitEvent("followup_clicked", { followup_id: activeFollowup.id });
+      setActiveFollowup(null);
+      openChat("followup_nudge");
+      return;
+    }
+    openChat("nudge_message");
   }
 
   function runCommand(command: CommandValue) {
@@ -920,10 +1060,10 @@ export default function KoraChat({ pageContext }: { pageContext?: KoraPageContex
     }
   }
 
-  function buildSuggestionActions(suggestions: string[] | undefined): ChatAction[] {
+  function buildSuggestionActions(suggestions: string[] | undefined, limit = 2): ChatAction[] {
     if (!Array.isArray(suggestions) || suggestions.length === 0) return [];
     return suggestions
-      .slice(0, 3)
+      .slice(0, limit)
       .map((text) => String(text || "").trim())
       .filter(Boolean)
       .map((text, index) => ({
@@ -934,10 +1074,10 @@ export default function KoraChat({ pageContext }: { pageContext?: KoraPageContex
       }));
   }
 
-function sanitizeApiActions(actions: ChatAction[] | undefined): ChatAction[] {
+function sanitizeApiActions(actions: ChatAction[] | undefined, limit = 2): ChatAction[] {
     if (!Array.isArray(actions)) return [];
     return actions
-      .slice(0, 6)
+      .slice(0, limit)
       .filter((action) => {
         if (!action || typeof action !== "object") return false;
         if (!action.id || !action.label || !action.type || !action.value) return false;
@@ -1141,12 +1281,13 @@ function sanitizeApiActions(actions: ChatAction[] | undefined): ChatAction[] {
                 : prev.last_category_opening_context,
           }));
         }
-        const apiActions = sanitizeApiActions(aiReply.actions);
+        const actionPolicy = getKoraActionDisplayPolicy(aiReply.intent, aiReply.actions?.length || 0);
+        const apiActions = sanitizeApiActions(aiReply.actions, actionPolicy.api_action_limit);
         const productCards = sanitizeProductCards(aiReply.product_cards);
         const productCardLinks = new Set(productCards.map((card) => card.url));
-        const suggestionActions = buildSuggestionActions(aiReply.suggestions);
+        const suggestionActions = buildSuggestionActions(aiReply.suggestions, actionPolicy.suggestion_limit);
         const filteredApiActions = apiActions.filter((action) => !(action.type === "link" && productCardLinks.has(action.value)));
-        const mergedActions = [...filteredApiActions, ...suggestionActions].slice(0, 7);
+        const mergedActions = [...filteredApiActions, ...suggestionActions].slice(0, actionPolicy.total_limit);
         setMessages((current) => [
           ...current,
           {
@@ -1364,8 +1505,11 @@ function sanitizeApiActions(actions: ChatAction[] | undefined): ChatAction[] {
     }
     setMessages([{ id: createId(), role: "bot", text: greeting.message }]);
     setMemory({});
+    setActiveFollowup(null);
+    followupStateRef.current = { shownCount: 0, lastShownAt: 0, shownPaths: [] };
     if (typeof window !== "undefined") {
       window.sessionStorage.removeItem(MEMORY_SESSION_KEY);
+      window.sessionStorage.removeItem(FOLLOWUP_SESSION_KEY);
     }
     emitEvent("conversation_reset");
   }
@@ -1409,9 +1553,17 @@ function sanitizeApiActions(actions: ChatAction[] | undefined): ChatAction[] {
 
   return (
     <div className="kora-chat-root" ref={rootRef}>
-      <div className={`kora-chat-nudge${nudgeVisible && !isOpen ? " is-visible" : ""}`} aria-hidden={isOpen || !nudgeVisible}>
-        {KORA_NUDGE_TEXT}
-      </div>
+      <button
+        type="button"
+        className={`kora-chat-nudge${nudgeVisible && !isOpen ? " is-visible" : ""}${activeFollowup ? " is-followup" : ""}`}
+        onClick={handleNudgeClick}
+        aria-label={`${koraNudgeMessage}. Abrir asistente KORA`}
+        aria-hidden={isOpen || !nudgeVisible}
+        tabIndex={nudgeVisible && !isOpen ? 0 : -1}
+      >
+        {activeFollowup ? <span className="kora-chat-nudge-name" aria-hidden="true">KORA</span> : null}
+        <span aria-hidden="true">{koraNudgeMessage}</span>
+      </button>
       <button
         type="button"
         className={`kora-chat-toggle${nudgePulse ? " is-notify-wave" : ""}`}
