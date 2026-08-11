@@ -12,6 +12,7 @@ import {
   resolveRecommendationClarification,
 } from "@/app/lib/kora/recommendation-readiness";
 import type { KoraContextualSellingDebug, KoraPageContext } from "@/app/lib/kora/knowledge-types";
+import type { KoraProductFamily } from "@/app/lib/kora/product-family-guards";
 
 type AskRequest = {
   query?: string;
@@ -43,6 +44,10 @@ type AskRequest = {
     last_recommendation_attributes?: string[];
     last_usage_context?: string | null;
     last_recommendation_type?: string | null;
+    last_qualification_family?: KoraProductFamily | null;
+    last_qualification_missing_dimensions?: string[];
+    last_qualification_attempts?: number | null;
+    last_qualification_answer?: string | null;
     last_intent?:
       | "products"
       | "payments"
@@ -160,6 +165,10 @@ type AskResponse = {
     last_recommendation_attributes?: string[];
     last_usage_context?: string | null;
     last_recommendation_type?: string | null;
+    last_qualification_family?: string | null;
+    last_qualification_missing_dimensions?: string[];
+    last_qualification_attempts?: number | null;
+    last_qualification_answer?: string | null;
     last_intent?:
       | "products"
       | "payments"
@@ -213,6 +222,10 @@ type AskResponse = {
     last_recommendation_attributes?: string[];
     last_usage_context?: string | null;
     last_recommendation_type?: string | null;
+    last_qualification_family?: string | null;
+    last_qualification_missing_dimensions?: string[];
+    last_qualification_attempts?: number | null;
+    last_qualification_answer?: string | null;
     last_intent?:
       | "products"
       | "payments"
@@ -1810,6 +1823,7 @@ export async function POST(request: Request) {
 
   const recommendationClarification = resolveRecommendationClarification({
     query: qualificationQuery,
+    latestQuery: query,
     nlu: qualificationNlu,
     memory: {
       preferred_category: body?.memory?.preferred_category,
@@ -1817,6 +1831,11 @@ export async function POST(request: Request) {
       last_recommendation_query: body?.memory?.last_recommendation_query,
       last_query: body?.memory?.last_query,
       last_recommended_products: body?.memory?.last_recommended_products,
+      last_recommendation_type: body?.memory?.last_recommendation_type,
+      last_qualification_family: body?.memory?.last_qualification_family,
+      last_qualification_missing_dimensions: body?.memory?.last_qualification_missing_dimensions,
+      last_qualification_attempts: body?.memory?.last_qualification_attempts,
+      last_qualification_answer: body?.memory?.last_qualification_answer,
     },
   });
   if (recommendationClarification) {
@@ -1834,6 +1853,13 @@ export async function POST(request: Request) {
             last_recommendation_query: qualificationQuery,
             last_recommendation_category: recommendationClarification.family,
             last_recommendation_type: "qualification",
+            last_qualification_family: recommendationClarification.family,
+            last_qualification_missing_dimensions: recommendationClarification.missing_dimensions,
+            last_qualification_attempts:
+              body?.memory?.last_qualification_family === recommendationClarification.family
+                ? Math.min((Number(body?.memory?.last_qualification_attempts) || 0) + 1, 3)
+                : 1,
+            last_qualification_answer: recommendationClarification.answer,
           },
         },
         { emotion, tone, goal, companionMode, nluDebug, contextualSellingDebug: null }

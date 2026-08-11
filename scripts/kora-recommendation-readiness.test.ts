@@ -11,6 +11,15 @@ function clarify(query: string, memory = {}) {
   return resolveRecommendationClarification({ query, nlu: extractKoraEntities(query), memory });
 }
 
+function clarifyTurn(query: string, latestQuery: string, memory = {}) {
+  return resolveRecommendationClarification({
+    query,
+    latestQuery,
+    nlu: extractKoraEntities(query),
+    memory,
+  });
+}
+
 test("asks before recommending a generic guitar", () => {
   assert.equal(clarify("Quiero una guitarra")?.family, "guitarras");
 });
@@ -56,6 +65,62 @@ test("allows a cabinet query with use and relevant feature", () => {
   assert.equal(clarify("Quiero una cabina potente para una fiesta"), null);
 });
 
+test("keeps a partial cabinet preference and asks only for the missing space", () => {
+  const first = clarify("Quiero una cabina");
+  const memory = {
+    last_recommendation_type: "qualification",
+    last_recommendation_query: "Quiero una cabina",
+    last_qualification_family: "cabinas" as const,
+    last_qualification_attempts: 1,
+    last_qualification_answer: first?.answer,
+  };
+  const query = buildRecommendationQualificationQuery("la quiero potente", memory);
+  const next = clarifyTurn(query, "la quiero potente", memory);
+
+  assert.match(next?.answer || "", /buscaremos una cabina potente/i);
+  assert.match(next?.answer || "", /espacio mediano|evento grande/i);
+  assert.equal(next?.actions.length, 2);
+  assert.notEqual(next?.answer, first?.answer);
+});
+
+test("simplifies the question when the customer says they do not know", () => {
+  const memory = {
+    last_recommendation_type: "qualification",
+    last_recommendation_query: "Quiero una cabina",
+    last_qualification_family: "cabinas" as const,
+    last_qualification_attempts: 1,
+  };
+  const query = buildRecommendationQualificationQuery("no sé", memory);
+  const next = clarifyTurn(query, "no sé", memory);
+
+  assert.match(next?.answer || "", /Hagámoslo sencillo/i);
+  assert.deepEqual(next?.actions.map((action) => action.label), ["Casa o reunión", "Fiesta o evento"]);
+});
+
+test("lets a direct customer see options without forcing another question", () => {
+  const memory = {
+    last_recommendation_type: "qualification",
+    last_recommendation_query: "Quiero una cabina",
+    last_qualification_family: "cabinas" as const,
+    last_qualification_attempts: 1,
+  };
+  const query = buildRecommendationQualificationQuery("muéstrame opciones", memory);
+
+  assert.equal(clarifyTurn(query, "muéstrame opciones", memory), null);
+});
+
+test("stops qualifying after two attempts instead of getting stuck", () => {
+  const memory = {
+    last_recommendation_type: "qualification",
+    last_recommendation_query: "Quiero una cabina la quiero potente",
+    last_qualification_family: "cabinas" as const,
+    last_qualification_attempts: 2,
+  };
+  const query = buildRecommendationQualificationQuery("algo bueno", memory);
+
+  assert.equal(clarifyTurn(query, "algo bueno", memory), null);
+});
+
 test("asks a microphone question when only the use is known", () => {
   assert.equal(clarify("Quiero un micrófono para cantar")?.family, "microfonos");
 });
@@ -64,12 +129,24 @@ test("allows a wireless karaoke microphone request", () => {
   assert.equal(clarify("Quiero un micrófono inalámbrico para karaoke"), null);
 });
 
+test("acknowledges a microphone subtype before asking for its use", () => {
+  const next = clarify("Quiero un micrófono inalámbrico");
+  assert.match(next?.answer || "", /tengo presente el tipo/i);
+  assert.deepEqual(next?.actions.map((action) => action.label), ["Cantar o hablar", "Grabar voz"]);
+});
+
 test("asks for camera system type before recommending", () => {
   assert.equal(clarify("Quiero una cámara para vigilar la entrada")?.family, "seguridad");
 });
 
 test("allows an explicit WiFi entrance camera request", () => {
   assert.equal(clarify("Quiero una cámara WiFi para vigilar la entrada"), null);
+});
+
+test("acknowledges the camera location before asking for system type", () => {
+  const next = clarify("Quiero una cámara para el exterior");
+  assert.match(next?.answer || "", /Ya entendí dónde/i);
+  assert.deepEqual(next?.actions.map((action) => action.label), ["Cámara WiFi", "Sistema con grabador"]);
 });
 
 test("asks for TV size or budget", () => {
@@ -107,6 +184,7 @@ test("requires speaker compatibility before choosing an amplifier", () => {
 test("qualifies consoles by use and input count", () => {
   assert.equal(clarify("Quiero una consola")?.family, "consolas");
   assert.equal(clarify("Quiero una consola para iglesia con 8 entradas"), null);
+  assert.match(clarify("Quiero una consola con 8 entradas")?.answer || "", /ya tengo presente cuántas entradas/i);
 });
 
 test("qualifies audio interfaces by simultaneous sources", () => {

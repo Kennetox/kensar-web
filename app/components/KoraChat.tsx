@@ -117,6 +117,10 @@ type KoraAskResponse = {
     last_recommendation_attributes?: string[];
     last_usage_context?: string | null;
     last_recommendation_type?: string | null;
+    last_qualification_family?: string | null;
+    last_qualification_missing_dimensions?: string[];
+    last_qualification_attempts?: number | null;
+    last_qualification_answer?: string | null;
     last_intent?:
       | "products"
       | "payments"
@@ -170,6 +174,10 @@ type KoraAskResponse = {
     last_recommendation_attributes?: string[];
     last_usage_context?: string | null;
     last_recommendation_type?: string | null;
+    last_qualification_family?: string | null;
+    last_qualification_missing_dimensions?: string[];
+    last_qualification_attempts?: number | null;
+    last_qualification_answer?: string | null;
     last_intent?:
       | "products"
       | "payments"
@@ -541,6 +549,10 @@ type KoraSessionMemory = {
   last_recommendation_attributes?: string[];
   last_usage_context?: string | null;
   last_recommendation_type?: string | null;
+  last_qualification_family?: string | null;
+  last_qualification_missing_dimensions?: string[];
+  last_qualification_attempts?: number | null;
+  last_qualification_answer?: string | null;
   last_intent?:
     | "products"
     | "payments"
@@ -630,6 +642,16 @@ function loadKoraMemory(): KoraSessionMemory {
         : undefined,
       last_usage_context: typeof parsed?.last_usage_context === "string" ? parsed.last_usage_context : undefined,
       last_recommendation_type: typeof parsed?.last_recommendation_type === "string" ? parsed.last_recommendation_type : undefined,
+      last_qualification_family:
+        typeof parsed?.last_qualification_family === "string" ? parsed.last_qualification_family : undefined,
+      last_qualification_missing_dimensions: Array.isArray(parsed?.last_qualification_missing_dimensions)
+        ? parsed.last_qualification_missing_dimensions.filter((value) => typeof value === "string").slice(0, 8)
+        : undefined,
+      last_qualification_attempts: Number.isFinite(Number(parsed?.last_qualification_attempts))
+        ? Number(parsed.last_qualification_attempts)
+        : undefined,
+      last_qualification_answer:
+        typeof parsed?.last_qualification_answer === "string" ? parsed.last_qualification_answer : undefined,
       last_intent: typeof parsed?.last_intent === "string" ? parsed.last_intent : undefined,
       last_non_product_intent: typeof parsed?.last_non_product_intent === "string" ? parsed.last_non_product_intent : undefined,
       last_support_topic: typeof parsed?.last_support_topic === "string" ? parsed.last_support_topic : undefined,
@@ -1225,6 +1247,24 @@ function sanitizeApiActions(actions: ChatAction[] | undefined, limit = 2): ChatA
               typeof mergedPatch?.last_recommendation_type === "string"
                 ? mergedPatch.last_recommendation_type
                 : prev.last_recommendation_type,
+            last_qualification_family:
+              typeof mergedPatch?.last_qualification_family === "string"
+                ? mergedPatch.last_qualification_family
+                : prev.last_qualification_family,
+            last_qualification_missing_dimensions:
+              Array.isArray(mergedPatch?.last_qualification_missing_dimensions)
+                ? mergedPatch.last_qualification_missing_dimensions
+                    .filter((value) => typeof value === "string")
+                    .slice(0, 8)
+                : prev.last_qualification_missing_dimensions,
+            last_qualification_attempts:
+              Number.isFinite(Number(mergedPatch?.last_qualification_attempts))
+                ? Number(mergedPatch.last_qualification_attempts)
+                : prev.last_qualification_attempts,
+            last_qualification_answer:
+              typeof mergedPatch?.last_qualification_answer === "string"
+                ? mergedPatch.last_qualification_answer
+                : prev.last_qualification_answer,
             last_intent:
               typeof mergedPatch?.last_intent === "string"
                 ? mergedPatch.last_intent
