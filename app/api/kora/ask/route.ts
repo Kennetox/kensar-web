@@ -1699,9 +1699,36 @@ async function resolvePostRecommendationConversation(input: {
       products.map(async (product) => [product.id, await getCatalogProductForConversation(product.slug)] as const)
     )
   );
+  const verifiedProducts = products.filter((product) => {
+    const detail = details.get(product.id);
+    return Boolean(detail && detail.id === product.id && detail.slug === product.slug);
+  });
+
+  const requiredVerifiedProducts = interpretation.operation === "compare" ? 2 : 1;
+  if (verifiedProducts.length < requiredVerifiedProducts) {
+    return {
+      interpretation,
+      state: nextState,
+      continueRecommendation: false,
+      response: {
+        handled: true,
+        intent: "products",
+        answer:
+          "No pude validar en el catálogo todas las fichas necesarias para responderte con seguridad. Prefiero no usar datos guardados sin confirmarlos; intenta nuevamente o abre los productos desde el catálogo.",
+        actions: [
+          { id: "post-verify-catalog", label: "Ver catálogo", type: "link", value: "/catalogo" },
+          { id: "post-verify-retry", label: "Intentar nuevamente", type: "prompt", value: input.query },
+        ],
+        suggestions: [],
+        emotion: "neutral",
+        companion_mode: false,
+        memory_patch: { recommendation_state: nextState },
+      },
+    };
+  }
 
   if (interpretation.operation === "compare") {
-    if (products.length < 2) {
+    if (verifiedProducts.length < 2) {
       return {
         interpretation,
         state: nextState,
@@ -1723,7 +1750,7 @@ async function resolvePostRecommendationConversation(input: {
         },
       };
     }
-    const compared = products.slice(0, 2);
+    const compared = verifiedProducts.slice(0, 2);
     nextState.comparison_product_ids = compared.map((product) => product.id);
     const sections = compared.map((product, index) => {
       const detail = details.get(product.id);
@@ -1782,7 +1809,7 @@ async function resolvePostRecommendationConversation(input: {
     };
   }
 
-  const product = products[0];
+  const product = verifiedProducts[0];
   if (!product) return { interpretation, state: nextState, response: null, continueRecommendation: false };
   const detail = details.get(product.id);
   if (interpretation.operation === "select") {
