@@ -295,6 +295,12 @@ export default function CartAccess() {
                       {items.map((item) => {
                         const comboLabel = getComboContextLabel(item.combo_context_json);
                         const comboLocked = Boolean(item.combo_context_json?.length);
+                        const itemPurchaseLimit = Math.min(
+                          CART_MAX_UNITS_PER_ITEM,
+                          typeof item.available_quantity === "number"
+                            ? Math.max(0, Math.floor(item.available_quantity))
+                            : CART_MAX_UNITS_PER_ITEM
+                        );
                         return (
                           <article key={item.id} className="mini-cart-item">
                             <div
@@ -329,7 +335,7 @@ export default function CartAccess() {
                                   <span>{item.quantity}</span>
                                   <button
                                     type="button"
-                                    disabled={busy || comboLocked || item.quantity >= CART_MAX_UNITS_PER_ITEM}
+                                    disabled={busy || comboLocked || item.quantity >= itemPurchaseLimit}
                                     onClick={() => void handleQuantity(item.product_id, item.quantity + 1)}
                                   >
                                     +

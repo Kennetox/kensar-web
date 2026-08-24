@@ -168,6 +168,7 @@ export type WebCatalogProductDetail = {
   price: number | null;
   compare_price: number | null;
   stock_status: "in_stock" | "low_stock" | "out_of_stock" | "service" | "consultar";
+  available_quantity: number | null;
   warranty_text?: string | null;
   specs: Record<string, string>;
   whatsapp_message: string | null;
@@ -338,6 +339,17 @@ async function fetchCatalogOptionalFast<T>(path: string): Promise<T | null> {
   return response.json() as Promise<T>;
 }
 
+async function fetchCatalogOptionalLive<T>(path: string): Promise<T | null> {
+  const baseUrl = getApiBaseUrl();
+  const response = await fetch(`${baseUrl}${path}`, { cache: "no-store" });
+
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    throw new Error(`Catalog request failed: ${response.status}`);
+  }
+  return response.json() as Promise<T>;
+}
+
 export async function getCatalogCategories() {
   const baseUrl = getApiBaseUrl();
   const response = await fetchCatalog<{ items: WebCatalogCategory[] }>("/web/catalog/categories");
@@ -453,7 +465,7 @@ export async function getCatalogCombo(slug: string) {
 
 export async function getCatalogProduct(slug: string) {
   const baseUrl = getApiBaseUrl();
-  const response = await fetchCatalogOptionalFast<WebCatalogProductDetail>(
+  const response = await fetchCatalogOptionalLive<WebCatalogProductDetail>(
     `/web/catalog/products/${slug}`
   );
   return response ? normalizeCatalogProductDetail(baseUrl, response) : null;

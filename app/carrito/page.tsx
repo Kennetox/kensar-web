@@ -234,6 +234,12 @@ function CarritoPageContent() {
                 {sortedItems.map((item) => {
                   const comboLocked = Boolean(item.combo_context_json?.length);
                   const comboLabel = getComboContextLabel(item.combo_context_json);
+                  const itemPurchaseLimit = Math.min(
+                    CART_MAX_UNITS_PER_ITEM,
+                    typeof item.available_quantity === "number"
+                      ? Math.max(0, Math.floor(item.available_quantity))
+                      : CART_MAX_UNITS_PER_ITEM
+                  );
                   return (
                     <div key={item.id} className="cart-item-row">
                       <div className="cart-item-main">
@@ -248,6 +254,12 @@ function CarritoPageContent() {
                           <p>
                             {item.product_sku || "Sin SKU"} · {item.brand || "Kensar"}
                           </p>
+                          {typeof item.available_quantity === "number" ? (
+                            <p>
+                              Disponible: {Math.max(0, Math.floor(item.available_quantity))}{" "}
+                              {Math.floor(item.available_quantity) === 1 ? "unidad" : "unidades"}
+                            </p>
+                          ) : null}
                           <strong className="cart-item-price-row">
                             <span>{formatMoney(item.line_total)}</span>
                             {typeof item.compare_price === "number" && item.compare_price > item.unit_price ? (
@@ -269,7 +281,7 @@ function CarritoPageContent() {
                           <button
                             type="button"
                             onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
-                            disabled={isPending || comboLocked || item.quantity >= CART_MAX_UNITS_PER_ITEM}
+                            disabled={isPending || comboLocked || item.quantity >= itemPurchaseLimit}
                           >
                             +
                           </button>

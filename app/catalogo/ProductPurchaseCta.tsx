@@ -11,6 +11,7 @@ import type { WebCatalogProductDetail } from "@/app/lib/metrikCatalog";
 export default function ProductPurchaseCta({
   productId,
   stockStatus,
+  availableQuantity,
   productName,
   productSlug,
   productSku,
@@ -22,6 +23,7 @@ export default function ProductPurchaseCta({
 }: {
   productId: number;
   stockStatus: WebCatalogProductDetail["stock_status"];
+  availableQuantity: number | null;
   productName: string;
   productSlug: string;
   productSku: string | null;
@@ -40,9 +42,24 @@ export default function ProductPurchaseCta({
   const [buyingNow, setBuyingNow] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [shareMessage, setShareMessage] = useState<string | null>(null);
-  const quantityOptions = useMemo(() => Array.from({ length: 3 }, (_, index) => index + 1), []);
-  const stockLabel = stockStatus === "out_of_stock" ? "Sin stock" : "Stock disponible";
-  const canPurchase = stockStatus !== "out_of_stock";
+  const purchaseLimit = Math.min(
+    3,
+    typeof availableQuantity === "number"
+      ? Math.max(0, Math.floor(availableQuantity))
+      : stockStatus === "out_of_stock"
+        ? 0
+        : 3
+  );
+  const quantityOptions = useMemo(
+    () => Array.from({ length: purchaseLimit }, (_, index) => index + 1),
+    [purchaseLimit]
+  );
+  const stockLabel = purchaseLimit === 0
+    ? "Sin stock"
+    : purchaseLimit === 1
+      ? "Última unidad disponible"
+      : "Stock disponible";
+  const canPurchase = stockStatus !== "out_of_stock" && purchaseLimit > 0;
   const query = searchParams.toString();
   const returnTo = `${pathname}${query ? `?${query}` : ""}`;
   const checkoutHref = `/pago?returnTo=${encodeURIComponent(returnTo)}`;
@@ -104,6 +121,7 @@ export default function ProductPurchaseCta({
         image_url: imageUrl,
         brand,
         stock_status: stockStatus,
+        available_quantity: availableQuantity,
         unit_price: unitPrice,
         compare_price: comparePrice,
       });
@@ -150,6 +168,7 @@ export default function ProductPurchaseCta({
         image_url: imageUrl,
         brand,
         stock_status: stockStatus,
+        available_quantity: availableQuantity,
         unit_price: unitPrice,
         compare_price: comparePrice,
       });
@@ -172,7 +191,9 @@ export default function ProductPurchaseCta({
               value={quantity}
               onChange={(event) => setQuantity(Number(event.target.value))}
               aria-label="Seleccionar cantidad"
+              disabled={!canPurchase}
             >
+              {!quantityOptions.length ? <option value={1}>Sin unidades</option> : null}
               {quantityOptions.map((value) => (
                 <option key={`product-qty-${value}`} value={value}>
                   {value} {value === 1 ? "unidad" : "unidades"}

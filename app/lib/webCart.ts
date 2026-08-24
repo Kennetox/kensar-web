@@ -38,6 +38,7 @@ export type WebCartItem = {
   image_url: string | null;
   brand: string | null;
   stock_status: "in_stock" | "low_stock" | "out_of_stock" | "service" | "consultar";
+  available_quantity?: number | null;
   quantity: number;
   unit_price: number;
   compare_price?: number | null;

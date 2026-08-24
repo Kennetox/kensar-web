@@ -308,6 +308,7 @@ export default async function CatalogProductDetailPage({
                 <ProductPurchaseCta
                   productId={product.id}
                   stockStatus={product.stock_status}
+                  availableQuantity={product.available_quantity}
                   productName={product.name}
                   productSlug={product.slug}
                   productSku={product.sku}

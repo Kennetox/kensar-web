@@ -77,6 +77,7 @@ type GuestCartItemInput = {
   image_url?: string | null;
   brand?: string | null;
   stock_status?: WebCartItem["stock_status"];
+  available_quantity?: number | null;
   unit_price: number;
   compare_price?: number | null;
   unit_price_override?: number | null;
@@ -161,6 +162,7 @@ function parseGuestStorage(): WebCart {
           image_url: item.image_url || null,
           brand: item.brand || null,
           stock_status: item.stock_status || "in_stock",
+          available_quantity: typeof item.available_quantity === "number" ? item.available_quantity : null,
           quantity,
           unit_price: unitPrice,
           compare_price: typeof item.compare_price === "number" ? item.compare_price : null,
@@ -378,16 +380,32 @@ export default function WebCartProvider({
   const addItem = useCallback(
     async (productId: number, quantity = 1, guestItem?: GuestCartItemInput) => {
       if (!authenticated) {
-        const nextQuantity = Math.min(CART_MAX_UNITS_PER_ITEM, Math.max(1, Number(quantity) || 1));
+        const availableQuantity = typeof guestItem?.available_quantity === "number"
+          ? Math.max(0, Math.floor(guestItem.available_quantity))
+          : CART_MAX_UNITS_PER_ITEM;
+        const purchaseLimit = Math.min(CART_MAX_UNITS_PER_ITEM, availableQuantity);
+        if (purchaseLimit <= 0) {
+          throw new Error(`No quedan unidades disponibles de ${guestItem?.product_name || "este producto"}.`);
+        }
+        const nextQuantity = Math.min(purchaseLimit, Math.max(1, Number(quantity) || 1));
         const current = parseGuestStorage();
         const index = current.items.findIndex((item) => item.product_id === productId);
 
         const nextItems = [...current.items];
         if (index >= 0) {
           const existing = nextItems[index];
-          const allowedQuantity = Math.max(0, Math.min(nextQuantity, CART_MAX_UNITS_PER_ITEM - existing.quantity));
+          const existingLimit = Math.min(
+            CART_MAX_UNITS_PER_ITEM,
+            typeof existing.available_quantity === "number"
+              ? Math.max(0, Math.floor(existing.available_quantity))
+              : purchaseLimit
+          );
+          const allowedQuantity = Math.max(0, Math.min(nextQuantity, existingLimit - existing.quantity));
           if (allowedQuantity <= 0) {
-            return current;
+            const availabilityText = existingLimit === 1
+              ? "queda 1 unidad disponible"
+              : `quedan ${existingLimit} unidades disponibles`;
+            throw new Error(`Solo ${availabilityText} de ${existing.product_name}.`);
           }
           const mergedQuantity = existing.quantity + allowedQuantity;
           const unitPriceOverride = Number(guestItem?.unit_price_override ?? guestItem?.unit_price) || 0;
@@ -415,6 +433,7 @@ export default function WebCartProvider({
             image_url: guestItem.image_url || null,
             brand: guestItem.brand || null,
             stock_status: guestItem.stock_status || "in_stock",
+            available_quantity: guestItem.available_quantity ?? null,
             quantity: nextQuantity,
             unit_price: unitPrice,
             compare_price: typeof guestItem.compare_price === "number" ? guestItem.compare_price : null,
@@ -470,7 +489,19 @@ export default function WebCartProvider({
           .map((item) => {
             if (item.product_id !== productId) return item;
             if (quantity <= 0) return null;
-            const nextQuantity = Math.min(CART_MAX_UNITS_PER_ITEM, Math.max(1, Number(quantity) || 1));
+            const itemLimit = Math.min(
+              CART_MAX_UNITS_PER_ITEM,
+              typeof item.available_quantity === "number"
+                ? Math.max(0, Math.floor(item.available_quantity))
+                : CART_MAX_UNITS_PER_ITEM
+            );
+            if (quantity > itemLimit) {
+              const availabilityText = itemLimit === 1
+                ? "queda 1 unidad disponible"
+                : `quedan ${itemLimit} unidades disponibles`;
+              throw new Error(`Solo ${availabilityText} de ${item.product_name}.`);
+            }
+            const nextQuantity = Math.min(itemLimit, Math.max(1, Number(quantity) || 1));
             return {
               ...item,
               quantity: nextQuantity,
