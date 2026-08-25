@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   classifyAvailabilityCandidate,
   parseCatalogAvailabilityQuestion,
+  shouldContinueAvailabilityToSalesFlow,
 } from "../app/lib/kora/catalog-availability";
 
 test("parses common catalog existence questions", () => {
@@ -36,4 +37,12 @@ test("keeps accessories separate from the requested main product", () => {
   assert.ok(parsed);
   assert.equal(classifyAvailabilityCandidate(parsed!, { name: "Guitarra acústica", commercial_role: "main_product" }).match, "direct");
   assert.equal(classifyAvailabilityCandidate(parsed!, { name: "Encordado para guitarra clásica", commercial_role: "accessory" }).match, "related");
+});
+
+test("continues existing sales qualification for available advisory families", () => {
+  assert.equal(shouldContinueAvailabilityToSalesFlow({ hasDirectMatch: true, family: "guitarras" }), true);
+  assert.equal(shouldContinueAvailabilityToSalesFlow({ hasDirectMatch: true, family: "cabinas" }), true);
+  assert.equal(shouldContinueAvailabilityToSalesFlow({ hasDirectMatch: true, family: "microfonos" }), true);
+  assert.equal(shouldContinueAvailabilityToSalesFlow({ hasDirectMatch: true, family: "unknown" }), false);
+  assert.equal(shouldContinueAvailabilityToSalesFlow({ hasDirectMatch: false, family: "guitarras" }), false);
 });

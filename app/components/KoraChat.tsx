@@ -13,6 +13,11 @@ import { getOrCreateHandoffSessionId, readStoredPageContext, resolveCurrentUrlFr
 import { getKoraActionDisplayPolicy } from "@/app/lib/kora/chat-action-policy";
 import { getKoraNudgeMessages } from "@/app/lib/kora/nudge-messages";
 import {
+  buildKoraContextTransitionNotice,
+  hasKoraUserEngaged,
+  reconcileUntouchedKoraConversation,
+} from "@/app/lib/kora/conversation-context-policy";
+import {
   canShowKoraFollowup,
   resolveKoraFollowupNudge,
   type KoraFollowupCourtesyState,
@@ -56,6 +61,8 @@ type ChatMessage = {
   id: string;
   role: "bot" | "user";
   text: string;
+  kind?: "contextual_intro" | "conversation";
+  contextKey?: string;
   actions?: ChatAction[];
   productCards?: Array<{
     id: number;
@@ -299,15 +306,6 @@ function loadTelemetrySessionId() {
   return getOrCreateHandoffSessionId();
 }
 
-function createWelcomeMessage(pageContext?: KoraPageContext | null): ChatMessage {
-  const greeting = buildKoraContextualGreeting({ pageContext: pageContext || null });
-  return {
-    id: createId(),
-    role: "bot",
-    text: greeting.message,
-  };
-}
-
 function createAdvisorMessage(): ChatMessage {
   return {
     id: createId(),
@@ -440,6 +438,8 @@ function loadInitialMessages(pageContext?: KoraPageContext | null): ChatMessage[
     id: createId(),
     role: "bot" as const,
     text: greeting.message,
+    kind: "contextual_intro" as const,
+    contextKey: greeting.contextKey,
   };
 
   if (typeof window === "undefined") {
@@ -742,6 +742,7 @@ export default function KoraChat({ pageContext }: { pageContext?: KoraPageContex
   const [nudgePulse, setNudgePulse] = useState(false);
   const [nudgeMessageIndex, setNudgeMessageIndex] = useState(0);
   const [activeFollowup, setActiveFollowup] = useState<KoraFollowupNudge | null>(null);
+  const [contextTransitionNotice, setContextTransitionNotice] = useState<string | null>(null);
   const [memory, setMemory] = useState<KoraSessionMemory>(loadKoraMemory);
   const telemetrySessionIdRef = useRef<string>(loadTelemetrySessionId());
   const endRef = useRef<HTMLDivElement | null>(null);
@@ -752,6 +753,7 @@ export default function KoraChat({ pageContext }: { pageContext?: KoraPageContex
   const followupStateRef = useRef<KoraFollowupCourtesyState>(loadKoraFollowupState());
   const openChatRef = useRef<(source: string) => void>(() => undefined);
   const processUserInputRef = useRef<(input: string, source?: "message" | "prompt") => void>(() => undefined);
+  const activeContextKeyRef = useRef<string | null>(null);
   const isDisabledRoute = pathname === "/pago" || pathname.startsWith("/pago/") || pathname === "/legal" || pathname.startsWith("/legal/");
   const isCatalogRoute = pathname === "/catalogo" || pathname.startsWith("/catalogo/");
   const koraNudgeLoopMs = isCatalogRoute ? 30000 : 24000;
@@ -773,6 +775,14 @@ export default function KoraChat({ pageContext }: { pageContext?: KoraPageContex
   const koraFollowupDelayMs = isCatalogRoute ? 45000 : 70000;
 
   useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      const stored = pageContext || readPageContextFromSession(pathname);
+      setEffectivePageContext(stored || (pathname === "/" ? { pageType: "home" } : { pageType: "unknown" }));
+    }, pageContext ? 0 : 40);
+    return () => window.clearTimeout(timeoutId);
+  }, [pageContext, pathname]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
     function onPageContextUpdate(event: Event) {
       const detail = (event as CustomEvent<{ pathname?: string; pageContext?: KoraPageContext }>).detail;
@@ -786,6 +796,24 @@ export default function KoraChat({ pageContext }: { pageContext?: KoraPageContex
       window.removeEventListener("kensar:kora-page-context", onPageContextUpdate as EventListener);
     };
   }, [pathname]);
+
+  useEffect(() => {
+    if (!hydrated || isDisabledRoute) return;
+    const greeting = buildKoraContextualGreeting({ pageContext: effectivePageContext || { pageType: "home" } });
+    const previousContextKey = activeContextKeyRef.current;
+    const timeoutId = window.setTimeout(() => {
+      if (!hasKoraUserEngaged(messages)) {
+        setMessages((current) =>
+          reconcileUntouchedKoraConversation({ messages: current, greeting, createId })
+        );
+        setContextTransitionNotice(null);
+      } else if (previousContextKey && previousContextKey !== greeting.contextKey) {
+        setContextTransitionNotice(buildKoraContextTransitionNotice(effectivePageContext));
+      }
+      activeContextKeyRef.current = greeting.contextKey;
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [effectivePageContext, hydrated, isDisabledRoute, messages, pathname]);
 
   function sendTelemetryEvent(payload: Record<string, unknown>) {
     const body = JSON.stringify(payload);
@@ -1014,19 +1042,13 @@ export default function KoraChat({ pageContext }: { pageContext?: KoraPageContex
     setNudgeVisible(false);
     setActiveFollowup(null);
     emitEvent("chat_opened", { source });
-    if (messages.some((message) => message.role === "user")) return;
+    if (hasKoraUserEngaged(messages)) return;
     const greeting = buildKoraContextualGreeting({ pageContext: effectivePageContext || null });
     const shown = loadShownGreetingContexts();
+    setMessages((current) =>
+      reconcileUntouchedKoraConversation({ messages: current, greeting, createId })
+    );
     if (!shown.includes(greeting.contextKey)) {
-      setMessages((current) => {
-        if (!current.length) return [{ id: createId(), role: "bot", text: greeting.message }];
-        const next = [...current];
-        if (next[0]?.role === "bot") {
-          next[0] = { ...next[0], text: greeting.message };
-          return next;
-        }
-        return [{ id: createId(), role: "bot", text: greeting.message }, ...next];
-      });
       persistShownGreetingContexts([...shown, greeting.contextKey]);
       sendTelemetryEvent({
         event_type: "contextual_greeting_shown",
@@ -1126,6 +1148,7 @@ function sanitizeApiActions(actions: ChatAction[] | undefined, limit = 2): ChatA
       timeoutRef.current = null;
     }
 
+    setContextTransitionNotice(null);
     pushUserMessage(input);
     emitEvent("message_submitted", { length: input.length, source });
     setIsTyping(true);
@@ -1261,26 +1284,36 @@ function sanitizeApiActions(actions: ChatAction[] | undefined, limit = 2): ChatA
                 ? mergedPatch.last_recommendation_type
                 : prev.last_recommendation_type,
             last_qualification_family:
-              typeof mergedPatch?.last_qualification_family === "string"
-                ? mergedPatch.last_qualification_family
+              mergedPatch && Object.prototype.hasOwnProperty.call(mergedPatch, "last_qualification_family")
+                ? typeof mergedPatch.last_qualification_family === "string"
+                  ? mergedPatch.last_qualification_family
+                  : undefined
                 : prev.last_qualification_family,
             last_qualification_missing_dimensions:
-              Array.isArray(mergedPatch?.last_qualification_missing_dimensions)
-                ? mergedPatch.last_qualification_missing_dimensions
-                    .filter((value) => typeof value === "string")
-                    .slice(0, 8)
+              mergedPatch && Object.prototype.hasOwnProperty.call(mergedPatch, "last_qualification_missing_dimensions")
+                ? Array.isArray(mergedPatch.last_qualification_missing_dimensions)
+                  ? mergedPatch.last_qualification_missing_dimensions
+                      .filter((value) => typeof value === "string")
+                      .slice(0, 8)
+                  : []
                 : prev.last_qualification_missing_dimensions,
             last_qualification_attempts:
-              Number.isFinite(Number(mergedPatch?.last_qualification_attempts))
-                ? Number(mergedPatch.last_qualification_attempts)
+              mergedPatch && Object.prototype.hasOwnProperty.call(mergedPatch, "last_qualification_attempts")
+                ? mergedPatch.last_qualification_attempts !== null && Number.isFinite(Number(mergedPatch.last_qualification_attempts))
+                  ? Number(mergedPatch.last_qualification_attempts)
+                  : undefined
                 : prev.last_qualification_attempts,
             last_qualification_answer:
-              typeof mergedPatch?.last_qualification_answer === "string"
-                ? mergedPatch.last_qualification_answer
+              mergedPatch && Object.prototype.hasOwnProperty.call(mergedPatch, "last_qualification_answer")
+                ? typeof mergedPatch.last_qualification_answer === "string"
+                  ? mergedPatch.last_qualification_answer
+                  : undefined
                 : prev.last_qualification_answer,
             qualification_state:
-              mergedPatch?.qualification_state?.schema_version === "kora-qualification-v1"
-                ? mergedPatch.qualification_state
+              mergedPatch && Object.prototype.hasOwnProperty.call(mergedPatch, "qualification_state")
+                ? mergedPatch.qualification_state?.schema_version === "kora-qualification-v1"
+                  ? mergedPatch.qualification_state
+                  : undefined
                 : prev.qualification_state,
             recommendation_state:
               mergedPatch && Object.prototype.hasOwnProperty.call(mergedPatch, "recommendation_state")
@@ -1564,7 +1597,15 @@ function sanitizeApiActions(actions: ChatAction[] | undefined, limit = 2): ChatA
     if (!shown.includes(greeting.contextKey)) {
       persistShownGreetingContexts([...shown, greeting.contextKey]);
     }
-    setMessages([{ id: createId(), role: "bot", text: greeting.message }]);
+    setMessages([{
+      id: createId(),
+      role: "bot",
+      text: greeting.message,
+      kind: "contextual_intro",
+      contextKey: greeting.contextKey,
+    }]);
+    activeContextKeyRef.current = greeting.contextKey;
+    setContextTransitionNotice(null);
     setMemory({});
     setActiveFollowup(null);
     followupStateRef.current = { shownCount: 0, lastShownAt: 0, shownPaths: [] };
@@ -1689,6 +1730,26 @@ function sanitizeApiActions(actions: ChatAction[] | undefined, limit = 2): ChatA
         </header>
 
         <div className="kora-chat-messages">
+          {contextTransitionNotice ? (
+            <div
+              role="status"
+              aria-live="polite"
+              style={{
+                margin: "0 auto 0.65rem",
+                maxWidth: "92%",
+                border: "1px solid rgba(37, 99, 235, 0.18)",
+                borderRadius: "0.8rem",
+                background: "rgba(219, 234, 254, 0.72)",
+                color: "#334155",
+                padding: "0.55rem 0.7rem",
+                fontSize: "0.78rem",
+                lineHeight: 1.35,
+                textAlign: "center",
+              }}
+            >
+              {contextTransitionNotice}
+            </div>
+          ) : null}
           {messages.map((message) => (
             <article
               key={message.id}

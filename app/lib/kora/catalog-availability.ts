@@ -16,6 +16,22 @@ export type KoraAvailabilityCandidate = {
 
 export type KoraAvailabilityMatch = "direct" | "related" | "none";
 
+const SALES_QUALIFICATION_FAMILIES = new Set([
+  "amplificadores",
+  "cabinas",
+  "consolas",
+  "interfaces_audio",
+  "instrumentos_cuerda",
+  "megafonos",
+  "microfonos",
+  "percusion",
+  "procesamiento_audio",
+  "guitarras",
+  "teclados",
+  "seguridad",
+  "televisores",
+]);
+
 const SUBJECT_ALIASES: Array<{ aliases: string[]; searches: string[] }> = [
   { aliases: ["audifono", "audifonos", "auricular", "auriculares", "headphone", "headphones", "headset", "diadema"], searches: ["audifonos", "auriculares", "diadema", "headphones", "headset"] },
   { aliases: ["televisor", "televisores", "tv", "smart tv"], searches: ["televisor", "smart tv", "tv"] },
@@ -114,4 +130,15 @@ export function classifyAvailabilityCandidate(
   }
   if (terms.some((term) => phraseIn(description, term))) return { match: "related", score: 4 };
   return { match: "none", score: 0 };
+}
+
+export function shouldContinueAvailabilityToSalesFlow(input: {
+  hasDirectMatch: boolean;
+  family?: string | null;
+}) {
+  return Boolean(
+    input.hasDirectMatch &&
+      input.family &&
+      SALES_QUALIFICATION_FAMILIES.has(input.family)
+  );
 }
