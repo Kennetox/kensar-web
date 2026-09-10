@@ -16265,6 +16265,18 @@ body .main-wrapper::before {
     padding: 10px 14px 42px;
   }
 
+  /*
+   * Safari can resolve an aspect-ratio-only grid item with no definite height
+   * to zero when it contains a `next/image` with `fill`. Give the main media
+   * area an explicit mobile height so product images remain visible on iPhone.
+   */
+  .product-detail-page .product-main-visual {
+    height: calc(100vw - 28px);
+    min-height: 280px;
+    max-height: 420px;
+    aspect-ratio: auto;
+  }
+
   .product-detail-page .catalog-breadcrumbs {
     margin: 0;
     font-size: 0.88rem;
