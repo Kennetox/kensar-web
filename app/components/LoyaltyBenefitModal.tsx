@@ -115,6 +115,9 @@ export default function LoyaltyBenefitModal() {
             <h1 id="loyalty-modal-title">¡Tu beneficio está activo!</h1>
             <p>Guarda este código y preséntalo en caja en tu próxima compra.</p>
             <div className="loyalty-modal-code">{reward.code}</div>
+            <p className="loyalty-modal-save-hint">
+              Toma una foto o captura de pantalla antes de cerrar para mostrar este código luego en tienda.
+            </p>
             <p className="loyalty-modal-note">El descuento aplicable se confirma según el valor de la compra.</p>
             <button type="button" className="loyalty-modal-primary" onClick={copyCode}>
               Copiar código

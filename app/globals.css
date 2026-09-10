@@ -319,6 +319,18 @@ body {
   text-align: center;
 }
 
+.loyalty-modal-save-hint {
+  margin-top: 14px;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 10px 12px;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.45;
+  text-align: center;
+}
+
 .loyalty-modal-message {
   color: #166534;
   font-weight: 700;
