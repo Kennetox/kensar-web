@@ -180,6 +180,13 @@ body {
   overflow-wrap: anywhere;
 }
 
+.loyalty-save-note {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #475569;
+}
+
 .loyalty-message {
   margin-top: 14px;
   font-size: 14px;

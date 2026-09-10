@@ -156,6 +156,9 @@ export default function LoyaltyBenefitPage({ params }: { params: Promise<{ token
                 <button type="button" className="loyalty-primary" onClick={copyCode}>
                   Copiar código
                 </button>
+                <p className="loyalty-save-note">
+                  Toma un pantallazo o guarda este código en un lugar seguro para no perderlo.
+                </p>
               </div>
             ) : null}
           </>
