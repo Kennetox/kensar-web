@@ -85,6 +85,10 @@ export default function LoyaltyBenefitPage({ params }: { params: { token: string
   const status = reward?.status ?? "invalid";
   const showAmounts = status === "issued" || status === "activated";
   const redemptionOptions = reward?.redemption_options ?? [];
+  const maxRedemptionAmount = redemptionOptions.reduce(
+    (max, option) => Math.max(max, Number(option.discount_amount || 0)),
+    0
+  );
 
   return (
     <main className="loyalty-page">
@@ -114,13 +118,16 @@ export default function LoyaltyBenefitPage({ params }: { params: { token: string
           </>
         ) : (
           <>
-            <h1>{status === "activated" ? "Tu código está listo" : "¡Tu compra tiene premio!"}</h1>
-            <p>Ganaste hasta {formatMoney(reward?.amount)} de descuento para tu próxima compra.</p>
+            <h1>{status === "activated" ? "Tu código está listo" : "¡Tienes un beneficio para tu próxima compra!"}</h1>
+            <p>
+              Activa tu código y obtén hasta {formatMoney(maxRedemptionAmount)} de descuento según el valor de tu
+              próxima compra.
+            </p>
             {showAmounts ? (
               <div className="loyalty-amounts">
                 <div>
-                  <span>Beneficio máximo</span>
-                  <strong>Hasta {formatMoney(reward?.amount)}</strong>
+                  <span>Descuento máximo</span>
+                  <strong>Hasta {formatMoney(maxRedemptionAmount)}</strong>
                 </div>
                 <div>
                   <span>Vence</span>
