@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 
 type RewardState = {
   status: "issued" | "activated" | "redeemed" | "expired" | "cancelled" | "invalid";
@@ -30,8 +30,8 @@ function formatDate(value?: string | null) {
   }).format(new Date(value));
 }
 
-export default function LoyaltyBenefitPage({ params }: { params: { token: string } }) {
-  const [token, setToken] = useState(params.token);
+export default function LoyaltyBenefitPage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = use(params);
   const [reward, setReward] = useState<RewardState | null>(null);
   const [loading, setLoading] = useState(true);
   const [activating, setActivating] = useState(false);
@@ -39,8 +39,7 @@ export default function LoyaltyBenefitPage({ params }: { params: { token: string
 
   useEffect(() => {
     let cancelled = false;
-    setToken(params.token);
-    fetch(`/api/rewards/public/${encodeURIComponent(params.token)}`)
+    fetch(`/api/rewards/public/${encodeURIComponent(token)}`)
       .then((response) => response.json())
       .then((data) => {
         if (!cancelled) setReward(data);
@@ -54,7 +53,7 @@ export default function LoyaltyBenefitPage({ params }: { params: { token: string
     return () => {
       cancelled = true;
     };
-  }, [params.token]);
+  }, [token]);
 
   async function activate() {
     if (!token) return;
