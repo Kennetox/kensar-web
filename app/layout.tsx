@@ -12,6 +12,7 @@ import FloatingWhatsAppButton from "./components/FloatingWhatsAppButton";
 import KoraChat from "./components/KoraChat";
 import BackToTopButton from "./components/BackToTopButton";
 import CookieConsentBanner from "./components/CookieConsentBanner";
+import LoyaltyBenefitModal from "./components/LoyaltyBenefitModal";
 import WebCartProvider from "./components/WebCartProvider";
 import WebCustomerProvider from "./components/WebCustomerProvider";
 import TopbarScrollBehavior from "./components/TopbarScrollBehavior";
@@ -233,6 +234,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </header>
 
         <main className="main-wrapper">{children}</main>
+        <Suspense fallback={null}>
+          <LoyaltyBenefitModal />
+        </Suspense>
         <BackToTopButton />
         <KoraChat />
         <FloatingWhatsAppButton />

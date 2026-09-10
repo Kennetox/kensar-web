@@ -194,6 +194,141 @@ body {
   color: #166534;
 }
 
+.loyalty-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.56);
+  backdrop-filter: blur(4px);
+}
+
+.loyalty-modal {
+  position: relative;
+  width: min(100%, 460px);
+  padding: 34px 28px 28px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.3);
+}
+
+.loyalty-modal-eyebrow {
+  margin: 0 0 14px;
+  color: #637083;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.loyalty-modal h1 {
+  margin: 0 0 12px;
+  color: #101827;
+  font-size: clamp(28px, 7vw, 38px);
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+}
+
+.loyalty-modal > p:not(.loyalty-modal-eyebrow):not(.loyalty-modal-note):not(.loyalty-modal-message) {
+  color: #556274;
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+.loyalty-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.loyalty-modal-primary,
+.loyalty-modal-secondary {
+  width: 100%;
+  min-height: 50px;
+  margin-top: 24px;
+  border-radius: 10px;
+  padding: 0 18px;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.loyalty-modal-primary {
+  border: 0;
+  background: #111827;
+  color: #ffffff;
+}
+
+.loyalty-modal-primary:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.loyalty-modal-secondary {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #1e293b;
+}
+
+.loyalty-modal-text-action {
+  display: block;
+  width: 100%;
+  margin: 16px 0 0;
+  border: 0;
+  background: transparent;
+  color: #475569;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.loyalty-modal-code {
+  margin-top: 22px;
+  border: 2px dashed #94a3b8;
+  border-radius: 12px;
+  padding: 17px;
+  color: #111827;
+  font-size: clamp(28px, 8vw, 38px);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-align: center;
+}
+
+.loyalty-modal-note,
+.loyalty-modal-message {
+  margin-top: 14px;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.loyalty-modal-message {
+  color: #166534;
+  font-weight: 700;
+}
+
+@media (max-width: 540px) {
+  .loyalty-modal-backdrop { align-items: end; padding: 12px; }
+  .loyalty-modal { padding: 32px 22px 24px; border-radius: 18px 18px 12px 12px; }
+}
+
 body::before {
   content: "";
   position: fixed;
