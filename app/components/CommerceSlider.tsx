@@ -114,7 +114,11 @@ export default function CommerceSlider({
   function renderSlideFrame(slide: SlideItem, index: number) {
     const mediaSrc = isMobileViewport && slide.mobileImage ? slide.mobileImage : slide.image;
     const mediaKey = `${slide.id}-${mediaSrc}`;
-    const mediaReady = Boolean(slideMediaReady[mediaKey]);
+    // Do not request every banner (and its loop clones) on initial render.
+    // The active frame keeps the same visual quality; the next frame loads
+    // when the user or timer actually reaches it.
+    const shouldLoadMedia = index === internalIndex || index === internalIndex + 1;
+    const mediaReady = !shouldLoadMedia || Boolean(slideMediaReady[mediaKey]);
     const hasPresetStyle = slide.id === "guitarras" || slide.id === "audio-main" || slide.id === "contacto";
     const ctaPositionStyle = {
       left: `${typeof slide.ctaXPercent === "number" ? slide.ctaXPercent : 50}%`,
@@ -138,21 +142,23 @@ export default function CommerceSlider({
         }`}
       >
         {slide.href ? <Link href={slide.href} className="commerce-slider-link" aria-label={slide.alt} /> : null}
-        <Image
-          src={mediaSrc}
-          alt=""
-          className="commerce-slider-preload"
-          width={1}
-          height={1}
-          unoptimized
-          aria-hidden="true"
-          onLoad={() => markSlideReady(mediaKey)}
-          onError={() => markSlideReady(mediaKey)}
-        />
+        {shouldLoadMedia ? (
+          <Image
+            src={mediaSrc}
+            alt=""
+            className="commerce-slider-preload"
+            width={1}
+            height={1}
+            unoptimized
+            aria-hidden="true"
+            onLoad={() => markSlideReady(mediaKey)}
+            onError={() => markSlideReady(mediaKey)}
+          />
+        ) : null}
         <div
           className="commerce-slider-layer"
           style={{
-            backgroundImage: `url('${mediaSrc}')`,
+            backgroundImage: shouldLoadMedia ? `url('${mediaSrc}')` : undefined,
           }}
           role="img"
           aria-label={slide.alt}

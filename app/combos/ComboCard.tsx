@@ -64,7 +64,6 @@ export default function ComboCard({
   const mediaGallery = [combo.image_url, combo.image_thumb_url, ...combo.gallery_urls].filter(
     (value, index, list): value is string => Boolean(value) && list.indexOf(value) === index
   );
-
   if (viewMode === "list") {
     return (
       <article className="catalog-product-card-live catalog-product-card-list">

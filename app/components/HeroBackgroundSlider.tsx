@@ -36,7 +36,7 @@ export default function HeroBackgroundSlider({
     }, intervalMs);
 
     return () => window.clearInterval(timer);
-  }, [goToNextSlide, intervalMs]);
+  }, [goToNextSlide, images.length, intervalMs]);
 
   useEffect(() => {
     let ticking = false;
@@ -68,7 +68,9 @@ export default function HeroBackgroundSlider({
             key={image}
             className={`hero-slider-layer${index === activeIndex ? " hero-slider-layer-active" : ""}`}
             style={{
-              backgroundImage: `url('${image}')`,
+              // Only the visible layer may start a network request. The
+              // following slides retain their transition once selected.
+              backgroundImage: index === activeIndex ? `url('${image}')` : undefined,
               transform: `translate3d(0, ${offset}px, 0) scale(1.08)`,
             }}
           />

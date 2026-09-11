@@ -19,7 +19,7 @@ import { buildWhatsAppPrefill } from "@/app/lib/kora/whatsapp-handoff";
 import {
   getCatalogCategoryHierarchy,
   getCatalogBestSellers,
-  getCatalogProduct,
+  getCatalogProductCached,
   getCatalogProducts,
   getHomeSliders,
   getHomeVideos,
@@ -498,7 +498,7 @@ async function hydrateBestSellerProducts(items: WebCatalogProductCard[]) {
         return item;
       }
       try {
-        const detail = await getCatalogProduct(item.slug);
+        const detail = await getCatalogProductCached(item.slug);
         if (!detail) return item;
         return {
           ...item,

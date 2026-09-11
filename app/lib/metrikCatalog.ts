@@ -471,6 +471,18 @@ export async function getCatalogProduct(slug: string) {
   return response ? normalizeCatalogProductDetail(baseUrl, response) : null;
 }
 
+// Home-page enrichment must stay compatible with ISR. Explicit product pages
+// can use the live variant above; the home only needs a short-lived snapshot.
+export async function getCatalogProductCached(slug: string) {
+  const normalizedSlug = slug.trim();
+  if (!normalizedSlug) return null;
+  const baseUrl = getApiBaseUrl();
+  const response = await fetchCatalogOptionalFast<WebCatalogProductDetail>(
+    `/web/catalog/products/${normalizedSlug}`
+  );
+  return response ? normalizeCatalogProductDetail(baseUrl, response) : null;
+}
+
 export async function getPersonalizationServiceBySku(sku: string) {
   const params = new URLSearchParams();
   params.set("sku", sku);
