@@ -12,19 +12,6 @@ function ArrowIcon({ direction }: { direction: "left" | "right" }) {
   );
 }
 
-function resolveCardThumbnail(imageUrl: string | null, imageThumbUrl: string | null): string | null {
-  if (!imageUrl || (imageThumbUrl && imageThumbUrl !== imageUrl)) return imageThumbUrl || imageUrl;
-  const match = imageUrl.match(/^(https?:\/\/[^/]+)?(\/uploads\/product-images\/)(.+)$/);
-  if (!match) return imageUrl;
-  const [, origin = "", prefix, relativePath] = match;
-  const segments = relativePath.split("/");
-  const filename = segments.pop();
-  if (!filename) return imageUrl;
-  const extensionIndex = filename.lastIndexOf(".");
-  const stem = extensionIndex > 0 ? filename.slice(0, extensionIndex) : filename;
-  return `${origin}${prefix}${segments.join("/")}${segments.length ? "/" : ""}thumbnails/thumb-${stem}.webp`;
-}
-
 export default function CatalogProductGallery({
   detailHref,
   gallery,
@@ -39,7 +26,7 @@ export default function CatalogProductGallery({
   const images = useMemo(() => {
     // The first request is the compact thumbnail. Other gallery files are
     // requested only when the visitor presses an arrow.
-    const candidates = [resolveCardThumbnail(imageUrl, imageThumbUrl), ...gallery.filter((image) => image !== imageUrl)];
+    const candidates = [imageThumbUrl || imageUrl, ...gallery.filter((image) => image !== imageUrl)];
     return candidates.filter((value, index, list): value is string => Boolean(value) && list.indexOf(value) === index);
   }, [gallery, imageThumbUrl, imageUrl]);
   const [imageIndex, setImageIndex] = useState(0);
