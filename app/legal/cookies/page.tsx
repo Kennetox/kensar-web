@@ -33,8 +33,8 @@ export default function CookiesPolicyPage() {
 
         <h2>3. Gestión del consentimiento</h2>
         <p>
-          Puedes aceptar todas las cookies, rechazar las opcionales o configurar preferencias desde el banner de
-          cookies cuando visitas el sitio.
+          Puedes usar solo las cookies necesarias o aceptar las opcionales desde el aviso discreto que se muestra al
+          visitar el sitio. Las cookies opcionales no se activan antes de tu aceptación.
         </p>
 
         <h2>4. Control desde el navegador</h2>

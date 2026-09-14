@@ -4,11 +4,13 @@ import { Suspense } from "react";
 import Script from "next/script";
 import MetaPixelRouteTracker from "@/app/components/MetaPixelRouteTracker";
 import { flushPendingEvents } from "@/app/lib/meta-pixel";
+import { useCookieConsent } from "@/app/lib/cookieConsent";
 
 const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
 
 export default function MetaPixel() {
-  if (!pixelId) return null;
+  const consent = useCookieConsent();
+  if (!pixelId || !consent?.marketing) return null;
 
   return (
     <>

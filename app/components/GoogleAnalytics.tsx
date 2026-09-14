@@ -4,9 +4,11 @@ import { Suspense } from "react";
 import Script from "next/script";
 import GoogleAnalyticsRouteTracker from "@/app/components/GoogleAnalyticsRouteTracker";
 import { GA_MEASUREMENT_ID, isGaConfigured } from "@/app/lib/ga4";
+import { useCookieConsent } from "@/app/lib/cookieConsent";
 
 export default function GoogleAnalytics() {
-  if (!isGaConfigured()) return null;
+  const consent = useCookieConsent();
+  if (!isGaConfigured() || !consent?.analytics) return null;
 
   return (
     <>

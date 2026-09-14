@@ -1,5 +1,7 @@
 "use client";
 
+import { hasMarketingConsent } from "@/app/lib/cookieConsent";
+
 declare global {
   interface Window {
     fbq?: ((...args: unknown[]) => void) & {
@@ -193,6 +195,11 @@ function trackEvent(eventName: string, payload?: Record<string, unknown>) {
     return;
   }
 
+  if (!hasMarketingConsent()) {
+    debugMetaPixel(eventName, payload, { status: "skip", reason: "marketing-consent-missing" });
+    return;
+  }
+
   if (!isPixelReady()) {
     debugMetaPixel(eventName, payload, { status: "fbq-not-ready" });
     queueEvent(eventName, payload);
@@ -205,6 +212,11 @@ function trackEvent(eventName: string, payload?: Record<string, unknown>) {
 
 export function flushPendingEvents() {
   attachGlobalMetaDebugHelper();
+
+  if (!hasMarketingConsent()) {
+    debugMetaPixel("flushPendingEvents", {}, { status: "skip", reason: "marketing-consent-missing" });
+    return;
+  }
 
   if (!isPixelReady()) {
     debugMetaPixel("flushPendingEvents", {}, { status: "skip", reason: "fbq-not-ready" });

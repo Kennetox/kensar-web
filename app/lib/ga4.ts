@@ -1,5 +1,7 @@
 "use client";
 
+import { hasAnalyticsConsent } from "@/app/lib/cookieConsent";
+
 declare global {
   interface Window {
     dataLayer?: unknown[];
@@ -7,10 +9,8 @@ declare global {
   }
 }
 
-const FALLBACK_MEASUREMENT_ID = "G-VDQ5X2NFKN";
-
 export const GA_MEASUREMENT_ID =
-  (process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || FALLBACK_MEASUREMENT_ID).trim();
+  (process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "").trim();
 
 export type GaItem = {
   item_id: string;
@@ -27,7 +27,12 @@ export function isGaConfigured() {
 }
 
 function canTrack() {
-  return typeof window !== "undefined" && typeof window.gtag === "function" && isGaConfigured();
+  return (
+    typeof window !== "undefined" &&
+    typeof window.gtag === "function" &&
+    isGaConfigured() &&
+    hasAnalyticsConsent()
+  );
 }
 
 export function gtagEvent(eventName: string, params: Record<string, unknown> = {}) {
