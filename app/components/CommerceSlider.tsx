@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type SlideItem = {
   id: string;
@@ -36,8 +36,12 @@ export default function CommerceSlider({
   intervalMs = 8000,
 }: CommerceSliderProps) {
   const hasLoop = slides.length > 1;
-  const loopSlides = hasLoop ? [slides[slides.length - 1], ...slides, slides[0]] : slides;
+  const loopSlides = useMemo(
+    () => (hasLoop ? [slides[slides.length - 1], ...slides, slides[0]] : slides),
+    [hasLoop, slides],
+  );
   const [internalIndex, setInternalIndex] = useState(hasLoop ? 1 : 0);
+  const [pendingIndex, setPendingIndex] = useState<number | null>(null);
   const [transitionEnabled, setTransitionEnabled] = useState(true);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
@@ -45,27 +49,61 @@ export default function CommerceSlider({
   const [categoryMediaReady, setCategoryMediaReady] = useState<Record<string, boolean>>({});
   const activeIndex = hasLoop ? (internalIndex - 1 + slides.length) % slides.length : 0;
 
+  const mediaSourceFor = useCallback(
+    (slide: SlideItem) => (isMobileViewport && slide.mobileImage ? slide.mobileImage : slide.image),
+    [isMobileViewport],
+  );
+
+  const mediaKeyFor = useCallback((slide: SlideItem) => `${slide.id}-${mediaSourceFor(slide)}`, [mediaSourceFor]);
+
   const markSlideReady = useCallback((key: string) => {
     setSlideMediaReady((current) => (current[key] ? current : { ...current, [key]: true }));
   }, []);
+
+  const handleSlideReady = useCallback(
+    (key: string, index: number) => {
+      markSlideReady(key);
+      if (pendingIndex !== index) return;
+
+      setPendingIndex(null);
+      setIsAnimating(true);
+      setTransitionEnabled(true);
+      setInternalIndex(index);
+    },
+    [markSlideReady, pendingIndex],
+  );
 
   const markCategoryReady = useCallback((key: string) => {
     setCategoryMediaReady((current) => (current[key] ? current : { ...current, [key]: true }));
   }, []);
 
+  const requestSlide = useCallback(
+    (nextIndex: number) => {
+      if (!hasLoop || isAnimating || pendingIndex !== null) return;
+      const nextSlide = loopSlides[nextIndex];
+      if (!nextSlide) return;
+
+      // If the next banner is not in the small active/next cache yet, load it
+      // off-screen first. The current banner remains visible until it is ready.
+      if (!slideMediaReady[mediaKeyFor(nextSlide)]) {
+        setPendingIndex(nextIndex);
+        return;
+      }
+
+      setIsAnimating(true);
+      setTransitionEnabled(true);
+      setInternalIndex(nextIndex);
+    },
+    [hasLoop, isAnimating, loopSlides, mediaKeyFor, pendingIndex, slideMediaReady],
+  );
+
   const goToNextSlide = useCallback(() => {
-    if (!hasLoop || isAnimating) return;
-    setIsAnimating(true);
-    setTransitionEnabled(true);
-    setInternalIndex((current) => current + 1);
-  }, [hasLoop, isAnimating]);
+    requestSlide(internalIndex + 1);
+  }, [internalIndex, requestSlide]);
 
   const goToPrevSlide = useCallback(() => {
-    if (!hasLoop || isAnimating) return;
-    setIsAnimating(true);
-    setTransitionEnabled(true);
-    setInternalIndex((current) => current - 1);
-  }, [hasLoop, isAnimating]);
+    requestSlide(internalIndex - 1);
+  }, [internalIndex, requestSlide]);
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 720px)");
@@ -112,12 +150,12 @@ export default function CommerceSlider({
   }
 
   function renderSlideFrame(slide: SlideItem, index: number) {
-    const mediaSrc = isMobileViewport && slide.mobileImage ? slide.mobileImage : slide.image;
-    const mediaKey = `${slide.id}-${mediaSrc}`;
+    const mediaSrc = mediaSourceFor(slide);
+    const mediaKey = mediaKeyFor(slide);
     // Do not request every banner (and its loop clones) on initial render.
     // The active frame keeps the same visual quality; the next frame loads
     // when the user or timer actually reaches it.
-    const shouldLoadMedia = index === internalIndex || index === internalIndex + 1;
+    const shouldLoadMedia = index === internalIndex || index === internalIndex + 1 || index === pendingIndex;
     const mediaReady = !shouldLoadMedia || Boolean(slideMediaReady[mediaKey]);
     const hasPresetStyle = slide.id === "guitarras" || slide.id === "audio-main" || slide.id === "contacto";
     const ctaPositionStyle = {
@@ -151,14 +189,14 @@ export default function CommerceSlider({
             height={1}
             unoptimized
             aria-hidden="true"
-            onLoad={() => markSlideReady(mediaKey)}
-            onError={() => markSlideReady(mediaKey)}
+            onLoad={() => handleSlideReady(mediaKey, index)}
+            onError={() => handleSlideReady(mediaKey, index)}
           />
         ) : null}
         <div
           className="commerce-slider-layer"
           style={{
-            backgroundImage: shouldLoadMedia ? `url('${mediaSrc}')` : undefined,
+            backgroundImage: mediaReady ? `url('${mediaSrc}')` : undefined,
           }}
           role="img"
           aria-label={slide.alt}
@@ -290,10 +328,7 @@ export default function CommerceSlider({
                   aria-label={`Ir al slide ${index + 1}`}
                   aria-current={index === activeIndex}
                   onClick={() => {
-                    if (isAnimating) return;
-                    setIsAnimating(true);
-                    setTransitionEnabled(true);
-                    setInternalIndex(index + 1);
+                    requestSlide(index + 1);
                   }}
                 />
               ))}

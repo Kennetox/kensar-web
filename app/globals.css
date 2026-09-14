@@ -8826,7 +8826,7 @@ body .main-wrapper::before {
   position: relative;
   overflow: hidden;
   border: 0;
-  background: #0b4dd2;
+  background: #ffffff;
   border-radius: 0;
 }
 
@@ -8860,14 +8860,14 @@ body .main-wrapper::before {
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: linear-gradient(180deg, rgba(15, 74, 185, 0.88) 0%, rgba(11, 77, 210, 0.94) 100%);
+  background: #ffffff;
 }
 
 .commerce-slider-frame-skeleton::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.12) 50%, rgba(255, 255, 255, 0) 100%);
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(226, 232, 240, 0.52) 50%, rgba(255, 255, 255, 0) 100%);
   transform: translateX(-120%);
   animation: commerceSliderSkeletonShimmer 1.5s ease-in-out infinite;
 }
