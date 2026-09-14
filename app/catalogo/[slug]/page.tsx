@@ -116,7 +116,10 @@ export default async function CatalogProductDetailPage({
   const categoryTrail = product.category_path
     ? buildCatalogCategoryTrailFromKey(product.category_path, categoryMap)
     : null;
-  const gallery = [product.image_url, product.image_thumb_url, ...product.gallery].filter(
+  // Thumbnails are for catalog cards only. Including the thumbnail here makes
+  // the product cover appear twice because it is a smaller version of the
+  // same source image.
+  const gallery = [product.image_url, ...product.gallery].filter(
     (image, index, list): image is string => Boolean(image) && list.indexOf(image) === index
   );
   const descriptionText = (product.long_description || product.short_description || "").trim();
