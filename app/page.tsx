@@ -5,7 +5,6 @@ import CommerceSlider from "@/app/components/CommerceSlider";
 import HomeBrandCollage from "@/app/components/HomeBrandCollage";
 import HomeProductCarousel from "@/app/components/HomeProductCarousel";
 import HomeSocialVideos from "@/app/components/HomeSocialVideos";
-import HomePersonalizaHighlight from "@/app/components/HomePersonalizaHighlight";
 import KoraPageContextBridge from "@/app/components/KoraPageContextBridge";
 import Reveal from "@/app/components/Reveal";
 import { buildCatalogCategoryHref } from "@/app/lib/catalogRoutes";
@@ -699,9 +698,6 @@ export default async function HomePage() {
 
       {videos.length > 0 ? <HomeSocialVideos videos={videos} /> : null}
 
-      <section className="commerce-discover" aria-label="Personaliza tus instrumentos">
-        <HomePersonalizaHighlight />
-      </section>
       <section className="commerce-mid-feature" aria-label="Sección destacada Kensar">
         {bestSellerProducts.length > 0 ? (
           <div className="commerce-home-living-products">

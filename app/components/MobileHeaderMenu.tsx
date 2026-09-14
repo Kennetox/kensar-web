@@ -152,7 +152,6 @@ export default function MobileHeaderMenu({ categories }: MobileHeaderMenuProps) 
                     Catalogo
                     <span aria-hidden="true">›</span>
                   </button>
-                  <Link href="/personaliza" onClick={closeMenu}>Personaliza tu instrumento</Link>
                   <Link href="/empresa" onClick={closeMenu}>Contacto</Link>
                 </nav>
               </section>
