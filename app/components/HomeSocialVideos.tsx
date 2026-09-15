@@ -23,7 +23,6 @@ function resetVideo(video: HTMLVideoElement) {
 export default function HomeSocialVideos({ videos }: HomeSocialVideosProps) {
   const sectionRef = useRef<HTMLElement | null>(null);
   const videoRefs = useRef<Array<HTMLVideoElement | null>>([]);
-  const sectionVisibleRef = useRef(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [loadedIndex, setLoadedIndex] = useState<number | null>(null);
   const [soundSlot, setSoundSlot] = useState<number | null>(null);
@@ -61,14 +60,11 @@ export default function HomeSocialVideos({ videos }: HomeSocialVideosProps) {
     void selected.play().catch(() => undefined);
   }, [activeIndex, loadedIndex, soundSlot, videos]);
 
-  function handleVideoEnded(index: number, video: HTMLVideoElement) {
+  function handleVideoEnded(video: HTMLVideoElement) {
     resetVideo(video);
-    if (!sectionVisibleRef.current || videos.length === 0) {
-      setActiveIndex(null);
-      setSoundSlot(null);
-      return;
-    }
-    startOnlyVideo((index + 1) % videos.length);
+    setActiveIndex(null);
+    setLoadedIndex(null);
+    setSoundSlot(null);
   }
 
   useEffect(() => {
@@ -78,26 +74,13 @@ export default function HomeSocialVideos({ videos }: HomeSocialVideosProps) {
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        sectionVisibleRef.current = entry.isIntersecting;
-        if (entry.isIntersecting) {
-          const firstVideo = videoRefs.current[0];
-          if (!videoRefs.current.some((video) => video && !video.paused) && firstVideo) {
-            videoRefs.current.forEach((video, index) => {
-              if (!video || index === 0) return;
-              resetVideo(video);
-            });
-            firstVideo.muted = true;
-            setActiveIndex(0);
-            setSoundSlot(null);
-            void firstVideo.play().catch(() => undefined);
-          }
-          return;
-        }
+        if (entry.isIntersecting) return;
 
         videoRefs.current.forEach((video) => {
           if (video) resetVideo(video);
         });
         setActiveIndex(null);
+        setLoadedIndex(null);
         setSoundSlot(null);
       },
       { threshold: 0.25 }
@@ -106,7 +89,6 @@ export default function HomeSocialVideos({ videos }: HomeSocialVideosProps) {
     observer.observe(section);
     return () => {
       observer.disconnect();
-      sectionVisibleRef.current = false;
       mountedVideos.forEach((video) => video?.pause());
     };
   }, [videos.length]);
@@ -128,18 +110,10 @@ export default function HomeSocialVideos({ videos }: HomeSocialVideosProps) {
                 <div
                   key={`home-video-${item.slot}`}
                   className={`home-instagram-carousel-item${soundSlot === item.slot ? " has-sound" : ""}`}
-                  onMouseEnter={() => {
-                    const selected = videoRefs.current[index];
-                    if (activeIndex !== index || selected?.paused) startOnlyVideo(index);
-                  }}
                 >
                   <button
                     type="button"
                     className="commerce-instagram-video-toggle"
-                    onFocus={() => {
-                      const selected = videoRefs.current[index];
-                      if (activeIndex !== index || selected?.paused) startOnlyVideo(index);
-                    }}
                     onClick={() => handleVideoClick(index)}
                     aria-label={
                       soundSlot === item.slot
@@ -158,7 +132,7 @@ export default function HomeSocialVideos({ videos }: HomeSocialVideosProps) {
                       muted={soundSlot !== item.slot}
                       playsInline
                       preload={loadedIndex === index ? "auto" : "none"}
-                      onEnded={(event) => handleVideoEnded(index, event.currentTarget)}
+                      onEnded={(event) => handleVideoEnded(event.currentTarget)}
                       onLoadedMetadata={(event) => {
                         const video = event.currentTarget;
                         const previewTime = getPreviewTime(video);
