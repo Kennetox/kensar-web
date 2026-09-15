@@ -14,6 +14,7 @@ function getPreviewTime(video: HTMLVideoElement) {
 }
 
 function resetVideo(video: HTMLVideoElement) {
+  if (!video.currentSrc) return;
   video.pause();
   video.muted = true;
   video.currentTime = getPreviewTime(video);
@@ -24,20 +25,17 @@ export default function HomeSocialVideos({ videos }: HomeSocialVideosProps) {
   const videoRefs = useRef<Array<HTMLVideoElement | null>>([]);
   const sectionVisibleRef = useRef(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [loadedIndex, setLoadedIndex] = useState<number | null>(null);
   const [soundSlot, setSoundSlot] = useState<number | null>(null);
 
   function startOnlyVideo(index: number, enableSound = false) {
-    const selected = videoRefs.current[index];
-    if (!selected) return;
-
     videoRefs.current.forEach((video, videoIndex) => {
       if (!video || videoIndex === index) return;
       resetVideo(video);
     });
-    selected.muted = !enableSound;
+    setLoadedIndex(index);
     setActiveIndex(index);
     setSoundSlot(enableSound ? videos[index]?.slot ?? null : null);
-    void selected.play().catch(() => undefined);
   }
 
   function handleVideoClick(index: number) {
@@ -54,6 +52,14 @@ export default function HomeSocialVideos({ videos }: HomeSocialVideosProps) {
     setSoundSlot(enableSound ? item.slot : null);
     if (selected.paused) void selected.play().catch(() => undefined);
   }
+
+  useEffect(() => {
+    if (activeIndex === null || loadedIndex !== activeIndex) return;
+    const selected = videoRefs.current[activeIndex];
+    if (!selected) return;
+    selected.muted = soundSlot !== videos[activeIndex]?.slot;
+    void selected.play().catch(() => undefined);
+  }, [activeIndex, loadedIndex, soundSlot, videos]);
 
   function handleVideoEnded(index: number, video: HTMLVideoElement) {
     resetVideo(video);
@@ -141,15 +147,17 @@ export default function HomeSocialVideos({ videos }: HomeSocialVideosProps) {
                         : `Escuchar video ${index + 1}`
                     }
                   >
+                    {/* Safari may download an entire MP4 even with metadata preloading.
+                        Keep a source only on the selected card. */}
                     <video
                       ref={(node) => {
                         videoRefs.current[index] = node;
                       }}
                       className="commerce-instagram-video"
-                      src={`${item.video_url}#t=0.5`}
+                      src={loadedIndex === index ? `${item.video_url}#t=0.5` : undefined}
                       muted={soundSlot !== item.slot}
                       playsInline
-                      preload={activeIndex === index ? "auto" : "metadata"}
+                      preload={loadedIndex === index ? "auto" : "none"}
                       onEnded={(event) => handleVideoEnded(index, event.currentTarget)}
                       onLoadedMetadata={(event) => {
                         const video = event.currentTarget;
@@ -159,6 +167,12 @@ export default function HomeSocialVideos({ videos }: HomeSocialVideosProps) {
                         }
                       }}
                     />
+                    {loadedIndex !== index ? (
+                      <span className="commerce-instagram-video-preview" aria-hidden="true">
+                        <span className="commerce-instagram-video-preview-icon">▶</span>
+                        <span>Ver video</span>
+                      </span>
+                    ) : null}
                   </button>
                   <a
                     href="https://www.instagram.com/kensarelectronic/"

@@ -9880,6 +9880,36 @@ body .main-wrapper::before {
   pointer-events: none;
 }
 
+.commerce-instagram-video-preview {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 9px;
+  color: #ffffff;
+  background:
+    radial-gradient(circle at 50% 44%, rgba(42, 94, 185, 0.64), transparent 31%),
+    linear-gradient(145deg, #101b35, #05070d);
+  font-size: clamp(0.72rem, 1vw, 0.86rem);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+}
+
+.commerce-instagram-video-preview-icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  padding-left: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.13);
+  font-size: 1rem;
+}
+
 .commerce-instagram-account {
   position: absolute;
   top: 12px;
