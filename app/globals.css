@@ -9880,34 +9880,46 @@ body .main-wrapper::before {
   pointer-events: none;
 }
 
+.commerce-instagram-video-poster {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #101114;
+}
+
 .commerce-instagram-video-preview {
   position: absolute;
   inset: 0;
   z-index: 1;
   display: grid;
-  place-content: center;
-  justify-items: center;
-  gap: 9px;
-  color: #ffffff;
-  background:
-    radial-gradient(circle at 50% 44%, rgba(42, 94, 185, 0.64), transparent 31%),
-    linear-gradient(145deg, #101b35, #05070d);
-  font-size: clamp(0.72rem, 1vw, 0.86rem);
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+  place-items: center;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.22));
+  transition: background 0.18s ease;
 }
 
 .commerce-instagram-video-preview-icon {
   display: grid;
-  width: 46px;
-  height: 46px;
+  width: 34px;
+  height: 34px;
   place-items: center;
-  padding-left: 2px;
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.82);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.13);
-  font-size: 1rem;
+  background: rgba(11, 15, 20, 0.32);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.28);
+}
+
+.commerce-instagram-video-preview-icon svg {
+  width: 17px;
+  height: 17px;
+  margin-left: 1px;
+  fill: #ffffff;
+}
+
+.commerce-instagram-video-toggle:hover .commerce-instagram-video-preview {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.12));
 }
 
 .commerce-instagram-account {

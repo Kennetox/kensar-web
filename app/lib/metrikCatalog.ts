@@ -39,6 +39,7 @@ export type WebCatalogHomeSlider = {
 export type WebCatalogHomeVideo = {
   slot: number;
   video_url: string;
+  poster_url?: string | null;
   sort_order: number;
   is_new: boolean;
 };
@@ -388,6 +389,7 @@ export async function getHomeVideos() {
     .map((item) => ({
       ...item,
       video_url: resolveCatalogAssetUrl(baseUrl, item.video_url) || item.video_url,
+      poster_url: resolveCatalogAssetUrl(baseUrl, item.poster_url || null),
     }));
 }
 

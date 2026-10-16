@@ -116,11 +116,20 @@ export default function HomeSocialVideos({ videos }: HomeSocialVideosProps) {
                     className="commerce-instagram-video-toggle"
                     onClick={() => handleVideoClick(index)}
                     aria-label={
-                      soundSlot === item.slot
-                        ? `Silenciar video ${index + 1}`
-                        : `Escuchar video ${index + 1}`
+                      activeIndex === index
+                        ? soundSlot === item.slot
+                          ? `Silenciar video ${index + 1}`
+                          : `Escuchar video ${index + 1}`
+                        : `Reproducir video ${index + 1}`
                     }
                   >
+                    {item.poster_url ? (
+                      <img
+                        src={item.poster_url}
+                        alt=""
+                        className="commerce-instagram-video-poster"
+                      />
+                    ) : null}
                     {/* Safari may download an entire MP4 even with metadata preloading.
                         Keep a source only on the selected card. */}
                     <video
@@ -143,8 +152,11 @@ export default function HomeSocialVideos({ videos }: HomeSocialVideosProps) {
                     />
                     {loadedIndex !== index ? (
                       <span className="commerce-instagram-video-preview" aria-hidden="true">
-                        <span className="commerce-instagram-video-preview-icon">▶</span>
-                        <span>Ver video</span>
+                        <span className="commerce-instagram-video-preview-icon">
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M8.5 6.7a1 1 0 0 1 1.52-.85l7.1 4.3a1 1 0 0 1 0 1.7l-7.1 4.3A1 1 0 0 1 8.5 15.3V6.7Z" />
+                          </svg>
+                        </span>
                       </span>
                     ) : null}
                   </button>
