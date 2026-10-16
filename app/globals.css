@@ -1215,6 +1215,112 @@ body.personaliza-editor-page .topbar-utility {
   white-space: nowrap;
 }
 
+.home-floating-promo {
+  position: fixed;
+  z-index: 1180;
+  left: 50%;
+  bottom: 22px;
+  width: min(560px, calc(100vw - 216px));
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 18px;
+  background: #101827;
+  box-shadow: 0 22px 52px rgba(15, 23, 42, 0.3);
+  color: #fff;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translate(-50%, calc(100% + 28px));
+  transition: opacity 0.32s ease, transform 0.4s cubic-bezier(0.2, 0.78, 0.24, 1);
+}
+
+.home-floating-promo.is-open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+}
+
+.home-floating-promo-link {
+  display: flex;
+  min-height: 116px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.home-floating-promo-link img {
+  width: 116px;
+  flex: 0 0 116px;
+  object-fit: cover;
+  background: #1f2937;
+}
+
+.home-floating-promo-copy {
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 16px 50px 16px 17px;
+}
+
+.home-floating-promo-kicker,
+.home-floating-promo-saving {
+  color: #fbbf24;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.home-floating-promo-copy strong {
+  overflow: hidden;
+  font-size: 0.95rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-floating-promo-price {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.home-floating-promo-cta {
+  margin-top: 3px;
+  color: #dbeafe;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.home-floating-promo-close {
+  position: absolute;
+  z-index: 1;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.home-floating-promo-close:hover { background: rgba(255, 255, 255, 0.2); }
+
+@media (max-width: 680px) {
+  .home-floating-promo {
+    bottom: 96px;
+    width: calc(100vw - 30px);
+  }
+
+  .home-floating-promo-link { min-height: 100px; }
+  .home-floating-promo-link img { width: 100px; flex-basis: 100px; }
+  .home-floating-promo-copy { padding: 13px 42px 13px 14px; }
+}
+
 .floating-whatsapp-btn {
   position: fixed;
   right: 18px;

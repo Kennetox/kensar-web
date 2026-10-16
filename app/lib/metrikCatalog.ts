@@ -44,6 +44,12 @@ export type WebCatalogHomeVideo = {
   is_new: boolean;
 };
 
+export type WebCatalogHomePromo = {
+  product: WebCatalogProductCard;
+  minimum_price: number;
+  updated_at: string;
+};
+
 export type WebCatalogHomeSectionsMode = "categories" | "instruments" | "both";
 
 export type WebCatalogHomeSectionsConfig = {
@@ -447,6 +453,14 @@ export async function getCatalogBestSellers(input?: { limit?: number; days?: num
     ...response,
     items: response.items.map((item) => normalizeCatalogProductCard(baseUrl, item)),
   };
+}
+
+export async function getHomePromo() {
+  const baseUrl = getApiBaseUrl();
+  const response = await fetchCatalogFast<WebCatalogHomePromo | null>("/web/catalog/home-promo");
+  return response
+    ? { ...response, product: normalizeCatalogProductCard(baseUrl, response.product) }
+    : null;
 }
 
 export async function getCatalogCombos(input?: { q?: string }) {

@@ -5,6 +5,7 @@ import CommerceSlider from "@/app/components/CommerceSlider";
 import HomeBrandCollage from "@/app/components/HomeBrandCollage";
 import HomeProductCarousel from "@/app/components/HomeProductCarousel";
 import HomeSocialVideos from "@/app/components/HomeSocialVideos";
+import HomeFloatingPromo from "@/app/components/HomeFloatingPromo";
 import KoraPageContextBridge from "@/app/components/KoraPageContextBridge";
 import Reveal from "@/app/components/Reveal";
 import { buildCatalogCategoryHref } from "@/app/lib/catalogRoutes";
@@ -23,6 +24,7 @@ import {
   getHomeSliders,
   getHomeVideos,
   getHomeSectionsConfig,
+  getHomePromo,
   type WebCatalogCategory,
   type WebCatalogHomeSlider,
   type WebCatalogHomeVideo,
@@ -535,6 +537,7 @@ export default async function HomePage() {
   const bestSellerProducts = await getCatalogBestSellers({ limit: 10, days: 90 })
     .then((result) => hydrateBestSellerProducts(result.items))
     .catch(() => []);
+  const homePromo = await getHomePromo().catch(() => null);
   const fallbackSliderSlides = [
     {
       id: "guitarras",
@@ -657,6 +660,7 @@ export default async function HomePage() {
   return (
     <div id="inicio" className="commerce-home home-anchor-section">
       <KoraPageContextBridge pageContext={{ pageType: "home" }} />
+      {homePromo ? <HomeFloatingPromo product={homePromo.product} /> : null}
       <CommerceSlider
         slides={sliderSlides}
         categories={featuredCategories}
