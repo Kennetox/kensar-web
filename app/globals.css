@@ -9847,6 +9847,7 @@ body .main-wrapper::before {
 
 .home-instagram-carousel-viewport {
   width: 100%;
+  padding: 16px 0 24px;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
@@ -9882,10 +9883,15 @@ body .main-wrapper::before {
 }
 
 @media (hover: hover) and (pointer: fine) {
+  .home-instagram-carousel-item {
+    transform: scale(0.92);
+    transform-origin: center;
+  }
+
   .home-instagram-carousel-item:hover {
     z-index: 2;
-    box-shadow: 0 18px 32px rgba(15, 23, 42, 0.24);
-    transform: translateY(-7px) scale(1.035);
+    box-shadow: 0 22px 40px rgba(15, 23, 42, 0.26);
+    transform: translateY(-5px) scale(1.045);
   }
 }
 
@@ -9921,8 +9927,7 @@ body .main-wrapper::before {
   filter: brightness(0.8) saturate(0.94);
   pointer-events: none;
   opacity: 0;
-  transform: scale(1.025);
-  transition: opacity 0.34s ease, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1), filter 0.34s ease;
+  transition: opacity 0.34s ease, filter 0.34s ease;
 }
 
 .commerce-instagram-video:not([src]) {
@@ -9935,7 +9940,6 @@ body .main-wrapper::before {
 
 .home-instagram-carousel-item:hover .commerce-instagram-video {
   filter: brightness(0.96) saturate(1.04);
-  transform: scale(1.06);
 }
 
 .commerce-instagram-video-poster {
@@ -9946,13 +9950,11 @@ body .main-wrapper::before {
   height: 100%;
   object-fit: cover;
   background: #101114;
-  transform: scale(1);
-  transition: opacity 0.3s ease, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s ease;
+  transition: opacity 0.3s ease, filter 0.3s ease;
 }
 
 .home-instagram-carousel-item:hover .commerce-instagram-video-poster {
   filter: brightness(1.04) saturate(1.03);
-  transform: scale(1.06);
 }
 
 .home-instagram-carousel-item:has(.commerce-instagram-video[src]) .commerce-instagram-video-poster {
