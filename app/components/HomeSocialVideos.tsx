@@ -7,6 +7,8 @@ type HomeSocialVideosProps = {
   videos: WebCatalogHomeVideo[];
 };
 
+const HOVER_PREVIEW_DELAY_MS = 1800;
+
 function getPreviewTime(video: HTMLVideoElement) {
   return Number.isFinite(video.duration)
     ? Math.min(0.5, Math.max(0, video.duration / 2))
@@ -23,6 +25,7 @@ function resetVideo(video: HTMLVideoElement) {
 export default function HomeSocialVideos({ videos }: HomeSocialVideosProps) {
   const sectionRef = useRef<HTMLElement | null>(null);
   const videoRefs = useRef<Array<HTMLVideoElement | null>>([]);
+  const hoverTimerRef = useRef<number | null>(null);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [loadedIndex, setLoadedIndex] = useState<number | null>(null);
   const [soundSlot, setSoundSlot] = useState<number | null>(null);
@@ -35,6 +38,30 @@ export default function HomeSocialVideos({ videos }: HomeSocialVideosProps) {
     setLoadedIndex(index);
     setActiveIndex(index);
     setSoundSlot(enableSound ? videos[index]?.slot ?? null : null);
+  }
+
+  function clearHoverTimer() {
+    if (hoverTimerRef.current === null) return;
+    window.clearTimeout(hoverTimerRef.current);
+    hoverTimerRef.current = null;
+  }
+
+  function handleVideoHoverStart(index: number) {
+    clearHoverTimer();
+    hoverTimerRef.current = window.setTimeout(() => {
+      startOnlyVideo(index);
+      hoverTimerRef.current = null;
+    }, HOVER_PREVIEW_DELAY_MS);
+  }
+
+  function handleVideoHoverEnd(index: number) {
+    clearHoverTimer();
+    if (activeIndex !== index && loadedIndex !== index) return;
+    const video = videoRefs.current[index];
+    if (video) resetVideo(video);
+    setActiveIndex(null);
+    setLoadedIndex(null);
+    setSoundSlot(null);
   }
 
   function handleVideoClick(index: number) {
@@ -89,6 +116,7 @@ export default function HomeSocialVideos({ videos }: HomeSocialVideosProps) {
     observer.observe(section);
     return () => {
       observer.disconnect();
+      clearHoverTimer();
       mountedVideos.forEach((video) => video?.pause());
     };
   }, [videos.length]);
@@ -115,6 +143,8 @@ export default function HomeSocialVideos({ videos }: HomeSocialVideosProps) {
                     type="button"
                     className="commerce-instagram-video-toggle"
                     onClick={() => handleVideoClick(index)}
+                    onPointerEnter={() => handleVideoHoverStart(index)}
+                    onPointerLeave={() => handleVideoHoverEnd(index)}
                     aria-label={
                       activeIndex === index
                         ? soundSlot === item.slot
@@ -150,15 +180,6 @@ export default function HomeSocialVideos({ videos }: HomeSocialVideosProps) {
                         }
                       }}
                     />
-                    {loadedIndex !== index ? (
-                      <span className="commerce-instagram-video-preview" aria-hidden="true">
-                        <span className="commerce-instagram-video-preview-icon">
-                          <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M8.5 6.7a1 1 0 0 1 1.52-.85l7.1 4.3a1 1 0 0 1 0 1.7l-7.1 4.3A1 1 0 0 1 8.5 15.3V6.7Z" />
-                          </svg>
-                        </span>
-                      </span>
-                    ) : null}
                   </button>
                   <a
                     href="https://www.instagram.com/kensarelectronic/"

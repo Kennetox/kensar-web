@@ -9878,6 +9878,15 @@ body .main-wrapper::before {
   overflow: hidden;
   background: #050505;
   scroll-snap-align: start;
+  transition: transform 0.34s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.34s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .home-instagram-carousel-item:hover {
+    z-index: 2;
+    box-shadow: 0 18px 32px rgba(15, 23, 42, 0.24);
+    transform: translateY(-7px) scale(1.035);
+  }
 }
 
 .commerce-instagram-video-toggle {
@@ -9909,12 +9918,24 @@ body .main-wrapper::before {
   height: 100%;
   object-fit: cover;
   background: #050505;
-  filter: brightness(0.76) saturate(0.92);
+  filter: brightness(0.8) saturate(0.94);
   pointer-events: none;
+  opacity: 0;
+  transform: scale(1.025);
+  transition: opacity 0.34s ease, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1), filter 0.34s ease;
 }
 
 .commerce-instagram-video:not([src]) {
   display: none;
+}
+
+.commerce-instagram-video[src] {
+  opacity: 1;
+}
+
+.home-instagram-carousel-item:hover .commerce-instagram-video {
+  filter: brightness(0.96) saturate(1.04);
+  transform: scale(1.06);
 }
 
 .commerce-instagram-video-poster {
@@ -9925,38 +9946,25 @@ body .main-wrapper::before {
   height: 100%;
   object-fit: cover;
   background: #101114;
+  transform: scale(1);
+  transition: opacity 0.3s ease, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s ease;
 }
 
-.commerce-instagram-video-preview {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.22));
-  transition: background 0.18s ease;
+.home-instagram-carousel-item:hover .commerce-instagram-video-poster {
+  filter: brightness(1.04) saturate(1.03);
+  transform: scale(1.06);
 }
 
-.commerce-instagram-video-preview-icon {
-  display: grid;
-  width: 34px;
-  height: 34px;
-  place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.82);
-  border-radius: 999px;
-  background: rgba(11, 15, 20, 0.32);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.28);
+.home-instagram-carousel-item:has(.commerce-instagram-video[src]) .commerce-instagram-video-poster {
+  opacity: 0;
 }
 
-.commerce-instagram-video-preview-icon svg {
-  width: 17px;
-  height: 17px;
-  margin-left: 1px;
-  fill: #ffffff;
-}
-
-.commerce-instagram-video-toggle:hover .commerce-instagram-video-preview {
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.12));
+@media (prefers-reduced-motion: reduce) {
+  .home-instagram-carousel-item,
+  .commerce-instagram-video,
+  .commerce-instagram-video-poster {
+    transition: none;
+  }
 }
 
 .commerce-instagram-account {
